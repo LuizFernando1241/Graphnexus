@@ -23,7 +23,7 @@ export type Database = {
           source_type: string
           target_id: string
           target_type: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string
@@ -33,7 +33,7 @@ export type Database = {
           source_type: string
           target_id: string
           target_type: string
-          user_id?: string | null
+          user_id?: string
         }
         Update: {
           created_at?: string
@@ -43,7 +43,7 @@ export type Database = {
           source_type?: string
           target_id?: string
           target_type?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -59,7 +59,7 @@ export type Database = {
           tags: string[] | null
           title: string
           updated_at: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           archived?: boolean
@@ -72,7 +72,7 @@ export type Database = {
           tags?: string[] | null
           title?: string
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Update: {
           archived?: boolean
@@ -85,7 +85,7 @@ export type Database = {
           tags?: string[] | null
           title?: string
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -102,7 +102,7 @@ export type Database = {
           target_date: string | null
           title: string
           updated_at: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           archived?: boolean
@@ -114,9 +114,9 @@ export type Database = {
           start_date?: string | null
           status?: string
           target_date?: string | null
-          title: string
+          title?: string
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Update: {
           archived?: boolean
@@ -130,7 +130,7 @@ export type Database = {
           target_date?: string | null
           title?: string
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -152,7 +152,7 @@ export type Database = {
           subtasks: Json
           title: string
           updated_at: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           archived?: boolean
@@ -169,9 +169,9 @@ export type Database = {
           recurrence_rule?: string | null
           status?: string
           subtasks?: Json
-          title: string
+          title?: string
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Update: {
           archived?: boolean
@@ -190,17 +190,9 @@ export type Database = {
           subtasks?: Json
           title?: string
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "tasks_recurrence_parent_id_fkey"
-            columns: ["recurrence_parent_id"]
-            isOneToOne: false
-            referencedRelation: "tasks"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
     }
     Views: {
