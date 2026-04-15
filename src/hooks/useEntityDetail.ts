@@ -6,7 +6,7 @@ import { createNote } from "@/lib/api/notes";
 import { createEntityLink } from "@/lib/api/links";
 import type { EntityType } from "@/types/entities";
 
-interface UseEntityDetailOptions<T extends { id: string; title: string; description?: string | null }> {
+interface UseEntityDetailOptions<T extends { id: string; title: string; description?: string | null; archived?: boolean }> {
   id: string | undefined;
   entityType: EntityType;
   fetchFn: (id: string) => Promise<T>;
@@ -49,7 +49,7 @@ interface UseEntityDetailReturn<T> {
   resetForm: () => void;
 }
 
-export function useEntityDetail<T extends { id: string; title: string; description?: string | null }>(
+export function useEntityDetail<T extends { id: string; title: string; description?: string | null; archived?: boolean }>(
   options: UseEntityDetailOptions<T>
 ): UseEntityDetailReturn<T> {
   const { 
