@@ -1,8 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Task } from "@/types/entities";
-import type { Json, Database } from "@/integrations/supabase/types";
 
-type TaskUpdate = Database["public"]["Tables"]["tasks"]["Update"];
+type TaskUpdate = Record<string, unknown>;
 
 function rowToTask(row: Record<string, unknown>): Task {
   return {
@@ -92,7 +91,7 @@ export async function updateTask(
   if (updates.due_date !== undefined) payload.due_date = updates.due_date;
   if (updates.completed_at !== undefined) payload.completed_at = updates.completed_at;
   if (updates.estimated_minutes !== undefined) payload.estimated_minutes = updates.estimated_minutes;
-  if (updates.subtasks !== undefined) payload.subtasks = updates.subtasks as unknown as Json;
+  if (updates.subtasks !== undefined) payload.subtasks = updates.subtasks as unknown;
   if (updates.archived !== undefined) payload.archived = updates.archived;
   if (updates.recurrence_rule !== undefined) payload.recurrence_rule = updates.recurrence_rule;
   if (updates.recurrence_end_date !== undefined) payload.recurrence_end_date = updates.recurrence_end_date;
