@@ -49,7 +49,7 @@ interface UseEntityDetailReturn<T> {
   resetForm: () => void;
 }
 
-export function useEntityDetail<T extends { id: string; title: string; description?: string | null }>(
+export function useEntityDetail<T extends { id: string; title: string; description?: string | null; archived?: boolean }>(
   options: UseEntityDetailOptions<T>
 ): UseEntityDetailReturn<T> {
   const { 
