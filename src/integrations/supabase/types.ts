@@ -14,13 +14,192 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      entity_links: {
+        Row: {
+          created_at: string
+          id: string
+          label: string | null
+          source_id: string
+          source_type: string
+          target_id: string
+          target_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          source_id: string
+          source_type: string
+          target_id: string
+          target_type: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          source_id?: string
+          source_type?: string
+          target_id?: string
+          target_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notes: {
+        Row: {
+          archived: boolean
+          color: string | null
+          content: string | null
+          created_at: string
+          emoji: string | null
+          id: string
+          pinned: boolean
+          tags: string[] | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived?: boolean
+          color?: string | null
+          content?: string | null
+          created_at?: string
+          emoji?: string | null
+          id?: string
+          pinned?: boolean
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          archived?: boolean
+          color?: string | null
+          content?: string | null
+          created_at?: string
+          emoji?: string | null
+          id?: string
+          pinned?: boolean
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      projects: {
+        Row: {
+          archived: boolean
+          cover_color: string | null
+          created_at: string
+          description: string | null
+          emoji: string | null
+          id: string
+          start_date: string | null
+          status: string
+          target_date: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived?: boolean
+          cover_color?: string | null
+          created_at?: string
+          description?: string | null
+          emoji?: string | null
+          id?: string
+          start_date?: string | null
+          status?: string
+          target_date?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          archived?: boolean
+          cover_color?: string | null
+          created_at?: string
+          description?: string | null
+          emoji?: string | null
+          id?: string
+          start_date?: string | null
+          status?: string
+          target_date?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      tasks: {
+        Row: {
+          archived: boolean
+          completed_at: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          estimated_minutes: number | null
+          id: string
+          priority: string
+          recurrence_days: number[] | null
+          recurrence_end_date: string | null
+          recurrence_parent_id: string | null
+          recurrence_rule: string | null
+          status: string
+          subtasks: Json
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived?: boolean
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          estimated_minutes?: number | null
+          id?: string
+          priority?: string
+          recurrence_days?: number[] | null
+          recurrence_end_date?: string | null
+          recurrence_parent_id?: string | null
+          recurrence_rule?: string | null
+          status?: string
+          subtasks?: Json
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          archived?: boolean
+          completed_at?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          estimated_minutes?: number | null
+          id?: string
+          priority?: string
+          recurrence_days?: number[] | null
+          recurrence_end_date?: string | null
+          recurrence_parent_id?: string | null
+          recurrence_rule?: string | null
+          status?: string
+          subtasks?: Json
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      auto_triage_tasks: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
