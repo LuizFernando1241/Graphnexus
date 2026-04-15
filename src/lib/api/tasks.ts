@@ -67,7 +67,7 @@ export async function createTask(task: {
       priority: task.priority || "none",
       due_date: task.due_date || null,
       estimated_minutes: task.estimated_minutes || null,
-      subtasks: [] as unknown as Json,
+      subtasks: [],
       recurrence_rule: task.recurrence_rule || null,
       recurrence_end_date: task.recurrence_end_date || null,
       recurrence_parent_id: task.recurrence_parent_id || null,
