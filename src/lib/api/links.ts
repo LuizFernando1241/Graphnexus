@@ -22,8 +22,8 @@ export async function fetchEntityLinks(entityId: string, entityType: EntityType)
   
   // Combinar resultados
   const combined = new Map<string, EntityLink>();
-  (sourceData || []).forEach((link) => combined.set(link.id, link));
-  (targetData || []).forEach((link) => combined.set(link.id, link));
+  (sourceData || []).forEach((link) => combined.set(link.id, link as unknown as EntityLink));
+  (targetData || []).forEach((link) => combined.set(link.id, link as unknown as EntityLink));
   
   return Array.from(combined.values());
 }
