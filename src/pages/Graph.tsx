@@ -13,6 +13,7 @@ import * as THREE from "three";
 import SpriteText from "three-spritetext";
 import { supabase } from "@/integrations/supabase/client";
 import type { EntityType } from "@/types/entities";
+import type { ForceGraphMethods } from "react-force-graph-3d";
 
 const ForceGraph3D = lazy(() => import("react-force-graph-3d"));
 
@@ -32,7 +33,7 @@ interface GraphNode {
   fx?: number | null;
   fy?: number | null;
   fz?: number | null;
-  __nodeObj?: THREE.Group; // Cache da malha 3D + Texto
+  __nodeObj?: THREE.Group;
 }
 
 interface GraphLink {
@@ -66,6 +67,7 @@ async function fetchGraphData() {
 
     const linkCounts = new Map<string, number>();
     const connectedIds = new Set<string>();
+    
     (links.data || []).forEach((l) => {
       connectedIds.add(l.source_id);
       connectedIds.add(l.target_id);
@@ -80,10 +82,12 @@ async function fetchGraphData() {
       nodes.push({ id: n.id, type: "note", label: n.title, color: n.color || TYPE_COLORS.note, emoji: n.emoji, content: n.content, isOrphan: !connectedIds.has(n.id), linkCount: linkCounts.get(n.id) || 0 });
       nodeIds.add(n.id);
     });
+    
     (tasks.data || []).forEach((t) => {
       nodes.push({ id: t.id, type: "task", label: t.title, color: TYPE_COLORS.task, description: t.description, isOrphan: !connectedIds.has(t.id), linkCount: linkCounts.get(t.id) || 0 });
       nodeIds.add(t.id);
     });
+    
     (projects.data || []).forEach((p) => {
       nodes.push({ id: p.id, type: "project", label: p.title, color: p.cover_color || TYPE_COLORS.project, emoji: p.emoji, description: p.description, isOrphan: !connectedIds.has(p.id), linkCount: linkCounts.get(p.id) || 0 });
       nodeIds.add(p.id);
@@ -100,19 +104,19 @@ async function fetchGraphData() {
   }
 }
 
-// Criar geometrias com antecedência para economizar memória (Flyweight pattern)
+// Criar geometria antecipadamente para performance superior
 const baseGeometry = new THREE.SphereGeometry(1, 24, 24);
 
 export default function Graph() {
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
-  const fgRef = useRef<any>(null);
+  const fgRef = useRef<ForceGraphMethods>(undefined);
+  
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const [hideOrphans, setHideOrphans] = useState(false);
   const [graphSearch, setGraphSearch] = useState("");
   const [visibleTypes, setVisibleTypes] = useState<Set<EntityType>>(new Set(["note", "task", "project"]));
   
-  // Otimização de Performance Extrema: Hover Node não usa React State para evitar lag e renderização pesada
   const hoverNodeRef = useRef<string | null>(null);
 
   const toggleType = (type: EntityType) => {
@@ -138,8 +142,6 @@ export default function Graph() {
     if (!data) return null;
     const visibleNodeIds = new Set<string>();
     
-    // Nós mantemos a REFERÊNCIA exata dos clones do fetchGraphData
-    // para evitar vazamento de memória e não "explodir" a física da D3
     const nodes = data.nodes.filter((n) => {
       if (hideOrphans && n.isOrphan) return false;
       if (!visibleTypes.has(n.type)) return false;
@@ -148,15 +150,14 @@ export default function Graph() {
     });
 
     const links = data.links.filter((l) => {
-      const srcId = typeof l.source === "object" ? l.source.id : l.source;
-      const tgtId = typeof l.target === "object" ? l.target.id : l.target;
-      return visibleNodeIds.has(srcId) && visibleNodeIds.has(tgtId);
+      const sourceId = typeof l.source === "object" ? l.source.id : l.source;
+      const targetId = typeof l.target === "object" ? l.target.id : l.target;
+      return visibleNodeIds.has(sourceId) && visibleNodeIds.has(targetId);
     });
 
     return { nodes, links };
   }, [data, hideOrphans, visibleTypes]);
 
-  // Observer com requestAnimationFrame para economizar CPU
   useEffect(() => {
     if (!containerRef.current) return;
     let animationFrameId: number;
@@ -175,7 +176,6 @@ export default function Graph() {
     };
   }, []);
 
-  // Motor de Física Estilo Obsidian
   useEffect(() => {
     if (!fgRef.current || !data) return;
     const fg = fgRef.current;
@@ -194,13 +194,16 @@ export default function Graph() {
   }, [data]);
 
   const handleNodeClick = useCallback(
-    (node: GraphNode) => {
+    (node: object) => {
+      const gNode = node as GraphNode;
+      if (!gNode.type || !gNode.id) return;
+      
       const routes: Record<EntityType, string> = {
         note: "/notes",
         task: "/tasks",
         project: "/projects",
       };
-      navigate(`${routes[node.type]}/${node.id}`);
+      navigate(`${routes[gNode.type]}/${gNode.id}`);
     },
     [navigate]
   );
@@ -228,9 +231,9 @@ export default function Graph() {
     [graphSearch, searchIndex]
   );
 
-  // Criador de Malhas 100% customizado (Com Anti-Memory Leak e Correção de Texturas Edge/Hover)
   const nodeThreeObject = useCallback(
-    (node: GraphNode) => {
+    (nodeObj: object) => {
+      const node = nodeObj as GraphNode;
       if (hideOrphans && node.isOrphan) return new THREE.Group();
 
       const rawR = node.isOrphan ? 4 : 6 + (node.linkCount || 0) * 1.1;
@@ -239,21 +242,20 @@ export default function Graph() {
       if (!node.__nodeObj) {
         const group = new THREE.Group();
 
-        // 1. A Esfera - MeshBasicMaterial
         const color = node.isOrphan ? ORPHAN_COLOR : node.color;
-        // MÁGICA DE PERFORMANCE E CORES AQUI (depthWrite: false evita bugs de transparência e cortes)
+        
         const material = new THREE.MeshBasicMaterial({ 
           color, 
           transparent: true, 
           opacity: node.isOrphan ? 0.3 : 0.95,
           depthWrite: false 
         });
+        
         const sphere = new THREE.Mesh(baseGeometry, material);
         sphere.scale.set(r, r, r);
         sphere.userData = { isSphere: true, defaultOpacity: node.isOrphan ? 0.3 : 0.95 };
         group.add(sphere);
 
-        // 2. O Texto (Sprite)
         const label = node.emoji ? `${node.emoji} ${node.label}` : node.label;
         const truncated = label.length > 25 ? label.slice(0, 23) + "…" : label;
 
@@ -263,7 +265,6 @@ export default function Graph() {
         sprite.position.y = r + 4;
         sprite.center.set(0.5, 0);
         
-        // Corrige texto sendo engolido ou renderizado escuro por trás de outras esferas
         if (sprite.material) {
            sprite.material.depthWrite = false;
         }
@@ -274,20 +275,19 @@ export default function Graph() {
         node.__nodeObj = group;
       }
       
-      // Update sizes in case it changes, without recreating materials
-      const sphereMesh = node.__nodeObj.children.find((c: any) => c.userData.isSphere) as THREE.Mesh;
-      if (sphereMesh) sphereMesh.scale.set(r, r, r);
+      const sphereMesh = node.__nodeObj.children.find((c) => c.userData.isSphere) as THREE.Mesh | undefined;
+      if (sphereMesh) {
+        sphereMesh.scale.set(r, r, r);
+      }
       
       return node.__nodeObj;
     },
     [hideOrphans]
   );
 
-  // Atualizador manual ultra-rápido do estado visual (Roda sem renderizar o React!)
   const updateVisualState = useCallback((hoverJustChanged = false) => {
     if (!filteredData) return;
 
-    // FIX: Ghost Hover (Quando muda os filtros enquanto está com mouse num nó)
     let hoverId = hoverNodeRef.current;
     if (hoverId) {
       const hoverNodeExists = filteredData.nodes.some(n => n.id === hoverId);
@@ -297,13 +297,12 @@ export default function Graph() {
       }
     }
     
-    // Calcula conexões diretas do hover de forma rápida
     const connected = new Set<string>();
     if (hoverId) {
       connected.add(hoverId);
       for (const l of filteredData.links) {
-        const srcId = typeof l.source === "object" ? (l.source as any).id : l.source;
-        const tgtId = typeof l.target === "object" ? (l.target as any).id : l.target;
+        const srcId = typeof l.source === "object" ? (l.source as GraphNode).id : String(l.source);
+        const tgtId = typeof l.target === "object" ? (l.target as GraphNode).id : String(l.target);
         if (srcId === hoverId) connected.add(tgtId);
         if (tgtId === hoverId) connected.add(srcId);
       }
@@ -319,20 +318,22 @@ export default function Graph() {
 
       group.children.forEach((child) => {
         const c = child as THREE.Mesh | SpriteText;
-        const defaultOp = c.userData.defaultOpacity;
+        const defaultOp = Number(c.userData.defaultOpacity);
         
+        let targetOpacity = defaultOp;
         if (isDimmedByHover) {
-          c.material.opacity = c.userData.isText ? 0 : 0.05;
+          targetOpacity = c.userData.isText ? 0 : 0.05;
         } else if (isDimmedBySearch) {
-          c.material.opacity = 0.05;
-        } else {
-          c.material.opacity = defaultOp;
+          targetOpacity = 0.05;
+        }
+
+        const material = Array.isArray(c.material) ? c.material[0] : c.material;
+        if (material) {
+          material.opacity = targetOpacity;
         }
       });
     });
 
-    // Apenas pede para o WebGL recomputar linhas (pesado!) se o hover MUDAR,
-    // caso seja apenas usuário digitando na barra de pesquisa a gente economiza CPU e não causa "stutter"
     if (hoverJustChanged && fgRef.current) {
         fgRef.current.linkColor(fgRef.current.linkColor());
         fgRef.current.linkWidth(fgRef.current.linkWidth());
@@ -340,7 +341,6 @@ export default function Graph() {
     }
   }, [filteredData, graphSearch, nodeMatchesSearch]);
 
-  // Hook que ouve apenas o State do Search para atualizar cores
   useEffect(() => {
     updateVisualState(false);
   }, [graphSearch, updateVisualState]);
@@ -350,7 +350,6 @@ export default function Graph() {
   return (
     <PageTransition>
       <div ref={containerRef} className="relative w-full h-[calc(100vh-5rem)] rounded-xl overflow-hidden shadow-2xl bg-[#09090b]">
-        {/* Painel Glassmorphism Flutuante UI */}
         {data && (
           <div className="absolute top-4 left-4 right-4 z-10 flex flex-col sm:flex-row gap-3 justify-between pointer-events-none">
             <div className="relative flex-1 max-w-md pointer-events-auto">
@@ -404,45 +403,48 @@ export default function Graph() {
         <Suspense fallback={<div className="flex items-center justify-center h-full text-white/50">Carregando universo...</div>}>
           {filteredData && (
             <ForceGraph3D
-              ref={fgRef}
+              ref={fgRef as React.RefObject<ForceGraphMethods>}
               graphData={filteredData}
               width={dimensions.width}
               height={dimensions.height}
               backgroundColor="#020203"
               
-              nodeThreeObject={nodeThreeObject as any}
+              nodeThreeObject={nodeThreeObject}
               
-              linkColor={(link: any) => {
-                 const srcId = typeof link.source === "object" ? link.source.id : link.source;
-                 const tgtId = typeof link.target === "object" ? link.target.id : link.target;
+              linkColor={(linkObj: object) => {
+                 const link = linkObj as GraphLink;
+                 const srcId = typeof link.source === "object" ? (link.source as GraphNode).id : String(link.source);
+                 const tgtId = typeof link.target === "object" ? (link.target as GraphNode).id : String(link.target);
                  const hoverId = hoverNodeRef.current;
                  if (hoverId && srcId !== hoverId && tgtId !== hoverId) {
-                     return "rgba(255, 255, 255, 0.05)"; // Linhas esmaecem
+                     return "rgba(255, 255, 255, 0.05)";
                  }
-                 return "rgba(255, 255, 255, 0.45)"; // Linhas normais e super brancas
+                 return "rgba(255, 255, 255, 0.45)";
               }}
-              linkWidth={(link: any) => {
-                const srcId = typeof link.source === "object" ? link.source.id : link.source;
-                const tgtId = typeof link.target === "object" ? link.target.id : link.target;
+              linkWidth={(linkObj: object) => {
+                const link = linkObj as GraphLink;
+                const srcId = typeof link.source === "object" ? (link.source as GraphNode).id : String(link.source);
+                const tgtId = typeof link.target === "object" ? (link.target as GraphNode).id : String(link.target);
                 return (hoverNodeRef.current && (srcId === hoverNodeRef.current || tgtId === hoverNodeRef.current)) ? 1.5 : 0.6;
               }}
               
-              // Efeito visual sutil de partículas
-              linkDirectionalParticles={(link: any) => {
-                const srcId = typeof link.source === "object" ? link.source.id : link.source;
-                const tgtId = typeof link.target === "object" ? link.target.id : link.target;
+              linkDirectionalParticles={(linkObj: object) => {
+                const link = linkObj as GraphLink;
+                const srcId = typeof link.source === "object" ? (link.source as GraphNode).id : String(link.source);
+                const tgtId = typeof link.target === "object" ? (link.target as GraphNode).id : String(link.target);
                 return (hoverNodeRef.current && (srcId === hoverNodeRef.current || tgtId === hoverNodeRef.current)) ? 3 : 0;
               }}
               linkDirectionalParticleSpeed={0.015}
               linkDirectionalParticleWidth={1.5}
               linkDirectionalParticleColor={() => "rgba(255,255,255,0.7)"}
               
-              onNodeClick={handleNodeClick as any}
-              onNodeHover={(node: any) => {
+              onNodeClick={handleNodeClick}
+              onNodeHover={(nodeObj: object | null) => {
+                 const node = nodeObj as GraphNode | null;
                  const newHoverId = node ? node.id : null;
                  if (hoverNodeRef.current !== newHoverId) {
                    hoverNodeRef.current = newHoverId;
-                   updateVisualState(true); // Hover mudou => recalcular arestas visualmente
+                   updateVisualState(true);
                  }
                  if (containerRef.current) {
                    containerRef.current.style.cursor = node ? 'pointer' : 'grab';

@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Task } from "@/types/entities";
+import { format } from "date-fns";
 
 type TaskUpdate = Record<string, unknown>;
 
@@ -33,6 +34,27 @@ export async function fetchTasks(opts?: { includeOldDone?: boolean }) {
     });
   }
 
+  // --- AUTO-PROMOÇÃO DIÁRIA ---
+  // Se uma tarefa está no backlog, mas o dia dela chegou (ou já passou),
+  // avançamos ela para "A Fazer" automaticamente!
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const tasksToPromote = tasks.filter(t => t.status === "backlog" && t.due_date && t.due_date <= todayStr);
+  
+  if (tasksToPromote.length > 0) {
+    // 1. Atualizamos a memória instantaneamente para a interface renderizar sem latência
+    tasks = tasks.map(t => {
+      if (t.status === "backlog" && t.due_date && t.due_date <= todayStr) {
+        return { ...t, status: "todo" };
+      }
+      return t;
+    });
+
+    // 2. Disparamos o update silencioso no banco (fire and forget)
+    Promise.all(
+       tasksToPromote.map(t => supabase.from("tasks").update({ status: "todo" }).eq("id", t.id))
+    ).catch(err => console.error("Erro na auto-promoção de tarefas:", err));
+  }
+
   return tasks;
 }
 
@@ -43,7 +65,17 @@ export async function fetchTask(id: string) {
     .eq("id", id)
     .single();
   if (error) throw error;
-  return rowToTask(data as Record<string, unknown>);
+  
+  const rawTask = rowToTask(data as Record<string, unknown>);
+  
+  // --- AUTO-PROMOÇÃO PARA TAREFA ÚNICA ---
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  if (rawTask.status === "backlog" && rawTask.due_date && rawTask.due_date <= todayStr) {
+    rawTask.status = "todo";
+    supabase.from("tasks").update({ status: "todo" }).eq("id", rawTask.id).catch(err => console.error("Erro na auto-promoção", err));
+  }
+  
+  return rawTask;
 }
 
 export async function createTask(task: {
