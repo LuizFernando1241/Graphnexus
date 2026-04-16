@@ -32,12 +32,12 @@ interface GraphNode {
   fx?: number | null;
   fy?: number | null;
   fz?: number | null;
-  __spriteCache?: THREE.Object3D; // Cache to prevent memory leak
+  __nodeObj?: THREE.Group; // Cache da malha 3D + Texto
 }
 
 interface GraphLink {
-  source: string;
-  target: string;
+  source: string | GraphNode;
+  target: string | GraphNode;
 }
 
 const TYPE_COLORS: Record<EntityType, string> = {
@@ -100,6 +100,9 @@ async function fetchGraphData() {
   }
 }
 
+// Criar geometrias com antecedência para economizar memória (Flyweight pattern)
+const baseGeometry = new THREE.SphereGeometry(1, 24, 24);
+
 export default function Graph() {
   const navigate = useNavigate();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -109,8 +112,8 @@ export default function Graph() {
   const [graphSearch, setGraphSearch] = useState("");
   const [visibleTypes, setVisibleTypes] = useState<Set<EntityType>>(new Set(["note", "task", "project"]));
   
-  // Destaque visual (Hover)
-  const [hoverNode, setHoverNode] = useState<string | null>(null);
+  // Otimização de Performance Extrema: Hover Node não usa React State para evitar lag e renderização pesada
+  const hoverNodeRef = useRef<string | null>(null);
 
   const toggleType = (type: EntityType) => {
     setVisibleTypes((prev) => {
@@ -132,96 +135,61 @@ export default function Graph() {
   const orphanCount = useMemo(() => data?.nodes.filter((n) => n.isOrphan).length ?? 0, [data]);
 
   const filteredData = useMemo(() => {
-    if (!data) return null; // Retornar nulo se não houver dados
-    
+    if (!data) return null;
     const visibleNodeIds = new Set<string>();
     
-    // Precisamos recriar os objetos completamente porque o useQuery faz cache dos dados.
-    // O react-force-graph muta esses objetos injetando x,y,z e __spriteCache.
-    // Se não limparmos ao remontar a página, as posições velhas e os WebGL contexts velhos quebram o canvas!
-    const nodes = data.nodes
-      .filter((n) => {
-        if (hideOrphans && n.isOrphan) return false;
-        if (!visibleTypes.has(n.type)) return false;
-        visibleNodeIds.add(n.id);
-        return true;
-      })
-      .map((n) => ({ 
-        ...n, 
-        x: undefined, y: undefined, z: undefined, // Limpa física antiga
-        vx: undefined, vy: undefined, vz: undefined,
-        __spriteCache: undefined // Limpa instâncias Three.js que pertenciam a um canvas destruído
-      }));
+    // Nós mantemos a REFERÊNCIA exata dos clones do fetchGraphData
+    // para evitar vazamento de memória e não "explodir" a física da D3
+    const nodes = data.nodes.filter((n) => {
+      if (hideOrphans && n.isOrphan) return false;
+      if (!visibleTypes.has(n.type)) return false;
+      visibleNodeIds.add(n.id);
+      return true;
+    });
 
-    const links = data.links
-      .filter((l) => {
-        const srcId = typeof l.source === "object" ? l.source.id : l.source;
-        const tgtId = typeof l.target === "object" ? l.target.id : l.target;
-        return visibleNodeIds.has(srcId) && visibleNodeIds.has(tgtId);
-      })
-      .map((l) => ({
-        // O react-force-graph troca as strings originais por referências de objeto.
-        // Precisamos garantir que sempre passamos strings novas na remontagem.
-        source: typeof l.source === "object" ? l.source.id : l.source,
-        target: typeof l.target === "object" ? l.target.id : l.target
-      }));
+    const links = data.links.filter((l) => {
+      const srcId = typeof l.source === "object" ? l.source.id : l.source;
+      const tgtId = typeof l.target === "object" ? l.target.id : l.target;
+      return visibleNodeIds.has(srcId) && visibleNodeIds.has(tgtId);
+    });
 
     return { nodes, links };
   }, [data, hideOrphans, visibleTypes]);
 
-  const connectedNodes = useMemo(() => {
-    if (!hoverNode || !filteredData) return new Set<string>();
-    const connected = new Set<string>();
-    connected.add(hoverNode);
-    filteredData.links.forEach((l: any) => {
-      const srcId = typeof l.source === "object" ? l.source.id : l.source;
-      const tgtId = typeof l.target === "object" ? l.target.id : l.target;
-      if (srcId === hoverNode) connected.add(tgtId);
-      if (tgtId === hoverNode) connected.add(srcId);
-    });
-    return connected;
-  }, [hoverNode, filteredData]);
-
-  // ResizeObserver previne bugs no layout quando a barra lateral altera a largura
+  // Observer com requestAnimationFrame para economizar CPU
   useEffect(() => {
     if (!containerRef.current) return;
+    let animationFrameId: number;
     const observer = new ResizeObserver((entries) => {
-      const { width, height } = entries[0].contentRect;
-      setDimensions({ width, height });
+      animationFrameId = requestAnimationFrame(() => {
+        if (containerRef.current) {
+          const { width, height } = entries[0].contentRect;
+          setDimensions({ width, height });
+        }
+      });
     });
     observer.observe(containerRef.current);
-    
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(animationFrameId);
+    };
   }, []);
 
-  // Física e Luzes estilo Obsidian
+  // Motor de Física Estilo Obsidian
   useEffect(() => {
     if (!fgRef.current || !data) return;
     const fg = fgRef.current;
     
-    // Força de atração dos centros e repulsão das cargas (Estilo Obsidian)
-    fg.d3Force("charge", forceManyBody().strength(-150)); 
-    fg.d3Force("link", forceLink().distance(40));
+    fg.d3Force("charge", forceManyBody().strength(-140)); 
+    fg.d3Force("link", forceLink().distance(45));
     fg.d3Force(
       "radial",
       forceRadial<GraphNode>(
-        (node) => (node.isOrphan ? 300 : 0),
+        (node) => (node.isOrphan ? 250 : 0),
         0,
         0
-      ).strength((node) => (node.isOrphan ? 0.1 : 0.05))
+      ).strength((node) => (node.isOrphan ? 0.08 : 0.02))
     );
-    
-    // Adicionar iluminação para destacar as esferas (Modo Premium)
-    const scene = fg.scene();
-    if (scene && !scene.__hasPremiumLights) {
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
-      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-      directionalLight.position.set(100, 200, 100);
-      scene.add(ambientLight);
-      scene.add(directionalLight);
-      scene.__hasPremiumLights = true;
-    }
-
     fg.d3ReheatSimulation();
   }, [data]);
 
@@ -260,72 +228,129 @@ export default function Graph() {
     [graphSearch, searchIndex]
   );
 
-  // Sincroniza a opacidade dos textos (Sprite) pois o react-force-graph-3d não re-avalia o nodeThreeObject constantemente
-  useEffect(() => {
-    if (!filteredData) return;
-    
-    filteredData.nodes.forEach((node) => {
-      if (node.__spriteCache) {
-        const sprite = node.__spriteCache as SpriteText;
-        const matchesSearch = nodeMatchesSearch(node);
-        const isDimmed = graphSearch.trim() && !matchesSearch;
-
-        // Ocultar texto de nós isolados ou esmaecer pelo search
-        if (hoverNode && !connectedNodes.has(node.id)) {
-          sprite.material.opacity = 0;
-        } else if (isDimmed) {
-          sprite.material.opacity = 0.05;
-        } else {
-          sprite.material.opacity = node.isOrphan ? 0.3 : 0.9;
-        }
-      }
-    });
-  }, [hoverNode, connectedNodes, graphSearch, nodeMatchesSearch, filteredData]);
-
-  // nodeThreeObject otimizado usando cache na propriedade `__spriteCache` para evitar Memory Leaks!
+  // Criador de Malhas 100% customizado (Com Anti-Memory Leak e Correção de Texturas Edge/Hover)
   const nodeThreeObject = useCallback(
     (node: GraphNode) => {
       if (hideOrphans && node.isOrphan) return new THREE.Group();
 
-      const rawR = node.isOrphan ? 6 : 8 + (node.linkCount || 0) * 1.1; // Multiplicador 1.1
-      const r = Math.min(rawR, 18); // Limite máximo reduzido para 18
+      const rawR = node.isOrphan ? 4 : 6 + (node.linkCount || 0) * 1.1;
+      const r = Math.min(rawR, 14);
 
-      // Cache do SpriteText para não travar a memória (GPU Leak fix)
-      if (!node.__spriteCache) {
+      if (!node.__nodeObj) {
+        const group = new THREE.Group();
+
+        // 1. A Esfera - MeshBasicMaterial
+        const color = node.isOrphan ? ORPHAN_COLOR : node.color;
+        // MÁGICA DE PERFORMANCE E CORES AQUI (depthWrite: false evita bugs de transparência e cortes)
+        const material = new THREE.MeshBasicMaterial({ 
+          color, 
+          transparent: true, 
+          opacity: node.isOrphan ? 0.3 : 0.95,
+          depthWrite: false 
+        });
+        const sphere = new THREE.Mesh(baseGeometry, material);
+        sphere.scale.set(r, r, r);
+        sphere.userData = { isSphere: true, defaultOpacity: node.isOrphan ? 0.3 : 0.95 };
+        group.add(sphere);
+
+        // 2. O Texto (Sprite)
         const label = node.emoji ? `${node.emoji} ${node.label}` : node.label;
         const truncated = label.length > 25 ? label.slice(0, 23) + "…" : label;
 
         const sprite = new SpriteText(truncated);
         sprite.color = node.isOrphan ? ORPHAN_TEXT_COLOR : "#F4F4F8";
-        sprite.textHeight = node.isOrphan ? 3 : 4;
-        sprite.position.y = r + 4; // Um pouco mais colado
+        sprite.textHeight = node.isOrphan ? 3 : 4.5;
+        sprite.position.y = r + 4;
         sprite.center.set(0.5, 0);
-
-        // Define a opacidade inicial
-        const matchesSearch = nodeMatchesSearch(node);
-        const isDimmed = graphSearch.trim() && !matchesSearch;
-        if (hoverNode && !connectedNodes.has(node.id)) {
-          sprite.material.opacity = 0;
-        } else if (isDimmed) {
-          sprite.material.opacity = 0.05;
-        } else {
-          sprite.material.opacity = node.isOrphan ? 0.3 : 0.9;
+        
+        // Corrige texto sendo engolido ou renderizado escuro por trás de outras esferas
+        if (sprite.material) {
+           sprite.material.depthWrite = false;
         }
 
-        node.__spriteCache = sprite;
+        sprite.userData = { isText: true, defaultOpacity: node.isOrphan ? 0.3 : 0.95 };
+        group.add(sprite);
+
+        node.__nodeObj = group;
       }
       
-      return node.__spriteCache as SpriteText;
+      // Update sizes in case it changes, without recreating materials
+      const sphereMesh = node.__nodeObj.children.find((c: any) => c.userData.isSphere) as THREE.Mesh;
+      if (sphereMesh) sphereMesh.scale.set(r, r, r);
+      
+      return node.__nodeObj;
     },
-    [hideOrphans, graphSearch, nodeMatchesSearch, hoverNode, connectedNodes]
+    [hideOrphans]
   );
+
+  // Atualizador manual ultra-rápido do estado visual (Roda sem renderizar o React!)
+  const updateVisualState = useCallback((hoverJustChanged = false) => {
+    if (!filteredData) return;
+
+    // FIX: Ghost Hover (Quando muda os filtros enquanto está com mouse num nó)
+    let hoverId = hoverNodeRef.current;
+    if (hoverId) {
+      const hoverNodeExists = filteredData.nodes.some(n => n.id === hoverId);
+      if (!hoverNodeExists) {
+         hoverNodeRef.current = null;
+         hoverId = null;
+      }
+    }
+    
+    // Calcula conexões diretas do hover de forma rápida
+    const connected = new Set<string>();
+    if (hoverId) {
+      connected.add(hoverId);
+      for (const l of filteredData.links) {
+        const srcId = typeof l.source === "object" ? (l.source as any).id : l.source;
+        const tgtId = typeof l.target === "object" ? (l.target as any).id : l.target;
+        if (srcId === hoverId) connected.add(tgtId);
+        if (tgtId === hoverId) connected.add(srcId);
+      }
+    }
+
+    filteredData.nodes.forEach((node) => {
+      const group = node.__nodeObj;
+      if (!group) return;
+
+      const matchesSearch = nodeMatchesSearch(node);
+      const isDimmedBySearch = graphSearch.trim() && !matchesSearch;
+      const isDimmedByHover = hoverId && !connected.has(node.id);
+
+      group.children.forEach((child) => {
+        const c = child as THREE.Mesh | SpriteText;
+        const defaultOp = c.userData.defaultOpacity;
+        
+        if (isDimmedByHover) {
+          c.material.opacity = c.userData.isText ? 0 : 0.05;
+        } else if (isDimmedBySearch) {
+          c.material.opacity = 0.05;
+        } else {
+          c.material.opacity = defaultOp;
+        }
+      });
+    });
+
+    // Apenas pede para o WebGL recomputar linhas (pesado!) se o hover MUDAR,
+    // caso seja apenas usuário digitando na barra de pesquisa a gente economiza CPU e não causa "stutter"
+    if (hoverJustChanged && fgRef.current) {
+        fgRef.current.linkColor(fgRef.current.linkColor());
+        fgRef.current.linkWidth(fgRef.current.linkWidth());
+        fgRef.current.linkDirectionalParticles(fgRef.current.linkDirectionalParticles());
+    }
+  }, [filteredData, graphSearch, nodeMatchesSearch]);
+
+  // Hook que ouve apenas o State do Search para atualizar cores
+  useEffect(() => {
+    updateVisualState(false);
+  }, [graphSearch, updateVisualState]);
 
   if (isLoading) return <GraphSkeleton />;
 
   return (
     <PageTransition>
-      <div ref={containerRef} className="relative w-full h-[calc(100vh-5rem)] rounded-xl overflow-hidden border border-white/5 shadow-2xl bg-[#09090b]">
-        {/* Painel Glassmorphism Flutuante */}
+      <div ref={containerRef} className="relative w-full h-[calc(100vh-5rem)] rounded-xl overflow-hidden shadow-2xl bg-[#09090b]">
+        {/* Painel Glassmorphism Flutuante UI */}
         {data && (
           <div className="absolute top-4 left-4 right-4 z-10 flex flex-col sm:flex-row gap-3 justify-between pointer-events-none">
             <div className="relative flex-1 max-w-md pointer-events-auto">
@@ -340,7 +365,6 @@ export default function Graph() {
             </div>
 
             <div className="flex items-center gap-2 flex-wrap pointer-events-auto">
-              {/* Filtros de Tipos (Glassmorphism) */}
               <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-black/40 backdrop-blur-xl px-2 py-1.5 shadow-lg">
                 {TYPE_CONFIG.map(({ type, label, icon: Icon, color }) => {
                   const active = visibleTypes.has(type);
@@ -353,7 +377,6 @@ export default function Graph() {
                       className={`h-8 px-2.5 gap-2 text-xs transition-all rounded-lg ${
                         active ? "opacity-100 bg-white/5 text-white" : "opacity-40 hover:opacity-100 hover:bg-white/5 text-white/70"
                       }`}
-                      title={`${active ? "Ocultar" : "Mostrar"} ${label}`}
                     >
                       <span className="h-2.5 w-2.5 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: color }} />
                       <Icon className="h-3.5 w-3.5" />
@@ -363,7 +386,6 @@ export default function Graph() {
                 })}
               </div>
 
-              {/* Botão de Órfãos */}
               <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-black/40 backdrop-blur-xl px-3 py-1.5 shadow-lg">
                 <Switch
                   id="show-orphans"
@@ -371,7 +393,7 @@ export default function Graph() {
                   onCheckedChange={(v) => setHideOrphans(!v)}
                   className="data-[state=checked]:bg-blue-600"
                 />
-                <Label htmlFor="show-orphans" className="text-xs font-medium text-white/80 cursor-pointer whitespace-nowrap pt-0.5">
+                <Label htmlFor="show-orphans" className="text-xs font-medium text-white/80 cursor-pointer pt-0.5">
                   Órfãos ({orphanCount})
                 </Label>
               </div>
@@ -379,70 +401,57 @@ export default function Graph() {
           </div>
         )}
 
-        <Suspense fallback={<div className="flex items-center justify-center h-full text-white/50 bg-[#09090b]">Carregando universo...</div>}>
+        <Suspense fallback={<div className="flex items-center justify-center h-full text-white/50">Carregando universo...</div>}>
           {filteredData && (
             <ForceGraph3D
               ref={fgRef}
               graphData={filteredData}
               width={dimensions.width}
               height={dimensions.height}
-              backgroundColor="#050505"
+              backgroundColor="#020203"
               
-              // Ajustes Visuais Nativos Otimizados
-              nodeColor={(node: any) => node.isOrphan ? ORPHAN_COLOR : node.color}
-              nodeVal={(node: any) => {
-                const rawR = node.isOrphan ? 6 : 8 + (node.linkCount || 0) * 1.1; // Tamanho base atualizado
-                const r = Math.min(rawR, 18); // Limite máximo 18
-                return Math.pow(r / 4, 3); // O 'react-force-graph' tira a raiz cúbica
-              }}
-              nodeOpacity={(node: any) => {
-                if (hoverNode && !connectedNodes.has(node.id)) return 0.15;
-                if (graphSearch.trim() && !nodeMatchesSearch(node)) return 0.15;
-                return node.isOrphan ? 0.3 : 0.95;
-              }}
+              nodeThreeObject={nodeThreeObject as any}
               
-              // Linhas Mais Brancas e Sólidas
-              linkColor={() => "rgba(255, 255, 255, 0.45)"} // Opacidade mais alta ao invés de quase invisível
+              linkColor={(link: any) => {
+                 const srcId = typeof link.source === "object" ? link.source.id : link.source;
+                 const tgtId = typeof link.target === "object" ? link.target.id : link.target;
+                 const hoverId = hoverNodeRef.current;
+                 if (hoverId && srcId !== hoverId && tgtId !== hoverId) {
+                     return "rgba(255, 255, 255, 0.05)"; // Linhas esmaecem
+                 }
+                 return "rgba(255, 255, 255, 0.45)"; // Linhas normais e super brancas
+              }}
               linkWidth={(link: any) => {
                 const srcId = typeof link.source === "object" ? link.source.id : link.source;
                 const tgtId = typeof link.target === "object" ? link.target.id : link.target;
-                if (hoverNode && (srcId === hoverNode || tgtId === hoverNode)) return 1.5;
-                return 0.6;
-              }}
-              linkVisibility={(link: any) => {
-                if (!hoverNode) return true;
-                const srcId = typeof link.source === "object" ? link.source.id : link.source;
-                const tgtId = typeof link.target === "object" ? link.target.id : link.target;
-                return srcId === hoverNode || tgtId === hoverNode;
+                return (hoverNodeRef.current && (srcId === hoverNodeRef.current || tgtId === hoverNodeRef.current)) ? 1.5 : 0.6;
               }}
               
-              // Partículas ativadas ao focar no hover (WOW Effect)
+              // Efeito visual sutil de partículas
               linkDirectionalParticles={(link: any) => {
-                if (!hoverNode) return 0;
                 const srcId = typeof link.source === "object" ? link.source.id : link.source;
                 const tgtId = typeof link.target === "object" ? link.target.id : link.target;
-                return (srcId === hoverNode || tgtId === hoverNode) ? 3 : 0;
+                return (hoverNodeRef.current && (srcId === hoverNodeRef.current || tgtId === hoverNodeRef.current)) ? 3 : 0;
               }}
               linkDirectionalParticleSpeed={0.015}
               linkDirectionalParticleWidth={1.5}
-              linkDirectionalParticleColor={() => "rgba(255,255,255,0.8)"}
-
-              // Estendendo o mesh principal ao invés de recriar tudo
-              nodeThreeObject={nodeThreeObject as any}
-              nodeThreeObjectExtend={true}
+              linkDirectionalParticleColor={() => "rgba(255,255,255,0.7)"}
               
-              // Interatividade
               onNodeClick={handleNodeClick as any}
               onNodeHover={(node: any) => {
-                setHoverNode(node ? node.id : null);
-                if (containerRef.current) {
-                  containerRef.current.style.cursor = node ? 'pointer' : 'default';
-                }
+                 const newHoverId = node ? node.id : null;
+                 if (hoverNodeRef.current !== newHoverId) {
+                   hoverNodeRef.current = newHoverId;
+                   updateVisualState(true); // Hover mudou => recalcular arestas visualmente
+                 }
+                 if (containerRef.current) {
+                   containerRef.current.style.cursor = node ? 'pointer' : 'grab';
+                 }
               }}
 
-              // Físicas secundárias
-              d3AlphaDecay={0.02}
-              d3VelocityDecay={0.3}
+              enableNodeDrag={false}
+              d3AlphaDecay={0.03}
+              d3VelocityDecay={0.4}
             />
           )}
         </Suspense>
