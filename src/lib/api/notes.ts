@@ -121,6 +121,7 @@ export async function updateNote(
 }
 
 export async function deleteNote(id: string) {
+  await supabase.from("entity_links").delete().or(`source_id.eq.${id},target_id.eq.${id}`);
   const { error } = await supabase.from("notes").delete().eq("id", id);
   if (error) throw error;
 }
