@@ -290,7 +290,7 @@ export default function Graph() {
     };
   }, []);
 
-  // Configurar forças apenas uma vez quando o grafo é montado
+  // Configurar forças quando o grafo é montado/remontado
   const forcesConfigured = useRef(false);
   useEffect(() => {
     if (!fgRef.current || forcesConfigured.current) return;
@@ -307,6 +307,11 @@ export default function Graph() {
       ).strength((node) => (node.isOrphan ? 0.08 : 0.02))
     );
     forcesConfigured.current = true;
+    
+    // Resetar flag quando componente desmonta para reconfigurar no próximo mount
+    return () => {
+      forcesConfigured.current = false;
+    };
   }, []);
 
   const handleNodeClick = useCallback(
@@ -486,6 +491,49 @@ export default function Graph() {
     updateVisualState(false);
   }, [debouncedSearch, updateVisualState]);
 
+  // Callbacks do ForceGraph3D - SEM useCallback para permitir leitura atualizada da ref
+  // ForceGraph3D chama esses callbacks durante animacao, useCallback nao traz beneficio aqui
+  const linkColorCallback = (linkObj: object) => {
+    const link = linkObj as GraphLink;
+    const srcId = typeof link.source === "object" ? (link.source as GraphNode).id : String(link.source);
+    const tgtId = typeof link.target === "object" ? (link.target as GraphNode).id : String(link.target);
+    const hoverId = hoverNodeRef.current;
+    if (hoverId && srcId !== hoverId && tgtId !== hoverId) {
+      return "rgba(255, 255, 255, 0.05)";
+    }
+    return "rgba(255, 255, 255, 0.45)";
+  };
+
+  const linkWidthCallback = (linkObj: object) => {
+    const link = linkObj as GraphLink;
+    const srcId = typeof link.source === "object" ? (link.source as GraphNode).id : String(link.source);
+    const tgtId = typeof link.target === "object" ? (link.target as GraphNode).id : String(link.target);
+    return (hoverNodeRef.current && (srcId === hoverNodeRef.current || tgtId === hoverNodeRef.current)) ? 1.5 : 0.6;
+  };
+
+  const linkParticlesCallback = (linkObj: object) => {
+    const link = linkObj as GraphLink;
+    const srcId = typeof link.source === "object" ? (link.source as GraphNode).id : String(link.source);
+    const tgtId = typeof link.target === "object" ? (link.target as GraphNode).id : String(link.target);
+    return (hoverNodeRef.current && (srcId === hoverNodeRef.current || tgtId === hoverNodeRef.current)) ? 3 : 0;
+  };
+
+  const handleNodeHover = useCallback((nodeObj: object | null) => {
+    const node = nodeObj as GraphNode | null;
+    const newHoverId = node ? node.id : null;
+    if (hoverNodeRef.current !== newHoverId) {
+      hoverNodeRef.current = newHoverId;
+      updateVisualState(true);
+    }
+    if (containerRef.current) {
+      containerRef.current.style.cursor = node ? 'pointer' : 'grab';
+    }
+  }, [updateVisualState]);
+
+  // Memoizar constantes para evitar re-render
+  const linkParticleColor = useMemo(() => () => "rgba(255,255,255,0.7)", []);
+  const handleToggleOrphans = useCallback((v: boolean) => setHideOrphans(!v), []);
+
   if (isLoading) return <GraphSkeleton />;
 
   return (
@@ -498,7 +546,7 @@ export default function Graph() {
             visibleTypes={visibleTypes}
             onToggleType={toggleType}
             hideOrphans={hideOrphans}
-            onToggleOrphans={(v) => setHideOrphans(!v)}
+            onToggleOrphans={handleToggleOrphans}
             orphanCount={orphanCount}
           />
         )}
@@ -514,45 +562,15 @@ export default function Graph() {
               
               nodeThreeObject={nodeThreeObject}
               
-              linkColor={useCallback((linkObj: object) => {
-                 const link = linkObj as GraphLink;
-                 const srcId = typeof link.source === "object" ? (link.source as GraphNode).id : String(link.source);
-                 const tgtId = typeof link.target === "object" ? (link.target as GraphNode).id : String(link.target);
-                 const hoverId = hoverNodeRef.current;
-                 if (hoverId && srcId !== hoverId && tgtId !== hoverId) {
-                     return "rgba(255, 255, 255, 0.05)";
-                 }
-                 return "rgba(255, 255, 255, 0.45)";
-              }, [])}
-              linkWidth={useCallback((linkObj: object) => {
-                const link = linkObj as GraphLink;
-                const srcId = typeof link.source === "object" ? (link.source as GraphNode).id : String(link.source);
-                const tgtId = typeof link.target === "object" ? (link.target as GraphNode).id : String(link.target);
-                return (hoverNodeRef.current && (srcId === hoverNodeRef.current || tgtId === hoverNodeRef.current)) ? 1.5 : 0.6;
-              }, [])}
-              
-              linkDirectionalParticles={useCallback((linkObj: object) => {
-                const link = linkObj as GraphLink;
-                const srcId = typeof link.source === "object" ? (link.source as GraphNode).id : String(link.source);
-                const tgtId = typeof link.target === "object" ? (link.target as GraphNode).id : String(link.target);
-                return (hoverNodeRef.current && (srcId === hoverNodeRef.current || tgtId === hoverNodeRef.current)) ? 3 : 0;
-              }, [])}
+              linkColor={linkColorCallback}
+              linkWidth={linkWidthCallback}
+              linkDirectionalParticles={linkParticlesCallback}
               linkDirectionalParticleSpeed={0.015}
               linkDirectionalParticleWidth={1.5}
-              linkDirectionalParticleColor={() => "rgba(255,255,255,0.7)"}
+              linkDirectionalParticleColor={linkParticleColor}
               
               onNodeClick={handleNodeClick}
-              onNodeHover={(nodeObj: object | null) => {
-                 const node = nodeObj as GraphNode | null;
-                 const newHoverId = node ? node.id : null;
-                 if (hoverNodeRef.current !== newHoverId) {
-                   hoverNodeRef.current = newHoverId;
-                   updateVisualState(true);
-                 }
-                 if (containerRef.current) {
-                   containerRef.current.style.cursor = node ? 'pointer' : 'grab';
-                 }
-              }}
+              onNodeHover={handleNodeHover}
 
               enableNodeDrag={false}
               d3AlphaDecay={0.03}
