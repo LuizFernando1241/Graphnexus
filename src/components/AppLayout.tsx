@@ -34,7 +34,8 @@ export function AppLayout() {
       <div className="fixed top-0 left-0 right-0 z-40 flex md:hidden items-center h-[60px] px-4 gap-3 border-b border-border/50 bg-[hsl(var(--sidebar-background)/.8)] backdrop-blur-lg">
         <button
           onClick={() => setMobileOpen(true)}
-          className="rounded p-2 text-foreground hover:bg-accent"
+          className="rounded p-2.5 text-foreground hover:bg-accent min-h-[44px] min-w-[44px] flex items-center justify-center"
+          aria-label="Abrir menu de navegação"
         >
           <Menu className="h-5 w-5" />
         </button>

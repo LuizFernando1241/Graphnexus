@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import type { EntityType } from "@/types/entities";
@@ -101,6 +102,7 @@ export function CommandPalette() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className="max-w-lg p-0 gap-0">
+        <DialogTitle className="sr-only">Busca rápida</DialogTitle>
         <div className="flex items-center border-b border-border px-4">
           <Search className="h-4 w-4 text-muted-foreground shrink-0" />
           <Input
@@ -109,6 +111,7 @@ export function CommandPalette() {
             onChange={(e) => setSearch(e.target.value)}
             className="border-none focus-visible:ring-0 focus-visible:ring-offset-0"
             autoFocus
+            aria-label="Buscar notas, tarefas e projetos"
           />
         </div>
         <div className="max-h-72 overflow-y-auto p-2">

@@ -14,6 +14,8 @@ import {
   AlertDialogFooter,
 } from "@/components/ui/alert-dialog";
 import { useState } from "react";
+import { ArchiveListSkeleton } from "@/components/ui/page-skeleton";
+import { Archive as ArchiveIcon } from "lucide-react";
 
 type ArchivedItem = { id: string; title: string; emoji?: string | null };
 
@@ -168,8 +170,13 @@ export default function Archive() {
   });
 
   const renderList = (items: ArchivedItem[] | undefined, isLoading: boolean | undefined, table: "notes" | "projects" | "tasks") => {
-    if (isLoading) return <p className="text-sm text-muted-foreground py-4">Carregando...</p>;
-    if (!items?.length) return <p className="text-sm text-muted-foreground py-4">Nenhum item arquivado.</p>;
+    if (isLoading) return <ArchiveListSkeleton />;
+    if (!items?.length) return (
+      <div className="flex flex-col items-center gap-3 py-8 text-muted-foreground">
+        <ArchiveIcon className="h-8 w-8" />
+        <p className="text-sm">Nenhum item arquivado.</p>
+      </div>
+    );
     return (
       <div className="flex flex-col gap-2">
         {items.map((item) => (

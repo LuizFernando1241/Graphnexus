@@ -5,6 +5,14 @@ import { useQuery } from "@tanstack/react-query";
 import { useEntityLinks, useCreateLink, useDeleteLink } from "@/hooks/useLinks";
 import { LinkPicker } from "@/components/LinkPicker";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+} from "@/components/ui/alert-dialog";
 import type { EntityType, EntityLink } from "@/types/entities";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -89,7 +97,7 @@ function LinkItem({
       <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
       <button
         onClick={() => navigate(`${TYPE_ROUTES[linked.type]}/${linked.id}`)}
-        className="flex-1 text-left text-sm truncate text-foreground hover:underline"
+        className="flex-1 text-left text-sm truncate text-foreground hover:underline min-h-[44px] flex items-center"
         title={title || ""}
       >
         {title || `${linked.id.slice(0, 8)}…`}
@@ -98,8 +106,9 @@ function LinkItem({
       <Button
         variant="ghost"
         size="icon"
-        className="h-6 w-6 opacity-0 group-hover:opacity-100 shrink-0"
+        className="h-8 w-8 opacity-0 group-hover:opacity-100 shrink-0"
         onClick={onDelete}
+        aria-label={`Remover link com ${title || "item"}`}
       >
         <Trash2 className="h-3 w-3" />
       </Button>
@@ -109,6 +118,7 @@ function LinkItem({
 
 export function LinkPanel({ entityId, entityType }: LinkPanelProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [deleteLinkId, setDeleteLinkId] = useState<string | null>(null);
   const { data: links = [], isLoading } = useEntityLinks(entityId, entityType);
   const createLink = useCreateLink(entityId, entityType);
   const deleteLink = useDeleteLink(entityId, entityType);
@@ -129,7 +139,7 @@ export function LinkPanel({ entityId, entityType }: LinkPanelProps) {
           <Link2 className="h-4 w-4" />
           Links ({links.length})
         </div>
-        <Button variant="ghost" size="icon" onClick={() => setPickerOpen(true)}>
+        <Button variant="ghost" size="icon" onClick={() => setPickerOpen(true)} aria-label="Adicionar link">
           <Plus className="h-4 w-4" />
         </Button>
       </div>
@@ -143,7 +153,7 @@ export function LinkPanel({ entityId, entityType }: LinkPanelProps) {
             link={link}
             entityId={entityId}
             titleMap={titleMap}
-            onDelete={() => deleteLink.mutate(link.id)}
+            onDelete={() => setDeleteLinkId(link.id)}
           />
         ))}
         {links.length === 0 && !isLoading && (
@@ -157,6 +167,32 @@ export function LinkPanel({ entityId, entityType }: LinkPanelProps) {
         excludeId={entityId}
         onSelect={(target) => createLink.mutate(target)}
       />
+
+      {/* Delete Link Confirmation */}
+      <AlertDialog open={!!deleteLinkId} onOpenChange={() => setDeleteLinkId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remover link</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja remover este link? A ação pode ser refeita manualmente.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button variant="ghost" onClick={() => setDeleteLinkId(null)}>Cancelar</Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (deleteLinkId) {
+                  deleteLink.mutate(deleteLinkId);
+                  setDeleteLinkId(null);
+                }
+              }}
+            >
+              Remover
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

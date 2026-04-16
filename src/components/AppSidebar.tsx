@@ -39,7 +39,7 @@ export function AppSidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex flex-1 flex-col gap-1 px-3 pt-2">
+      <nav aria-label="Navegação principal" className="flex flex-1 flex-col gap-1 px-3 pt-2">
         {navItems.map((item) => (
           <NavLink
             key={item.url}
@@ -63,7 +63,8 @@ export function AppSidebar() {
           <button
             onClick={handleLogout}
             title="Sair"
-            className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            aria-label="Sair da conta"
+            className="rounded p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground min-h-[44px] min-w-[44px] flex items-center justify-center"
           >
             <LogOut className="h-4 w-4" />
           </button>

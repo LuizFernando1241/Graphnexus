@@ -1,3 +1,4 @@
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -62,20 +63,19 @@ export function RecurrenceSelector({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
+        <Checkbox
+          id="recurrence-enabled"
           checked={enabled}
-          onChange={(e) => {
-            if (!e.target.checked) {
+          onCheckedChange={(checked) => {
+            if (!checked) {
               onChange(null);
               onRecurrenceDaysChange(null);
             } else {
               emit(interval, unit, true);
             }
           }}
-          className="rounded border-border"
         />
-        <Label className="text-sm">Recorrente</Label>
+        <Label htmlFor="recurrence-enabled" className="text-sm cursor-pointer">Recorrente</Label>
       </div>
 
       {enabled && (

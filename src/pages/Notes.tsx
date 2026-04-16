@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Plus, Search, Archive, Pin } from "lucide-react";
+import { Plus, Search, Archive, Pin, StickyNote } from "lucide-react";
 import { toast } from "sonner";
 import { fetchNotes, createNote, updateNote, getAllNoteTags } from "@/lib/api/notes";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { SwipeableItem } from "@/components/ui/SwipeableItem";
 import { PageTransition } from "@/components/PageTransition";
+import { NotesGridSkeleton } from "@/components/ui/page-skeleton";
 import {
   Dialog,
   DialogContent,
@@ -101,7 +102,8 @@ function NewNoteDialog({ onCreated }: { onCreated: () => void }) {
                   key={c}
                   type="button"
                   onClick={() => setColor(c)}
-                  className={`h-7 w-7 rounded-full border-2 transition-transform ${
+                  aria-label={`Cor ${c}`}
+                  className={`h-8 w-8 rounded-full border-2 transition-transform ${
                     color === c ? "scale-110 border-foreground" : "border-transparent"
                   }`}
                   style={{ backgroundColor: c }}
@@ -258,6 +260,7 @@ export default function Notes() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
+            aria-label="Buscar notas"
           />
         </div>
 
@@ -291,9 +294,13 @@ export default function Notes() {
 
       {/* Grid */}
       {isLoading ? (
-        <p className="text-muted-foreground">Carregando...</p>
+        <NotesGridSkeleton />
       ) : notes.length === 0 ? (
-        <p className="text-muted-foreground">Nenhuma nota encontrada.</p>
+        <div className="flex flex-col items-center gap-4 py-12 text-muted-foreground">
+          <StickyNote className="h-10 w-10" />
+          <p>Nenhuma nota encontrada.</p>
+          <NewNoteDialog onCreated={() => {}} />
+        </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 items-stretch">
           {notes.map((note) => (

@@ -19,6 +19,7 @@ import {
 import { Label } from "@/components/ui/label";
 import type { Project, ProjectStatus } from "@/types/entities";
 import { PageTransition } from "@/components/PageTransition";
+import { ProjectsGridSkeleton } from "@/components/ui/page-skeleton";
 
 const STATUS_COLORS: Record<ProjectStatus, string> = {
   active: "#10B981",
@@ -90,7 +91,8 @@ function NewProjectDialog() {
                   key={c}
                   type="button"
                   onClick={() => setColor(c)}
-                  className={`h-7 w-7 rounded-full border-2 transition-transform ${
+                  aria-label={`Cor ${c}`}
+                  className={`h-8 w-8 rounded-full border-2 transition-transform ${
                     color === c ? "scale-110 border-foreground" : "border-transparent"
                   }`}
                   style={{ backgroundColor: c }}
@@ -160,7 +162,7 @@ export default function Projects() {
     queryFn: () => fetchProjects(),
   });
 
-  if (isLoading) return <p className="text-muted-foreground">Carregando...</p>;
+  if (isLoading) return <ProjectsGridSkeleton />;
 
   return (
     <PageTransition>

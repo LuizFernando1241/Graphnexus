@@ -36,7 +36,8 @@ export default function Login() {
           <p className="text-sm text-muted-foreground">Entre na sua conta</p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-4" aria-describedby="login-desc">
+          <p id="login-desc" className="sr-only">Formulário de login. Insira seu email e senha para acessar sua conta.</p>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input

@@ -19,6 +19,7 @@ import { toast } from "sonner";
 import { fetchTasks, updateTask, createTask } from "@/lib/api/tasks";
 import { useCompleteRecurringTask } from "@/hooks/useRecurrence";
 import { PageTransition } from "@/components/PageTransition";
+import { TasksBoardSkeleton } from "@/components/ui/page-skeleton";
 import { MoveTaskDrawer } from "@/components/tasks/MoveTaskDrawer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -234,7 +235,7 @@ export default function Tasks() {
 
   const tasksByStatus = (status: TaskStatus) => tasks.filter((t) => t.status === status);
 
-  if (isLoading) return <p className="text-muted-foreground">Carregando...</p>;
+  if (isLoading) return <TasksBoardSkeleton />;
 
   return (
     <PageTransition>

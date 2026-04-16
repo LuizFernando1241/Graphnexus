@@ -57,7 +57,8 @@ export default function Signup() {
           <p className="text-sm text-muted-foreground">Crie sua conta</p>
         </div>
 
-        <form onSubmit={handleSignup} className="space-y-4">
+        <form onSubmit={handleSignup} className="space-y-4" aria-describedby="signup-desc">
+          <p id="signup-desc" className="sr-only">Formulário de cadastro. Insira seu email e uma senha com no mínimo 6 caracteres.</p>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input

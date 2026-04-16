@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { PageTransition } from "@/components/PageTransition";
+import { GraphSkeleton } from "@/components/ui/page-skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { forceRadial } from "d3-force";
@@ -207,7 +208,7 @@ export default function Graph() {
     [hideOrphans, graphSearch, nodeMatchesSearch]
   );
 
-  if (isLoading) return <p className="text-muted-foreground">Carregando grafo...</p>;
+  if (isLoading) return <GraphSkeleton />;
 
   return (
     <PageTransition>
@@ -223,6 +224,7 @@ export default function Graph() {
               value={graphSearch}
               onChange={(e) => setGraphSearch(e.target.value)}
               className="pl-9 bg-card/80 backdrop-blur-sm border-border"
+              aria-label="Buscar no grafo"
             />
           </div>
 

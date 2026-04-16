@@ -19,6 +19,7 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { WeeklyReview } from "@/components/WeeklyReview";
 import { Clock as ClockIcon } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
+import { DashboardSkeleton } from "@/components/ui/page-skeleton";
 
 const DAY_NAMES = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
@@ -98,7 +99,7 @@ export default function Dashboard() {
     },
   });
 
-  if (isLoading) return <p className="text-muted-foreground">Carregando...</p>;
+  if (isLoading) return <DashboardSkeleton />;
   if (!data) return null;
 
   const allDueTasks = [...data.overdueTasks, ...data.upcomingTasks];
@@ -276,7 +277,7 @@ export default function Dashboard() {
                   <button
                     key={note.id}
                     onClick={() => navigate(`/notes/${note.id}`)}
-                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-left text-sm hover:bg-accent transition-colors"
+                    className="flex items-center gap-3 rounded-lg px-3 py-2 text-left text-sm hover:bg-accent transition-colors min-h-[44px]"
                   >
                     <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: note.color || "#7C3AED" }} />
                     <span className="flex-1 truncate text-foreground">
@@ -306,7 +307,7 @@ export default function Dashboard() {
                 <button
                   key={item.id}
                   onClick={() => navigate(`/tasks/${item.id}`)}
-                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-left text-sm hover:bg-accent transition-colors"
+                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-left text-sm hover:bg-accent transition-colors min-h-[44px]"
                 >
                   <CheckSquare className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                   <span className="flex-1 truncate text-foreground">{item.title}</span>

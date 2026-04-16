@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Save, Trash2, Check, Archive, SkipForward, FileOutput } from "lucide-react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { ArrowLeft, Save, Trash2, Check, Archive, SkipForward, FileOutput, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { useTaskDetail } from "@/hooks/useTaskDetail";
 import { useCompleteRecurringTask, useSkipRecurringTask } from "@/hooks/useRecurrence";
@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
+import { DetailPageSkeleton } from "@/components/ui/page-skeleton";
 import {
   Select,
   SelectContent,
@@ -105,18 +106,27 @@ export default function TaskDetail() {
   const closeExtractDialog = () => setExtractOpen(false);
   const proceedWithBlocker = () => blocker.proceed?.();
 
-  if (isLoading || !task) return <p className="text-muted-foreground">Carregando...</p>;
+  if (isLoading || !task) return <DetailPageSkeleton />;
 
   return (
     <>
-      <div className="flex gap-6 max-w-5xl">
-        <div className="flex-1 flex flex-col gap-6">
+      {/* Breadcrumb */}
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-sm text-muted-foreground mb-4">
+        <Link to="/tasks" className="hover:text-foreground transition-colors">
+          Tarefas
+        </Link>
+        <ChevronRight className="h-3.5 w-3.5" />
+        <span className="text-foreground truncate max-w-[200px]">{title || "Sem título"}</span>
+      </nav>
+
+      <div className="flex flex-col lg:flex-row gap-6 max-w-5xl">
+        <div className="flex-1 flex flex-col gap-6 min-w-0">
           {/* Top bar */}
-          <div className="flex items-center justify-between gap-3">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/tasks")}>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/tasks")} className="min-h-[44px]">
               <ArrowLeft className="mr-1 h-4 w-4" /> Voltar
             </Button>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               {hasUnsavedChanges && (
                 <span className="text-xs text-primary animate-pulse">Alterações não salvas</span>
               )}
@@ -147,6 +157,7 @@ export default function TaskDetail() {
                 variant="ghost"
                 size="icon"
                 title="Arquivar"
+                aria-label="Arquivar tarefa"
                 onClick={handleArchive}
                 disabled={archiveMutation.isPending}
               >
@@ -157,6 +168,7 @@ export default function TaskDetail() {
                 size="icon"
                 className="text-destructive hover:text-destructive"
                 onClick={() => setDeleteOpen(true)}
+                aria-label="Excluir tarefa"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -169,10 +181,11 @@ export default function TaskDetail() {
             onChange={(e) => setTitle(e.target.value)}
             className="text-xl font-heading font-bold bg-transparent border-none focus-visible:ring-0"
             placeholder="Título da tarefa"
+            aria-label="Título da tarefa"
           />
 
           {/* Status + Priority row */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <Label className="text-xs text-muted-foreground mb-1 block">Status</Label>
               <Select value={status} onValueChange={(v) => setStatus(v as TaskStatus)}>
@@ -229,6 +242,7 @@ export default function TaskDetail() {
               onChange={(e) => setEstimatedMinutes(e.target.value)}
               placeholder="Ex: 30"
               className="w-32"
+              aria-label="Tempo estimado em minutos"
             />
           </div>
 
@@ -267,7 +281,7 @@ export default function TaskDetail() {
         </div>
 
         {/* Right sidebar - Links */}
-        <div className="w-72 shrink-0">
+        <div className="w-full lg:w-72 shrink-0">
           <LinkPanel entityId={id!} entityType="task" />
         </div>
       </div>
@@ -319,17 +333,20 @@ export default function TaskDetail() {
       <AlertDialog open={blocker.state === "blocked"} onOpenChange={() => blocker.reset?.()}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>tá loco? vai sair sem salvar?</AlertDialogTitle>
+            <AlertDialogTitle>Alterações não salvas</AlertDialogTitle>
+            <AlertDialogDescription>
+              Você tem alterações que ainda não foram salvas. O que deseja fazer?
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex gap-2 sm:justify-end">
             <Button variant="ghost" onClick={() => blocker.reset?.()}>
-              voltar
+              Voltar
             </Button>
             <Button
               variant="secondary"
               onClick={proceedWithBlocker}
             >
-              Não Salvar
+              Descartar
             </Button>
             <Button
               onClick={async () => { await saveMutation.mutateAsync(); proceedWithBlocker(); }}
