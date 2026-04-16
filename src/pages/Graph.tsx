@@ -8,11 +8,13 @@ import { PageTransition } from "@/components/PageTransition";
 import { GraphSkeleton } from "@/components/ui/page-skeleton";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { forceRadial } from "d3-force";
+import { forceRadial } from "d3-force-3d";
+import * as THREE from "three";
+import SpriteText from "three-spritetext";
 import { supabase } from "@/integrations/supabase/client";
 import type { EntityType } from "@/types/entities";
 
-const ForceGraph2D = lazy(() => import("react-force-graph-2d"));
+const ForceGraph3D = lazy(() => import("react-force-graph-3d"));
 
 interface GraphNode {
   id: string;
@@ -21,12 +23,15 @@ interface GraphNode {
   color: string;
   emoji?: string | null;
   isOrphan?: boolean;
+  linkCount?: number;
   content?: string | null;
   description?: string | null;
   x?: number;
   y?: number;
+  z?: number;
   fx?: number | null;
   fy?: number | null;
+  fz?: number | null;
 }
 
 interface GraphLink {
@@ -58,25 +63,28 @@ async function fetchGraphData() {
       supabase.from("entity_links").select("source_id, target_id"),
     ]);
 
+    const linkCounts = new Map<string, number>();
     const connectedIds = new Set<string>();
     (links.data || []).forEach((l) => {
       connectedIds.add(l.source_id);
       connectedIds.add(l.target_id);
+      linkCounts.set(l.source_id, (linkCounts.get(l.source_id) || 0) + 1);
+      linkCounts.set(l.target_id, (linkCounts.get(l.target_id) || 0) + 1);
     });
 
     const nodes: GraphNode[] = [];
     const nodeIds = new Set<string>();
 
     (notes.data || []).forEach((n) => {
-      nodes.push({ id: n.id, type: "note", label: n.title, color: n.color || TYPE_COLORS.note, emoji: n.emoji, content: n.content, isOrphan: !connectedIds.has(n.id) });
+      nodes.push({ id: n.id, type: "note", label: n.title, color: n.color || TYPE_COLORS.note, emoji: n.emoji, content: n.content, isOrphan: !connectedIds.has(n.id), linkCount: linkCounts.get(n.id) || 0 });
       nodeIds.add(n.id);
     });
     (tasks.data || []).forEach((t) => {
-      nodes.push({ id: t.id, type: "task", label: t.title, color: TYPE_COLORS.task, description: t.description, isOrphan: !connectedIds.has(t.id) });
+      nodes.push({ id: t.id, type: "task", label: t.title, color: TYPE_COLORS.task, description: t.description, isOrphan: !connectedIds.has(t.id), linkCount: linkCounts.get(t.id) || 0 });
       nodeIds.add(t.id);
     });
     (projects.data || []).forEach((p) => {
-      nodes.push({ id: p.id, type: "project", label: p.title, color: p.cover_color || TYPE_COLORS.project, emoji: p.emoji, description: p.description, isOrphan: !connectedIds.has(p.id) });
+      nodes.push({ id: p.id, type: "project", label: p.title, color: p.cover_color || TYPE_COLORS.project, emoji: p.emoji, description: p.description, isOrphan: !connectedIds.has(p.id), linkCount: linkCounts.get(p.id) || 0 });
       nodeIds.add(p.id);
     });
 
@@ -201,40 +209,44 @@ export default function Graph() {
     [graphSearch, searchIndex]
   );
 
-  const nodeCanvasObject = useCallback(
-    (node: GraphNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
-      if (hideOrphans && node.isOrphan) return;
+  const nodeThreeObject = useCallback(
+    (node: GraphNode) => {
+      const group = new THREE.Group();
+      if (hideOrphans && node.isOrphan) return group;
 
-      const x = node.x || 0;
-      const y = node.y || 0;
       const matchesSearch = nodeMatchesSearch(node);
       const isDimmed = graphSearch.trim() && !matchesSearch;
-      const r = node.isOrphan ? 6 : 8;
-      const fontSize = 11 / globalScale;
+      const rawR = node.isOrphan ? 6 : 8 + (node.linkCount || 0) * 1.5;
+      const r = Math.min(rawR, 24);
 
-      ctx.globalAlpha = isDimmed ? 0.05 : node.isOrphan ? 0.3 : 1;
+      // Main sphere
+      const geometry = new THREE.SphereGeometry(r);
+      const material = new THREE.MeshLambertMaterial({
+        color: node.isOrphan ? ORPHAN_COLOR : node.color,
+        transparent: true,
+        opacity: isDimmed ? 0.05 : node.isOrphan ? 0.3 : 0.9,
+      });
+      const sphere = new THREE.Mesh(geometry, material);
+      group.add(sphere);
 
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, 2 * Math.PI);
-      ctx.fillStyle = node.isOrphan ? ORPHAN_COLOR : node.color;
-      ctx.fill();
-
-      ctx.strokeStyle = isDimmed
-        ? "rgba(255,255,255,0.02)"
-        : node.isOrphan
-          ? "rgba(255,255,255,0.05)"
-          : "rgba(255,255,255,0.2)";
-      ctx.lineWidth = 1 / globalScale;
-      ctx.stroke();
-
+      // Label text
       const label = node.emoji ? `${node.emoji} ${node.label}` : node.label;
       const truncated = label.length > 20 ? label.slice(0, 18) + "…" : label;
-      ctx.font = `${fontSize}px "DM Sans", sans-serif`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "top";
-      ctx.globalAlpha = isDimmed ? 0.05 : 1;
-      ctx.fillStyle = node.isOrphan ? ORPHAN_TEXT_COLOR : "#F4F4F8";
-      ctx.fillText(truncated, x, y + r + 3 / globalScale);
+      
+      const sprite = new SpriteText(truncated);
+      sprite.color = node.isOrphan ? ORPHAN_TEXT_COLOR : "#F4F4F8";
+      sprite.textHeight = 6;
+      // Position label above the sphere
+      sprite.position.y = r + 8;
+      
+      if (isDimmed) {
+        sprite.material.opacity = 0.05;
+      } else if (node.isOrphan) {
+        sprite.material.opacity = 0.3;
+      }
+      
+      group.add(sprite);
+      return group;
     },
     [hideOrphans, graphSearch, nodeMatchesSearch]
   );
@@ -296,30 +308,20 @@ export default function Graph() {
           </div>
         )}
 
-        <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground">Carregando visualização...</div>}>
+        <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground">Carregando cosmos...</div>}>
           {filteredData && (
-            <ForceGraph2D
+            <ForceGraph3D
               ref={fgRef}
               graphData={filteredData}
               width={dimensions.width}
               height={dimensions.height}
               backgroundColor="#0F0F13"
-              linkColor={() => "rgba(255, 255, 255, 0.85)"}
-              linkWidth={2.5}
+              linkColor={() => "rgba(255, 255, 255, 0.3)"}
+              linkWidth={1.5}
               d3AlphaDecay={0.04}
               d3VelocityDecay={0.4}
-              nodeCanvasObject={nodeCanvasObject as any}
-              nodePointerAreaPaint={(node: any, color: string, ctx: CanvasRenderingContext2D) => {
-                ctx.beginPath();
-                ctx.arc(node.x || 0, node.y || 0, 12, 0, 2 * Math.PI);
-                ctx.fillStyle = color;
-                ctx.fill();
-              }}
+              nodeThreeObject={nodeThreeObject as any}
               onNodeClick={handleNodeClick as any}
-              onNodeDragEnd={(node: any) => {
-                node.fx = node.x;
-                node.fy = node.y;
-              }}
             />
           )}
         </Suspense>
