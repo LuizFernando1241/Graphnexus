@@ -32,7 +32,7 @@ interface GraphNode {
   fx?: number | null;
   fy?: number | null;
   fz?: number | null;
-  __threeObj?: THREE.Object3D; // Cache to prevent memory leak
+  __spriteCache?: THREE.Object3D; // Cache to prevent memory leak
 }
 
 interface GraphLink {
@@ -250,7 +250,7 @@ export default function Graph() {
       const r = Math.min(rawR, 18); // Limite máximo reduzido para 18
 
       // Cache do SpriteText para não travar a memória (GPU Leak fix)
-      if (!node.__threeObj) {
+      if (!node.__spriteCache) {
         const label = node.emoji ? `${node.emoji} ${node.label}` : node.label;
         const truncated = label.length > 25 ? label.slice(0, 23) + "…" : label;
 
@@ -260,10 +260,10 @@ export default function Graph() {
         sprite.position.y = r + 4; // Um pouco mais colado
         sprite.center.set(0.5, 0);
 
-        node.__threeObj = sprite;
+        node.__spriteCache = sprite;
       }
       
-      const sprite = node.__threeObj as SpriteText;
+      const sprite = node.__spriteCache as SpriteText;
       const matchesSearch = nodeMatchesSearch(node);
       const isDimmed = graphSearch.trim() && !matchesSearch;
 

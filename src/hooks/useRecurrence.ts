@@ -74,10 +74,13 @@ export function useCompleteRecurringTask() {
           }
         }
 
+        const todayStr = format(new Date(), "yyyy-MM-dd");
+        const isTodayOrPast = nextDue ? nextDue <= todayStr : false;
+
         const newTask = await createTask({
           title: task.title,
           description: task.description || undefined,
-          status: "todo",
+          status: isTodayOrPast ? "todo" : "backlog",
           priority: task.priority,
           due_date: nextDue,
           estimated_minutes: task.estimated_minutes,
@@ -132,7 +135,13 @@ export function useSkipRecurringTask() {
         }
       }
 
-      await updateTask(task.id, { due_date: nextDue });
+      const todayStr = format(new Date(), "yyyy-MM-dd");
+      const isTodayOrPast = nextDue ? nextDue <= todayStr : false;
+      
+      await updateTask(task.id, { 
+        due_date: nextDue, 
+        status: isTodayOrPast ? "todo" : "backlog" 
+      });
     },
     onSuccess: () => {
       invalidateAllEntities(queryClient);
