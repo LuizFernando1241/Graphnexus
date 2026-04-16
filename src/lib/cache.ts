@@ -11,4 +11,6 @@ export function invalidateAllEntities(queryClient: QueryClient, options?: { excl
     queryClient.invalidateQueries({ queryKey: ["entity-links"] });
   }
   if (!exclude.includes("graph-data")) queryClient.invalidateQueries({ queryKey: ["graph-data"] });
+  if (!exclude.includes("entity-titles")) queryClient.invalidateQueries({ queryKey: ["entity-titles"] });
+  if (!exclude.includes("project-task-stats")) queryClient.invalidateQueries({ queryKey: ["project-task-stats"] });
 }

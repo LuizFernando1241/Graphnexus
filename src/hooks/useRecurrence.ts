@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { addDays, addWeeks, addMonths, isAfter, startOfDay } from "date-fns";
 import { toast } from "sonner";
 import { updateTask, createTask } from "@/lib/api/tasks";
+import { fetchEntityLinks, createEntityLink } from "@/lib/api/links";
 import { invalidateAllEntities } from "@/lib/cache";
 import type { Task } from "@/types/entities";
 
@@ -73,7 +74,7 @@ export function useCompleteRecurringTask() {
           }
         }
 
-        await createTask({
+        const newTask = await createTask({
           title: task.title,
           description: task.description || undefined,
           status: "todo",
@@ -85,6 +86,17 @@ export function useCompleteRecurringTask() {
           recurrence_parent_id: task.recurrence_parent_id || task.id,
           recurrence_days: task.recurrence_days,
         });
+
+        const links = await fetchEntityLinks(task.id, "task");
+        for (const link of links) {
+          await createEntityLink({
+            source_type: link.source_id === task.id ? "task" : link.source_type,
+            source_id: link.source_id === task.id ? newTask.id : link.source_id,
+            target_type: link.target_id === task.id ? "task" : link.target_type,
+            target_id: link.target_id === task.id ? newTask.id : link.target_id,
+            label: link.label || undefined,
+          });
+        }
 
         toast.success("Tarefa concluída — próxima ocorrência criada");
       } else {
