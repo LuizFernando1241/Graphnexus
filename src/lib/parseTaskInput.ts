@@ -1,5 +1,5 @@
 import * as chrono from "chrono-node";
-import { isToday, isBefore, startOfDay } from "date-fns";
+import { isToday, isBefore, startOfDay, format } from "date-fns";
 
 const PRIORITY_MAP: { value: string; patterns: string[] }[] = [
   { value: "urgent", patterns: ["urgente", "!urgente", "para ontem", "p1"] },
@@ -56,7 +56,7 @@ export function parseTaskInput(rawText: string): ParsedTaskInput {
   if (results.length > 0) {
     const match = results[0];
     const date = match.start.date();
-    due_date = date.toISOString().split("T")[0];
+    due_date = format(date, "yyyy-MM-dd");
     title = title.replace(match.text, "").replace(/\s{2,}/g, " ").trim();
     if (!title) title = rawText.trim();
   }
