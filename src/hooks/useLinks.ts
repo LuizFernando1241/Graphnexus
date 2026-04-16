@@ -37,7 +37,8 @@ export function useDeleteLink(entityId: string, entityType: EntityType) {
   return useMutation({
     mutationFn: (linkId: string) => deleteEntityLink(linkId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["entity-links", entityId, entityType] });
+      // Invalidate broadly since we don't know both sides from just the linkId
+      queryClient.invalidateQueries({ queryKey: ["entity-links"] });
       queryClient.invalidateQueries({ queryKey: ["graph-data"] });
       toast.success("Link removido");
     },
