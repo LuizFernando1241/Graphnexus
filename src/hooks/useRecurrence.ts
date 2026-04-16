@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { addDays, addWeeks, addMonths, isAfter, startOfDay, format } from "date-fns";
+import { addDays, addWeeks, addMonths, isAfter, startOfDay, format, isSameDay, parseISO } from "date-fns";
 import { toast } from "sonner";
 import { updateTask, createTask } from "@/lib/api/tasks";
 import { fetchEntityLinks, createEntityLink } from "@/lib/api/links";
@@ -74,13 +74,16 @@ export function useCompleteRecurringTask() {
           }
         }
 
-        const todayStr = format(new Date(), "yyyy-MM-dd");
-        const isTodayOrPast = nextDue ? nextDue <= todayStr : false;
+        // Determina status baseado em SE a data é hoje
+        // Tarefas futuras (> hoje) vão para backlog
+        const today = startOfDay(new Date());
+        const nextDueDate = nextDue ? parseISO(nextDue) : null;
+        const isDueToday = nextDueDate ? isSameDay(nextDueDate, today) : false;
 
         const newTask = await createTask({
           title: task.title,
           description: task.description || undefined,
-          status: isTodayOrPast ? "todo" : "backlog",
+          status: isDueToday ? "todo" : "backlog",  // Só "todo" se for hoje
           priority: task.priority,
           due_date: nextDue,
           estimated_minutes: task.estimated_minutes,
@@ -135,12 +138,14 @@ export function useSkipRecurringTask() {
         }
       }
 
-      const todayStr = format(new Date(), "yyyy-MM-dd");
-      const isTodayOrPast = nextDue ? nextDue <= todayStr : false;
+      // Determina status baseado em SE a data é hoje
+      const today = startOfDay(new Date());
+      const nextDueDate = nextDue ? parseISO(nextDue) : null;
+      const isDueToday = nextDueDate ? isSameDay(nextDueDate, today) : false;
       
       await updateTask(task.id, { 
         due_date: nextDue, 
-        status: isTodayOrPast ? "todo" : "backlog" 
+        status: isDueToday ? "todo" : "backlog"  // Só "todo" se for hoje
       });
     },
     onSuccess: () => {

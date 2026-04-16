@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Task } from "@/types/entities";
-import { format } from "date-fns";
+import { isSameDay, parseISO } from "date-fns";
 
 type TaskUpdate = Record<string, unknown>;
 
@@ -35,16 +35,23 @@ export async function fetchTasks(opts?: { includeOldDone?: boolean }) {
   }
 
   // --- AUTO-PROMOÇÃO DIÁRIA ---
-  // Se uma tarefa está no backlog, mas o dia dela chegou (ou já passou),
-  // avançamos ela para "A Fazer" automaticamente!
-  const todayStr = format(new Date(), "yyyy-MM-dd");
-  const tasksToPromote = tasks.filter(t => t.status === "backlog" && t.due_date && t.due_date <= todayStr);
+  // Só promove tarefas AGENDADAS PARA HOJE (não futuro nem passado)
+  // Isso garante que tarefas do dia 17 fiquem em backlog no dia 16
+  const today = new Date();
+  const tasksToPromote = tasks.filter(t => {
+    if (t.status !== "backlog" || !t.due_date) return false;
+    const dueDate = parseISO(t.due_date);
+    return isSameDay(dueDate, today);  // Apenas se for EXATAMENTE hoje
+  });
   
   if (tasksToPromote.length > 0) {
     // 1. Atualizamos a memória instantaneamente para a interface renderizar sem latência
     tasks = tasks.map(t => {
-      if (t.status === "backlog" && t.due_date && t.due_date <= todayStr) {
-        return { ...t, status: "todo" };
+      if (t.status === "backlog" && t.due_date) {
+        const dueDate = parseISO(t.due_date);
+        if (isSameDay(dueDate, today)) {
+          return { ...t, status: "todo" };
+        }
       }
       return t;
     });
@@ -69,10 +76,14 @@ export async function fetchTask(id: string) {
   const rawTask = rowToTask(data as Record<string, unknown>);
   
   // --- AUTO-PROMOÇÃO PARA TAREFA ÚNICA ---
-  const todayStr = format(new Date(), "yyyy-MM-dd");
-  if (rawTask.status === "backlog" && rawTask.due_date && rawTask.due_date <= todayStr) {
-    rawTask.status = "todo";
-    supabase.from("tasks").update({ status: "todo" }).eq("id", rawTask.id).catch(err => console.error("Erro na auto-promoção", err));
+  // Só promove se a tarefa for para HOJE (mesmo dia)
+  const today = new Date();
+  if (rawTask.status === "backlog" && rawTask.due_date) {
+    const dueDate = parseISO(rawTask.due_date);
+    if (isSameDay(dueDate, today)) {
+      rawTask.status = "todo";
+      supabase.from("tasks").update({ status: "todo" }).eq("id", rawTask.id).catch(err => console.error("Erro na auto-promoção", err));
+    }
   }
   
   return rawTask;
