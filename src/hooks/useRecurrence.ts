@@ -76,8 +76,9 @@ export function useCompleteRecurringTask() {
 
         // Determina status baseado em SE a data é hoje
         // Tarefas futuras (> hoje) vão para backlog
+        // Normaliza ambas as datas para evitar problemas de timezone
         const today = startOfDay(new Date());
-        const nextDueDate = nextDue ? parseISO(nextDue) : null;
+        const nextDueDate = nextDue ? startOfDay(parseISO(nextDue)) : null;
         const isDueToday = nextDueDate ? isSameDay(nextDueDate, today) : false;
 
         const newTask = await createTask({
@@ -139,8 +140,9 @@ export function useSkipRecurringTask() {
       }
 
       // Determina status baseado em SE a data é hoje
+      // Normaliza ambas as datas para evitar problemas de timezone
       const today = startOfDay(new Date());
-      const nextDueDate = nextDue ? parseISO(nextDue) : null;
+      const nextDueDate = nextDue ? startOfDay(parseISO(nextDue)) : null;
       const isDueToday = nextDueDate ? isSameDay(nextDueDate, today) : false;
       
       await updateTask(task.id, { 

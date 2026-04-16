@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Task } from "@/types/entities";
-import { isSameDay, parseISO } from "date-fns";
+import { isSameDay, parseISO, startOfDay } from "date-fns";
 
 type TaskUpdate = Record<string, unknown>;
 
@@ -36,11 +36,11 @@ export async function fetchTasks(opts?: { includeOldDone?: boolean }) {
 
   // --- AUTO-PROMOÇÃO DIÁRIA ---
   // Só promove tarefas AGENDADAS PARA HOJE (não futuro nem passado)
-  // Isso garante que tarefas do dia 17 fiquem em backlog no dia 16
-  const today = new Date();
+  // Normaliza ambas as datas para meia-noite local para evitar problemas de timezone
+  const today = startOfDay(new Date());
   const tasksToPromote = tasks.filter(t => {
     if (t.status !== "backlog" || !t.due_date) return false;
-    const dueDate = parseISO(t.due_date);
+    const dueDate = startOfDay(parseISO(t.due_date));
     return isSameDay(dueDate, today);  // Apenas se for EXATAMENTE hoje
   });
   
@@ -48,7 +48,7 @@ export async function fetchTasks(opts?: { includeOldDone?: boolean }) {
     // 1. Atualizamos a memória instantaneamente para a interface renderizar sem latência
     tasks = tasks.map(t => {
       if (t.status === "backlog" && t.due_date) {
-        const dueDate = parseISO(t.due_date);
+        const dueDate = startOfDay(parseISO(t.due_date));
         if (isSameDay(dueDate, today)) {
           return { ...t, status: "todo" };
         }
@@ -77,9 +77,10 @@ export async function fetchTask(id: string) {
   
   // --- AUTO-PROMOÇÃO PARA TAREFA ÚNICA ---
   // Só promove se a tarefa for para HOJE (mesmo dia)
-  const today = new Date();
+  // Usa startOfDay para garantir comparacao consistente de timezone
+  const today = startOfDay(new Date());
   if (rawTask.status === "backlog" && rawTask.due_date) {
-    const dueDate = parseISO(rawTask.due_date);
+    const dueDate = startOfDay(parseISO(rawTask.due_date));
     if (isSameDay(dueDate, today)) {
       rawTask.status = "todo";
       supabase.from("tasks").update({ status: "todo" }).eq("id", rawTask.id).catch(err => console.error("Erro na auto-promoção", err));
