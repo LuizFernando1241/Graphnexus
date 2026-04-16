@@ -480,11 +480,10 @@ export default function Graph() {
       }
     }
 
-    if (hoverJustChanged && fgRef.current) {
-        fgRef.current.linkColor(fgRef.current.linkColor());
-        fgRef.current.linkWidth(fgRef.current.linkWidth());
-        fgRef.current.linkDirectionalParticles(fgRef.current.linkDirectionalParticles());
-    }
+    // NOTA: Nao precisamos forcar refresh do ForceGraph3D aqui.
+    // Os callbacks linkColorCallback, linkWidthCallback e linkParticlesCallback
+    // ja leem hoverNodeRef.current dinamicamente durante a animacao.
+    // Forcar refresh causava travamento com muitos nós.
   }, [filteredData, debouncedSearch, searchIndex]);
 
   useEffect(() => {
