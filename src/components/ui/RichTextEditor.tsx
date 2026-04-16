@@ -311,9 +311,9 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
   if (!editor) return null;
 
   return (
-    <div className="flex flex-col rounded-lg border border-border overflow-hidden bg-card">
+    <div className="flex flex-col rounded-lg border border-border bg-card">
       {/* Sticky Toolbar */}
-      <div className="flex items-center gap-1 border-b border-border bg-secondary px-3 py-2 flex-wrap sticky top-0 z-20">
+      <div className="flex items-center gap-1 border-b border-border bg-secondary px-3 py-2 flex-wrap sticky top-0 md:top-0 z-20 rounded-t-lg">
         <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} isActive={editor.isActive("bold")} title="Negrito">
           <Bold className="h-4 w-4" />
         </ToolbarButton>

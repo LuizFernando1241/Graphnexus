@@ -24,7 +24,7 @@ export function AppLayout() {
   }, { enableOnFormTags: false });
 
   return (
-    <div className="flex min-h-screen w-full bg-background">
+    <div className="flex bg-background h-screen w-full overflow-hidden">
       {/* Desktop sidebar */}
       <div className="hidden md:flex">
         <AppSidebar />
