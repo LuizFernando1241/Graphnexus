@@ -22,6 +22,7 @@ export default defineConfig(({ mode }) => ({
       },
       workbox: {
         navigateFallbackDenylist: [/^\/~oauth/],
+        maximumFileSizeToCacheInBytes: 5000000,
       },
       manifest: {
         name: "NexusGraph",
