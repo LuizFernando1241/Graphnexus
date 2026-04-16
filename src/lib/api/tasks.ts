@@ -1,6 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Task } from "@/types/entities";
-import { isSameDay, parseISO, startOfDay } from "date-fns";
+// NOTA: Auto-promoção removida do frontend - agora controlada pelo banco via auto_triage_tasks()
+// import { isSameDay, parseISO, startOfDay } from "date-fns";
 
 type TaskUpdate = Record<string, unknown>;
 
@@ -34,33 +35,9 @@ export async function fetchTasks(opts?: { includeOldDone?: boolean }) {
     });
   }
 
-  // --- AUTO-PROMOÇÃO DIÁRIA ---
-  // Só promove tarefas AGENDADAS PARA HOJE (não futuro nem passado)
-  // Normaliza ambas as datas para meia-noite local para evitar problemas de timezone
-  const today = startOfDay(new Date());
-  const tasksToPromote = tasks.filter(t => {
-    if (t.status !== "backlog" || !t.due_date) return false;
-    const dueDate = startOfDay(parseISO(t.due_date));
-    return isSameDay(dueDate, today);  // Apenas se for EXATAMENTE hoje
-  });
-  
-  if (tasksToPromote.length > 0) {
-    // 1. Atualizamos a memória instantaneamente para a interface renderizar sem latência
-    tasks = tasks.map(t => {
-      if (t.status === "backlog" && t.due_date) {
-        const dueDate = startOfDay(parseISO(t.due_date));
-        if (isSameDay(dueDate, today)) {
-          return { ...t, status: "todo" };
-        }
-      }
-      return t;
-    });
-
-    // 2. Disparamos o update silencioso no banco (fire and forget)
-    Promise.all(
-       tasksToPromote.map(t => supabase.from("tasks").update({ status: "todo" }).eq("id", t.id))
-    ).catch(err => console.error("Erro na auto-promoção de tarefas:", err));
-  }
+  // NOTA: Auto-promoção de tarefas é feita pelo banco de dados via função auto_triage_tasks()
+  // Essa função é chamada pelo hook useAutoTriage() no AppLayout
+  // Removida lógica duplicada do frontend para evitar race conditions
 
   return tasks;
 }
@@ -75,17 +52,8 @@ export async function fetchTask(id: string) {
   
   const rawTask = rowToTask(data as Record<string, unknown>);
   
-  // --- AUTO-PROMOÇÃO PARA TAREFA ÚNICA ---
-  // Só promove se a tarefa for para HOJE (mesmo dia)
-  // Usa startOfDay para garantir comparacao consistente de timezone
-  const today = startOfDay(new Date());
-  if (rawTask.status === "backlog" && rawTask.due_date) {
-    const dueDate = startOfDay(parseISO(rawTask.due_date));
-    if (isSameDay(dueDate, today)) {
-      rawTask.status = "todo";
-      supabase.from("tasks").update({ status: "todo" }).eq("id", rawTask.id).catch(err => console.error("Erro na auto-promoção", err));
-    }
-  }
+  // NOTA: Auto-promoção é feita pelo banco de dados via auto_triage_tasks()
+  // Não aplicamos auto-promoção aqui para evitar duplicação com o useAutoTriage()
   
   return rawTask;
 }

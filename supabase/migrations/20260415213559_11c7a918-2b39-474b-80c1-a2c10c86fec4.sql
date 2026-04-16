@@ -85,11 +85,13 @@ SECURITY INVOKER
 SET search_path = public
 AS $$
 BEGIN
+  -- Só promove tarefas agendadas PARA HOJE (não antes)
+  -- Isso garante que tarefas do dia 17 fiquem em backlog até o dia 17
   UPDATE tasks
   SET status = 'todo'
   WHERE status = 'backlog'
     AND due_date IS NOT NULL
-    AND due_date <= (CURRENT_DATE + INTERVAL '2 days')
+    AND due_date = CURRENT_DATE  -- Apenas tarefas para HOJE
     AND user_id = auth.uid();
 END;
 $$;
