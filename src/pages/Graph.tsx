@@ -1,8 +1,9 @@
 import { lazy, Suspense, useRef, useCallback, useEffect, useState, useMemo } from "react";
-import { EyeOff, Eye, Search } from "lucide-react";
+import { Search, StickyNote, CheckSquare, FolderKanban } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { PageTransition } from "@/components/PageTransition";
 import { GraphSkeleton } from "@/components/ui/page-skeleton";
 import { useQuery } from "@tanstack/react-query";
@@ -38,6 +39,12 @@ const TYPE_COLORS: Record<EntityType, string> = {
   task: "#3B82F6",
   project: "#10B981",
 };
+
+const TYPE_CONFIG: { type: EntityType; label: string; icon: React.ElementType; color: string }[] = [
+  { type: "note", label: "Notas", icon: StickyNote, color: TYPE_COLORS.note },
+  { type: "task", label: "Tarefas", icon: CheckSquare, color: TYPE_COLORS.task },
+  { type: "project", label: "Projetos", icon: FolderKanban, color: TYPE_COLORS.project },
+];
 
 const ORPHAN_COLOR = "#3F3F46";
 const ORPHAN_TEXT_COLOR = "rgba(244,244,248,0.3)";
@@ -91,6 +98,19 @@ export default function Graph() {
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const [hideOrphans, setHideOrphans] = useState(false);
   const [graphSearch, setGraphSearch] = useState("");
+  const [visibleTypes, setVisibleTypes] = useState<Set<EntityType>>(new Set(["note", "task", "project"]));
+
+  const toggleType = (type: EntityType) => {
+    setVisibleTypes((prev) => {
+      const next = new Set(prev);
+      if (next.has(type)) {
+        if (next.size > 1) next.delete(type);
+      } else {
+        next.add(type);
+      }
+      return next;
+    });
+  };
 
   const { data, isLoading } = useQuery({
     queryKey: ["graph-data"],
@@ -100,9 +120,23 @@ export default function Graph() {
   const orphanCount = useMemo(() => data?.nodes.filter((n) => n.isOrphan).length ?? 0, [data]);
 
   const filteredData = useMemo(() => {
-    if (!data || !hideOrphans) return data;
-    return { nodes: data.nodes.filter((n) => !n.isOrphan), links: data.links };
-  }, [data, hideOrphans]);
+    if (!data) return data;
+    const visibleNodeIds = new Set<string>();
+    const nodes = data.nodes.filter((n) => {
+      if (hideOrphans && n.isOrphan) return false;
+      if (!visibleTypes.has(n.type)) return false;
+      visibleNodeIds.add(n.id);
+      return true;
+    });
+    const links = data.links.filter(
+      (l) => {
+        const srcId = typeof l.source === "string" ? l.source : (l.source as any).id;
+        const tgtId = typeof l.target === "string" ? l.target : (l.target as any).id;
+        return visibleNodeIds.has(srcId) && visibleNodeIds.has(tgtId);
+      }
+    );
+    return { nodes, links };
+  }, [data, hideOrphans, visibleTypes]);
 
   useEffect(() => {
     const updateSize = () => {
@@ -118,7 +152,6 @@ export default function Graph() {
     return () => window.removeEventListener("resize", updateSize);
   }, []);
 
-  // Apply radial force: orphans pushed to outer orbit, connected nodes stay centered
   useEffect(() => {
     if (!fgRef.current || !data) return;
     const fg = fgRef.current;
@@ -145,33 +178,31 @@ export default function Graph() {
     [navigate]
   );
 
-  // Pre-compute searchable text index for O(1) lookup during render
   const searchIndex = useMemo(() => {
     const index = new Map<string, string>();
     if (!data?.nodes) return index;
-    
     data.nodes.forEach((node) => {
-      const searchableText = [
-        node.label,
-        node.content,
-        node.description,
-      ].filter(Boolean).join(" ").toLowerCase();
+      const searchableText = [node.label, node.content, node.description]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
       index.set(node.id, searchableText);
     });
     return index;
   }, [data?.nodes]);
 
-  // Helper function to check if node matches search (O(1) lookup)
-  const nodeMatchesSearch = useCallback((node: GraphNode): boolean => {
-    if (!graphSearch.trim()) return true;
-    const term = graphSearch.toLowerCase();
-    const searchableText = searchIndex.get(node.id) || "";
-    return searchableText.includes(term);
-  }, [graphSearch, searchIndex]);
+  const nodeMatchesSearch = useCallback(
+    (node: GraphNode): boolean => {
+      if (!graphSearch.trim()) return true;
+      const term = graphSearch.toLowerCase();
+      const searchableText = searchIndex.get(node.id) || "";
+      return searchableText.includes(term);
+    },
+    [graphSearch, searchIndex]
+  );
 
   const nodeCanvasObject = useCallback(
     (node: GraphNode, ctx: CanvasRenderingContext2D, globalScale: number) => {
-      // If hideOrphans is enabled and node is orphan, don't draw
       if (hideOrphans && node.isOrphan) return;
 
       const x = node.x || 0;
@@ -181,21 +212,21 @@ export default function Graph() {
       const r = node.isOrphan ? 6 : 8;
       const fontSize = 11 / globalScale;
 
-      // Dimmed nodes are very transparent
-      ctx.globalAlpha = isDimmed ? 0.05 : (node.isOrphan ? 0.3 : 1);
+      ctx.globalAlpha = isDimmed ? 0.05 : node.isOrphan ? 0.3 : 1;
 
-      // Circle
       ctx.beginPath();
       ctx.arc(x, y, r, 0, 2 * Math.PI);
       ctx.fillStyle = node.isOrphan ? ORPHAN_COLOR : node.color;
       ctx.fill();
 
-      // Border
-      ctx.strokeStyle = isDimmed ? "rgba(255,255,255,0.02)" : (node.isOrphan ? "rgba(255,255,255,0.05)" : "rgba(255,255,255,0.2)");
+      ctx.strokeStyle = isDimmed
+        ? "rgba(255,255,255,0.02)"
+        : node.isOrphan
+          ? "rgba(255,255,255,0.05)"
+          : "rgba(255,255,255,0.2)";
       ctx.lineWidth = 1 / globalScale;
       ctx.stroke();
 
-      // Label
       const label = node.emoji ? `${node.emoji} ${node.label}` : node.label;
       const truncated = label.length > 20 ? label.slice(0, 18) + "…" : label;
       ctx.font = `${fontSize}px "DM Sans", sans-serif`;
@@ -212,69 +243,87 @@ export default function Graph() {
 
   return (
     <PageTransition>
-    <div ref={containerRef} className="relative w-full h-[calc(100vh-5rem)] rounded-lg overflow-hidden border border-border">
-      {/* Search and filter overlay */}
-      {data && (
-        <div className="absolute top-3 left-3 right-3 z-10 flex flex-col sm:flex-row gap-3 justify-between">
-          {/* Search input */}
-          <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar no grafo..."
-              value={graphSearch}
-              onChange={(e) => setGraphSearch(e.target.value)}
-              className="pl-9 bg-card/80 backdrop-blur-sm border-border"
-              aria-label="Buscar no grafo"
-            />
-          </div>
-
-          {/* Orphan toggle */}
-          <div className="flex items-center gap-3 rounded-lg border border-border bg-card/80 backdrop-blur-sm px-3 py-2">
-            <div className="flex items-center gap-2">
-              <Switch
-                id="show-orphans"
-                checked={!hideOrphans}
-                onCheckedChange={(v) => setHideOrphans(!v)}
+      <div ref={containerRef} className="relative w-full h-[calc(100vh-5rem)] rounded-lg overflow-hidden border border-border">
+        {data && (
+          <div className="absolute top-3 left-3 right-3 z-10 flex flex-col sm:flex-row gap-3 justify-between">
+            <div className="relative flex-1 max-w-md">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar no grafo..."
+                value={graphSearch}
+                onChange={(e) => setGraphSearch(e.target.value)}
+                className="pl-9 bg-card/80 backdrop-blur-sm border-border"
+                aria-label="Buscar no grafo"
               />
-              <Label htmlFor="show-orphans" className="text-xs text-muted-foreground cursor-pointer">
-                Mostrar órfãos
-              </Label>
             </div>
-            <span className="text-xs text-muted-foreground">
-              ({orphanCount} cemitério)
-            </span>
-          </div>
-        </div>
-      )}
 
-      <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground">Carregando visualização...</div>}>
-        {filteredData && (
-          <ForceGraph2D
-            ref={fgRef}
-            graphData={filteredData}
-            width={dimensions.width}
-            height={dimensions.height}
-            backgroundColor="#0F0F13"
-            linkColor={() => "rgba(255, 255, 255, 0.85)"}
-            linkWidth={2.5}
-            d3AlphaDecay={0.04}
-            d3VelocityDecay={0.4}
-            nodeCanvasObject={nodeCanvasObject as any}
-            nodePointerAreaPaint={(node: any, color: string, ctx: CanvasRenderingContext2D) => {
-              ctx.beginPath();
-              ctx.arc(node.x || 0, node.y || 0, 12, 0, 2 * Math.PI);
-              ctx.fillStyle = color;
-              ctx.fill();
-            }}
-            onNodeClick={handleNodeClick as any}
-            onNodeDragEnd={(node: any) => {
-              node.fx = node.x;
-              node.fy = node.y;
-            }}
-          />
+            <div className="flex items-center gap-2 flex-wrap">
+              {/* Entity type filters */}
+              <div className="flex items-center gap-1 rounded-lg border border-border bg-card/80 backdrop-blur-sm px-2 py-1.5">
+                {TYPE_CONFIG.map(({ type, label, icon: Icon, color }) => {
+                  const active = visibleTypes.has(type);
+                  return (
+                    <Button
+                      key={type}
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => toggleType(type)}
+                      className={`h-7 px-2 gap-1.5 text-xs transition-all ${
+                        active ? "opacity-100" : "opacity-30 hover:opacity-60"
+                      }`}
+                      title={`${active ? "Ocultar" : "Mostrar"} ${label}`}
+                    >
+                      <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
+                      <Icon className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">{label}</span>
+                    </Button>
+                  );
+                })}
+              </div>
+
+              {/* Orphan toggle */}
+              <div className="flex items-center gap-2 rounded-lg border border-border bg-card/80 backdrop-blur-sm px-3 py-1.5">
+                <Switch
+                  id="show-orphans"
+                  checked={!hideOrphans}
+                  onCheckedChange={(v) => setHideOrphans(!v)}
+                />
+                <Label htmlFor="show-orphans" className="text-xs text-muted-foreground cursor-pointer whitespace-nowrap">
+                  Órfãos ({orphanCount})
+                </Label>
+              </div>
+            </div>
+          </div>
         )}
-      </Suspense>
-    </div>
+
+        <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground">Carregando visualização...</div>}>
+          {filteredData && (
+            <ForceGraph2D
+              ref={fgRef}
+              graphData={filteredData}
+              width={dimensions.width}
+              height={dimensions.height}
+              backgroundColor="#0F0F13"
+              linkColor={() => "rgba(255, 255, 255, 0.85)"}
+              linkWidth={2.5}
+              d3AlphaDecay={0.04}
+              d3VelocityDecay={0.4}
+              nodeCanvasObject={nodeCanvasObject as any}
+              nodePointerAreaPaint={(node: any, color: string, ctx: CanvasRenderingContext2D) => {
+                ctx.beginPath();
+                ctx.arc(node.x || 0, node.y || 0, 12, 0, 2 * Math.PI);
+                ctx.fillStyle = color;
+                ctx.fill();
+              }}
+              onNodeClick={handleNodeClick as any}
+              onNodeDragEnd={(node: any) => {
+                node.fx = node.x;
+                node.fy = node.y;
+              }}
+            />
+          )}
+        </Suspense>
+      </div>
     </PageTransition>
   );
 }
