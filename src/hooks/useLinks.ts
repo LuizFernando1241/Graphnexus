@@ -22,8 +22,9 @@ export function useCreateLink(entityId: string, entityType: EntityType) {
         target_id: target.id,
         label: target.label,
       }),
-    onSuccess: () => {
+    onSuccess: (_data, target) => {
       queryClient.invalidateQueries({ queryKey: ["entity-links", entityId, entityType] });
+      queryClient.invalidateQueries({ queryKey: ["entity-links", target.id, target.type] });
       queryClient.invalidateQueries({ queryKey: ["graph-data"] });
       toast.success("Link criado!");
     },
