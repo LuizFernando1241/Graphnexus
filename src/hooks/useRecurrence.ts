@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { addDays, addWeeks, addMonths, isAfter, startOfDay } from "date-fns";
+import { addDays, addWeeks, addMonths, isAfter, startOfDay, format } from "date-fns";
 import { toast } from "sonner";
 import { updateTask, createTask } from "@/lib/api/tasks";
 import { fetchEntityLinks, createEntityLink } from "@/lib/api/links";
@@ -27,7 +27,7 @@ function computeNextDate(baseDate: string | null, rule: string, recurrenceDays?:
     let candidate = addDays(effectiveBase, 1);
     for (let i = 0; i < 7; i++) {
       if (recurrenceDays.includes(candidate.getDay())) {
-        return candidate.toISOString().split("T")[0];
+        return format(candidate, "yyyy-MM-dd");
       }
       candidate = addDays(candidate, 1);
     }
@@ -49,7 +49,7 @@ function computeNextDate(baseDate: string | null, rule: string, recurrenceDays?:
       return null;
   }
 
-  return next.toISOString().split("T")[0];
+  return format(next, "yyyy-MM-dd");
 }
 
 export function useCompleteRecurringTask() {
@@ -81,6 +81,7 @@ export function useCompleteRecurringTask() {
           priority: task.priority,
           due_date: nextDue,
           estimated_minutes: task.estimated_minutes,
+          subtasks: task.subtasks?.map((st: any) => ({ ...st, completed: false })) || [],
           recurrence_rule: task.recurrence_rule,
           recurrence_end_date: task.recurrence_end_date,
           recurrence_parent_id: task.recurrence_parent_id || task.id,

@@ -57,6 +57,7 @@ export async function createTask(task: {
   recurrence_end_date?: string | null;
   recurrence_parent_id?: string | null;
   recurrence_days?: number[] | null;
+  subtasks?: any[] | null;
 }) {
   const { data, error } = await supabase
     .from("tasks")
@@ -67,7 +68,7 @@ export async function createTask(task: {
       priority: task.priority || "none",
       due_date: task.due_date || null,
       estimated_minutes: task.estimated_minutes || null,
-      subtasks: [],
+      subtasks: task.subtasks || [],
       recurrence_rule: task.recurrence_rule || null,
       recurrence_end_date: task.recurrence_end_date || null,
       recurrence_parent_id: task.recurrence_parent_id || null,
