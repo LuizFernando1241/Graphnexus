@@ -7,6 +7,8 @@ import { TableHeader } from "@tiptap/extension-table-header";
 import { TableCell } from "@tiptap/extension-table-cell";
 import { Link } from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
+import { Color } from "@tiptap/extension-color";
+import { TextStyle } from "@tiptap/extension-text-style";
 import {
   Bold,
   Italic,
@@ -21,13 +23,12 @@ import {
   Link as LinkIcon,
   Unlink,
   Trash2,
-  Plus,
-  Minus,
   Columns,
   Rows,
   Camera,
   Paperclip,
-  Image as ImageIcon,
+  Palette,
+  Minus,
 } from "lucide-react";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -46,6 +47,19 @@ interface SearchResult {
   type: "note" | "task" | "project";
   emoji?: string | null;
 }
+
+const FONT_COLORS = [
+  { label: "Padrão", value: "" },
+  { label: "Vermelho", value: "#EF4444" },
+  { label: "Laranja", value: "#F97316" },
+  { label: "Amarelo", value: "#EAB308" },
+  { label: "Verde", value: "#22C55E" },
+  { label: "Azul", value: "#3B82F6" },
+  { label: "Roxo", value: "#8B5CF6" },
+  { label: "Rosa", value: "#EC4899" },
+  { label: "Cinza", value: "#6B7280" },
+  { label: "Branco", value: "#FFFFFF" },
+];
 
 const ToolbarButton = ({
   onClick,
@@ -71,6 +85,58 @@ const ToolbarButton = ({
     {children}
   </button>
 );
+
+function ColorPicker({ editor }: { editor: ReturnType<typeof useEditor> }) {
+  const [open, setOpen] = useState(false);
+  if (!editor) return null;
+
+  const currentColor = editor.getAttributes("textStyle").color || "";
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          title="Cor do texto"
+          className="rounded p-1.5 transition-colors text-muted-foreground hover:bg-accent hover:text-foreground relative"
+        >
+          <Palette className="h-4 w-4" />
+          {currentColor && (
+            <span
+              className="absolute bottom-0.5 left-1/2 -translate-x-1/2 h-0.5 w-3 rounded-full"
+              style={{ backgroundColor: currentColor }}
+            />
+          )}
+        </button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-2" align="start">
+        <div className="grid grid-cols-5 gap-1">
+          {FONT_COLORS.map((c) => (
+            <button
+              key={c.value || "default"}
+              title={c.label}
+              onClick={() => {
+                if (c.value) {
+                  editor.chain().focus().setColor(c.value).run();
+                } else {
+                  editor.chain().focus().unsetColor().run();
+                }
+                setOpen(false);
+              }}
+              className={`h-7 w-7 rounded-md border border-border hover:scale-110 transition-transform ${
+                currentColor === c.value ? "ring-2 ring-primary" : ""
+              }`}
+              style={{
+                backgroundColor: c.value || "transparent",
+                ...((!c.value) ? { background: "linear-gradient(135deg, #ccc 25%, transparent 25%, transparent 50%, #ccc 50%, #ccc 75%, transparent 75%)", backgroundSize: "6px 6px" } : {}),
+              }}
+            />
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 function InternalLinkPicker({ editor }: { editor: ReturnType<typeof useEditor> }) {
   const [open, setOpen] = useState(false);
@@ -195,7 +261,6 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
     if (isImageFile(file)) {
       editor.chain().focus().setImage({ src: url, alt: file.name }).run();
     } else {
-      // Para documentos, insere como link
       const linkHtml = `<a href="${url}" target="_blank" rel="noopener noreferrer" class="editor-link">📎 ${file.name}</a>`;
       editor.chain().focus().insertContent(linkHtml).run();
     }
@@ -209,6 +274,8 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
       TableRow,
       TableHeader,
       TableCell,
+      TextStyle,
+      Color,
       Link.configure({
         openOnClick: false,
         autolink: true,
@@ -245,8 +312,8 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
 
   return (
     <div className="flex flex-col rounded-lg border border-border overflow-hidden bg-card">
-      {/* Toolbar */}
-      <div className="flex items-center gap-1 border-b border-border bg-secondary px-3 py-2 flex-wrap">
+      {/* Sticky Toolbar */}
+      <div className="flex items-center gap-1 border-b border-border bg-secondary px-3 py-2 flex-wrap sticky top-0 z-20">
         <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} isActive={editor.isActive("bold")} title="Negrito">
           <Bold className="h-4 w-4" />
         </ToolbarButton>
@@ -256,6 +323,10 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
         <ToolbarButton onClick={() => editor.chain().focus().toggleStrike().run()} isActive={editor.isActive("strike")} title="Tachado">
           <Strikethrough className="h-4 w-4" />
         </ToolbarButton>
+
+        <div className="mx-1 h-5 w-px bg-border" />
+
+        <ColorPicker editor={editor} />
 
         <div className="mx-1 h-5 w-px bg-border" />
 
