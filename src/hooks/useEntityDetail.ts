@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { createNote } from "@/lib/api/notes";
 import { createEntityLink } from "@/lib/api/links";
+import { invalidateAllEntities } from "@/lib/cache";
 import type { EntityType } from "@/types/entities";
 
 interface UseEntityDetailOptions<T extends { id: string; title: string; description?: string | null; archived?: boolean }> {
@@ -139,7 +140,7 @@ export function useEntityDetail<T extends { id: string; title: string; descripti
       if (!isMounted.current) return;
       setHasUnsavedChanges(false);
       queryClient.invalidateQueries({ queryKey: [queryKey, id] });
-      queryClient.invalidateQueries({ queryKey: [listQueryKey] });
+      invalidateAllEntities(queryClient);
       toast.success("Salvo com sucesso!");
     },
     onError: () => {
@@ -160,7 +161,7 @@ export function useEntityDetail<T extends { id: string; title: string; descripti
       await deleteFn(id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [listQueryKey] });
+      invalidateAllEntities(queryClient);
       toast.success("Excluído com sucesso");
       navigate(navigateTo);
     },
@@ -185,7 +186,8 @@ export function useEntityDetail<T extends { id: string; title: string; descripti
     onSuccess: () => {
       if (!isMounted.current) return;
       setHasUnsavedChanges(false);
-      queryClient.invalidateQueries({ queryKey: [listQueryKey] });
+      queryClient.invalidateQueries({ queryKey: [queryKey, id] });
+      invalidateAllEntities(queryClient);
       toast.success(entity?.archived ? "Desarquivado" : "Arquivado");
       navigate(navigateTo);
     },
@@ -231,10 +233,8 @@ export function useEntityDetail<T extends { id: string; title: string; descripti
       if (!isMounted.current) return;
       setDescriptionState("");
       setHasUnsavedChanges(false);
-      queryClient.invalidateQueries({ queryKey: [listQueryKey] });
       queryClient.invalidateQueries({ queryKey: [queryKey, id] });
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-      queryClient.invalidateQueries({ queryKey: ["links"] });
+      invalidateAllEntities(queryClient);
       toast.success("Nota extraída e vinculada com sucesso!");
     },
     onError: (error) => {

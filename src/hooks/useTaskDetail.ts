@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { fetchTask, updateTask, deleteTask } from "@/lib/api/tasks";
 import { createNote } from "@/lib/api/notes";
 import { createEntityLink } from "@/lib/api/links";
+import { invalidateAllEntities } from "@/lib/cache";
 import type { Task, TaskStatus, TaskPriority } from "@/types/entities";
 
 export function useTaskDetail(id: string | undefined) {
@@ -133,7 +134,7 @@ export function useTaskDetail(id: string | undefined) {
       if (!isMounted.current) return;
       setHasUnsavedChanges(false);
       queryClient.invalidateQueries({ queryKey: ["task", id] });
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      invalidateAllEntities(queryClient);
       toast.success("Tarefa salva!");
     },
     onError: () => {
@@ -150,7 +151,7 @@ export function useTaskDetail(id: string | undefined) {
       await deleteTask(id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      invalidateAllEntities(queryClient);
       toast.success("Tarefa excluída");
       navigate("/tasks");
     },
@@ -167,7 +168,7 @@ export function useTaskDetail(id: string | undefined) {
     onSuccess: () => {
       if (!isMounted.current) return;
       setHasUnsavedChanges(false);
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      invalidateAllEntities(queryClient);
       toast.success("Tarefa arquivada");
       navigate("/tasks");
     },
@@ -203,10 +204,8 @@ export function useTaskDetail(id: string | undefined) {
       if (!isMounted.current) return;
       setDescriptionState("");
       setHasUnsavedChanges(false);
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
       queryClient.invalidateQueries({ queryKey: ["task", id] });
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-      queryClient.invalidateQueries({ queryKey: ["links"] });
+      invalidateAllEntities(queryClient);
       toast.success("Nota extraída e vinculada com sucesso!");
     },
     onError: (error) => {

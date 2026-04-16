@@ -53,11 +53,11 @@ function useArchivedTasks() {
   return useQuery({
     queryKey: ["archived-tasks"],
     queryFn: async () => {
-      const threeDaysAgo = new Date();
-      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+      const twoDaysAgo = new Date();
+      twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
 
       // Busca segura: duas queries separadas (evita interpolação em .or())
-      const threeDaysAgoISO = threeDaysAgo.toISOString();
+      const twoDaysAgoISO = twoDaysAgo.toISOString();
       
       // Query 1: Tarefas arquivadas
       const { data: archivedData, error: archivedError } = await supabase
@@ -66,12 +66,12 @@ function useArchivedTasks() {
         .eq("archived", true)
         .order("updated_at", { ascending: false });
       
-      // Query 2: Tarefas completadas há mais de 3 dias
+      // Query 2: Tarefas completadas há mais de 2 dias
       const { data: oldCompletedData, error: oldCompletedError } = await supabase
         .from("tasks")
         .select("id, title")
         .eq("status", "done")
-        .lt("completed_at", threeDaysAgoISO)
+        .lt("completed_at", twoDaysAgoISO)
         .eq("archived", false)
         .order("updated_at", { ascending: false });
       

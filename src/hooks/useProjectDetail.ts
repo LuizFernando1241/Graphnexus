@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { fetchProject, updateProject, deleteProject } from "@/lib/api/projects";
 import { createNote } from "@/lib/api/notes";
 import { createEntityLink } from "@/lib/api/links";
+import { invalidateAllEntities } from "@/lib/cache";
 import type { Project, ProjectStatus } from "@/types/entities";
 
 export function useProjectDetail(id: string | undefined) {
@@ -123,7 +124,7 @@ export function useProjectDetail(id: string | undefined) {
       if (!isMounted.current) return;
       setHasUnsavedChanges(false);
       queryClient.invalidateQueries({ queryKey: ["project", id] });
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      invalidateAllEntities(queryClient);
       toast.success("Projeto salvo!");
     },
     onError: () => {
@@ -140,7 +141,7 @@ export function useProjectDetail(id: string | undefined) {
       await deleteProject(id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      invalidateAllEntities(queryClient);
       toast.success("Projeto excluído");
       navigate("/projects");
     },
@@ -158,7 +159,7 @@ export function useProjectDetail(id: string | undefined) {
       if (!isMounted.current) return;
       setHasUnsavedChanges(false);
       queryClient.invalidateQueries({ queryKey: ["project", id] });
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      invalidateAllEntities(queryClient);
       toast.success(project?.archived ? "Projeto desarquivado" : "Projeto arquivado");
     },
     onError: () => {
@@ -193,10 +194,8 @@ export function useProjectDetail(id: string | undefined) {
       if (!isMounted.current) return;
       setDescriptionState("");
       setHasUnsavedChanges(false);
-      queryClient.invalidateQueries({ queryKey: ["projects"] });
       queryClient.invalidateQueries({ queryKey: ["project", id] });
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
-      queryClient.invalidateQueries({ queryKey: ["links"] });
+      invalidateAllEntities(queryClient);
       toast.success("Nota extraída e vinculada com sucesso!");
     },
     onError: (error) => {

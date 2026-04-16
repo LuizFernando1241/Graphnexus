@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { invalidateAllEntities } from "@/lib/cache";
 
 export function useAutoTriage() {
   const queryClient = useQueryClient();
@@ -12,7 +13,7 @@ export function useAutoTriage() {
 
     supabase.rpc("auto_triage_tasks").then(({ error }) => {
       if (!error) {
-        queryClient.invalidateQueries({ queryKey: ["tasks"] });
+        invalidateAllEntities(queryClient);
       }
     });
   }, [queryClient]);

@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { addDays, addWeeks, addMonths, isAfter, startOfDay } from "date-fns";
 import { toast } from "sonner";
 import { updateTask, createTask } from "@/lib/api/tasks";
+import { invalidateAllEntities } from "@/lib/cache";
 import type { Task } from "@/types/entities";
 
 function parseRecurrenceRule(rule: string): { unit: "day" | "week" | "month" | "custom_days"; interval: number } | null {
@@ -91,7 +92,7 @@ export function useCompleteRecurringTask() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      invalidateAllEntities(queryClient);
     },
     onError: () => {
       toast.error("Erro ao completar tarefa");
@@ -121,8 +122,7 @@ export function useSkipRecurringTask() {
       await updateTask(task.id, { due_date: nextDue });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      queryClient.invalidateQueries({ queryKey: ["task"] });
+      invalidateAllEntities(queryClient);
       toast.success("Ocorrência pulada para a próxima data");
     },
     onError: () => {

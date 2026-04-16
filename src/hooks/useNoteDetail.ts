@@ -3,6 +3,7 @@ import { useNavigate, useBlocker } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { fetchNote, updateNote, deleteNote } from "@/lib/api/notes";
+import { invalidateAllEntities } from "@/lib/cache";
 import type { Note } from "@/types/entities";
 
 export function useNoteDetail(id: string | undefined) {
@@ -88,7 +89,7 @@ export function useNoteDetail(id: string | undefined) {
       if (!isMounted.current) return;
       setHasUnsavedChanges(false);
       queryClient.invalidateQueries({ queryKey: ["note", id] });
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      invalidateAllEntities(queryClient);
       toast.success("Nota salva!");
     },
     onError: () => {
@@ -106,7 +107,7 @@ export function useNoteDetail(id: string | undefined) {
     },
     onSuccess: (updatedNote) => {
       queryClient.invalidateQueries({ queryKey: ["note", id] });
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      invalidateAllEntities(queryClient);
       toast.success(updatedNote.pinned ? "Nota fixada" : "Nota desafixada");
     },
     onError: () => {
@@ -124,7 +125,7 @@ export function useNoteDetail(id: string | undefined) {
     },
     onSuccess: (updatedNote) => {
       queryClient.invalidateQueries({ queryKey: ["note", id] });
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      invalidateAllEntities(queryClient);
       toast.success(updatedNote.archived ? "Nota arquivada" : "Nota desarquivada");
     },
     onError: () => {
@@ -141,7 +142,7 @@ export function useNoteDetail(id: string | undefined) {
       await deleteNote(id);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      invalidateAllEntities(queryClient);
       toast.success("Nota excluída");
       navigate("/notes");
     },

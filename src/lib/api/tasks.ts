@@ -24,12 +24,12 @@ export async function fetchTasks(opts?: { includeOldDone?: boolean }) {
   let tasks = (data || []).map(rowToTask);
 
   if (!opts?.includeOldDone) {
-    const threeDaysAgo = new Date();
-    threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+    const twoDaysAgo = new Date();
+    twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
     tasks = tasks.filter((t) => {
       if (t.status !== "done") return true;
       if (!t.completed_at) return true;
-      return new Date(t.completed_at) >= threeDaysAgo;
+      return new Date(t.completed_at) >= twoDaysAgo;
     });
   }
 
