@@ -260,7 +260,29 @@ export default function Graph() {
     [graphSearch, searchIndex]
   );
 
-  // nodeThreeObject otimizado usando cache na propriedade `__threeObj` para evitar Memory Leaks!
+  // Sincroniza a opacidade dos textos (Sprite) pois o react-force-graph-3d não re-avalia o nodeThreeObject constantemente
+  useEffect(() => {
+    if (!filteredData) return;
+    
+    filteredData.nodes.forEach((node) => {
+      if (node.__spriteCache) {
+        const sprite = node.__spriteCache as SpriteText;
+        const matchesSearch = nodeMatchesSearch(node);
+        const isDimmed = graphSearch.trim() && !matchesSearch;
+
+        // Ocultar texto de nós isolados ou esmaecer pelo search
+        if (hoverNode && !connectedNodes.has(node.id)) {
+          sprite.material.opacity = 0;
+        } else if (isDimmed) {
+          sprite.material.opacity = 0.05;
+        } else {
+          sprite.material.opacity = node.isOrphan ? 0.3 : 0.9;
+        }
+      }
+    });
+  }, [hoverNode, connectedNodes, graphSearch, nodeMatchesSearch, filteredData]);
+
+  // nodeThreeObject otimizado usando cache na propriedade `__spriteCache` para evitar Memory Leaks!
   const nodeThreeObject = useCallback(
     (node: GraphNode) => {
       if (hideOrphans && node.isOrphan) return new THREE.Group();
@@ -279,23 +301,21 @@ export default function Graph() {
         sprite.position.y = r + 4; // Um pouco mais colado
         sprite.center.set(0.5, 0);
 
+        // Define a opacidade inicial
+        const matchesSearch = nodeMatchesSearch(node);
+        const isDimmed = graphSearch.trim() && !matchesSearch;
+        if (hoverNode && !connectedNodes.has(node.id)) {
+          sprite.material.opacity = 0;
+        } else if (isDimmed) {
+          sprite.material.opacity = 0.05;
+        } else {
+          sprite.material.opacity = node.isOrphan ? 0.3 : 0.9;
+        }
+
         node.__spriteCache = sprite;
       }
       
-      const sprite = node.__spriteCache as SpriteText;
-      const matchesSearch = nodeMatchesSearch(node);
-      const isDimmed = graphSearch.trim() && !matchesSearch;
-
-      // Ocultar texto de nós apagados e exibir apenas dos conectados no hover
-      if (hoverNode && !connectedNodes.has(node.id)) {
-        sprite.material.opacity = 0;
-      } else if (isDimmed) {
-        sprite.material.opacity = 0.05;
-      } else {
-        sprite.material.opacity = node.isOrphan ? 0.3 : 0.9;
-      }
-
-      return sprite;
+      return node.__spriteCache as SpriteText;
     },
     [hideOrphans, graphSearch, nodeMatchesSearch, hoverNode, connectedNodes]
   );
