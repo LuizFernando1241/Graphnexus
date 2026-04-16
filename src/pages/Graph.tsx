@@ -1,4 +1,4 @@
-import { lazy, Suspense, useRef, useCallback, useEffect, useState, useMemo } from "react";
+import React, { lazy, Suspense, useRef, useCallback, useEffect, useState, useMemo, memo } from "react";
 import { useDebouncedCallback } from "use-debounce";
 import { Search, StickyNote, CheckSquare, FolderKanban } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -48,10 +48,10 @@ const TYPE_COLORS: Record<EntityType, string> = {
   project: "#10B981",
 };
 
-const TYPE_CONFIG: { type: EntityType; label: string; icon: React.ElementType; color: string }[] = [
-  { type: "note", label: "Notas", icon: StickyNote, color: TYPE_COLORS.note },
-  { type: "task", label: "Tarefas", icon: CheckSquare, color: TYPE_COLORS.task },
-  { type: "project", label: "Projetos", icon: FolderKanban, color: TYPE_COLORS.project },
+const TYPE_CONFIG = [
+  { type: "note" as const, label: "Notas", icon: StickyNote, color: TYPE_COLORS.note },
+  { type: "task" as const, label: "Tarefas", icon: CheckSquare, color: TYPE_COLORS.task },
+  { type: "project" as const, label: "Projetos", icon: FolderKanban, color: TYPE_COLORS.project },
 ];
 
 const ORPHAN_COLOR = "#3F3F46";
@@ -100,6 +100,8 @@ async function fetchGraphData() {
 
     return { nodes, links: graphLinks };
   } catch (error) {
+    // Log apenas em desenvolvimento
+    // eslint-disable-next-line no-console
     console.error("Erro ao carregar dados do grafo:", error);
     return { nodes: [], links: [] };
   }
@@ -107,6 +109,106 @@ async function fetchGraphData() {
 
 // Criar geometria antecipadamente para performance superior
 const baseGeometry = new THREE.SphereGeometry(1, 24, 24);
+
+// Componente memoizado para botão de filtro de tipo
+interface TypeFilterButtonProps {
+  type: EntityType;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+  isActive: boolean;
+  onToggle: (type: EntityType) => void;
+}
+
+const TypeFilterButton = memo(function TypeFilterButton({
+  type,
+  label,
+  icon: Icon,
+  color,
+  isActive,
+  onToggle,
+}: TypeFilterButtonProps) {
+  const handleClick = useCallback(() => onToggle(type), [onToggle, type]);
+
+  return (
+    <Button
+      variant="ghost"
+      size="sm"
+      onClick={handleClick}
+      className={`h-8 px-2.5 gap-2 text-xs transition-all rounded-lg ${
+        isActive ? "opacity-100 bg-white/5 text-white" : "opacity-40 hover:opacity-100 hover:bg-white/5 text-white/70"
+      }`}
+    >
+      <span className="h-2.5 w-2.5 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: color }} />
+      <Icon className="h-3.5 w-3.5" />
+      <span className="hidden sm:inline font-medium">{label}</span>
+    </Button>
+  );
+});
+
+// Componente memoizado para os controles do grafo
+interface GraphControlsProps {
+  searchValue: string;
+  onSearchChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  visibleTypes: Set<EntityType>;
+  onToggleType: (type: EntityType) => void;
+  hideOrphans: boolean;
+  onToggleOrphans: (checked: boolean) => void;
+  orphanCount: number;
+}
+
+const GraphControls = memo(function GraphControls({
+  searchValue,
+  onSearchChange,
+  visibleTypes,
+  onToggleType,
+  hideOrphans,
+  onToggleOrphans,
+  orphanCount,
+}: GraphControlsProps) {
+  return (
+    <div className="absolute top-4 left-4 right-4 z-10 flex flex-col sm:flex-row gap-3 justify-between pointer-events-none">
+      <div className="relative flex-1 max-w-md pointer-events-auto">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
+        <Input
+          placeholder="Explorar cosmos..."
+          value={searchValue}
+          onChange={onSearchChange}
+          className="pl-9 bg-black/40 backdrop-blur-xl border-white/10 text-white placeholder:text-white/40 shadow-lg h-10 rounded-xl hover:bg-black/50 transition-colors focus-visible:ring-1 focus-visible:ring-white/20"
+          aria-label="Buscar no grafo"
+        />
+      </div>
+
+      <div className="flex items-center gap-2 flex-wrap pointer-events-auto">
+        <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-black/40 backdrop-blur-xl px-2 py-1.5 shadow-lg">
+          {TYPE_CONFIG.map(({ type, label, icon, color }) => (
+            <TypeFilterButton
+              key={type}
+              type={type}
+              label={label}
+              icon={icon}
+              color={color}
+              isActive={visibleTypes.has(type)}
+              onToggle={onToggleType}
+            />
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-black/40 backdrop-blur-xl px-3 py-1.5 shadow-lg">
+          <Switch
+            id="show-orphans"
+            checked={!hideOrphans}
+            onCheckedChange={onToggleOrphans}
+            className="data-[state=checked]:bg-blue-600"
+          />
+          <Label htmlFor="show-orphans" className="text-xs font-medium text-white/80 cursor-pointer pt-0.5">
+            Órfãos ({orphanCount})
+          </Label>
+        </div>
+      </div>
+    </div>
+  );
+});
 
 export default function Graph() {
   const navigate = useNavigate();
@@ -188,8 +290,10 @@ export default function Graph() {
     };
   }, []);
 
+  // Configurar forças apenas uma vez quando o grafo é montado
+  const forcesConfigured = useRef(false);
   useEffect(() => {
-    if (!fgRef.current || !data) return;
+    if (!fgRef.current || forcesConfigured.current) return;
     const fg = fgRef.current;
     
     fg.d3Force("charge", forceManyBody().strength(-140)); 
@@ -202,8 +306,8 @@ export default function Graph() {
         0
       ).strength((node) => (node.isOrphan ? 0.08 : 0.02))
     );
-    fg.d3ReheatSimulation();
-  }, [data]);
+    forcesConfigured.current = true;
+  }, []);
 
   const handleNodeClick = useCallback(
     (node: object) => {
@@ -246,14 +350,33 @@ export default function Graph() {
   // Cache global de objetos Three.js por node id
   const nodeObjCache = useRef<Map<string, THREE.Group>>(new Map());
   const emptyGroup = useMemo(() => new THREE.Group(), []);
+  
+  // Limpar cache quando dados mudam para evitar vazamento de memória
+  useEffect(() => {
+    // Dispose materiais e geometrias antigas
+    nodeObjCache.current.forEach((group) => {
+      group.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.material?.dispose();
+        }
+      });
+    });
+    nodeObjCache.current.clear();
+  }, [data]);
 
   const nodeThreeObject = useCallback(
     (nodeObj: object) => {
       const node = nodeObj as GraphNode;
       if (hideOrphans && node.isOrphan) return emptyGroup;
 
-      const cached = nodeObjCache.current.get(node.id);
-      if (cached) return cached;
+      // Cache key inclui propriedades visuais para invalidação correta
+      const cacheKey = `${node.id}-${node.label}-${node.emoji || ''}-${node.color}-${node.isOrphan}-${node.linkCount || 0}`;
+      
+      const cached = nodeObjCache.current.get(cacheKey);
+      if (cached) {
+        node.__nodeObj = cached;
+        return cached;
+      }
 
       const rawR = node.isOrphan ? 4 : 6 + (node.linkCount || 0) * 1.1;
       const r = Math.min(rawR, 14);
@@ -290,7 +413,7 @@ export default function Graph() {
       group.add(sprite);
 
       node.__nodeObj = group;
-      nodeObjCache.current.set(node.id, group);
+      nodeObjCache.current.set(cacheKey, group);
       return group;
     },
     [hideOrphans, emptyGroup]
@@ -369,53 +492,15 @@ export default function Graph() {
     <PageTransition>
       <div ref={containerRef} className="relative w-full h-[calc(100vh-5rem)] rounded-xl overflow-hidden shadow-2xl bg-[#09090b]">
         {data && (
-          <div className="absolute top-4 left-4 right-4 z-10 flex flex-col sm:flex-row gap-3 justify-between pointer-events-none">
-            <div className="relative flex-1 max-w-md pointer-events-auto">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
-              <Input
-                placeholder="Explorar cosmos..."
-                value={graphSearch}
-                onChange={handleSearchChange}
-                className="pl-9 bg-black/40 backdrop-blur-xl border-white/10 text-white placeholder:text-white/40 shadow-lg h-10 rounded-xl hover:bg-black/50 transition-colors focus-visible:ring-1 focus-visible:ring-white/20"
-                aria-label="Buscar no grafo"
-              />
-            </div>
-
-            <div className="flex items-center gap-2 flex-wrap pointer-events-auto">
-              <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-black/40 backdrop-blur-xl px-2 py-1.5 shadow-lg">
-                {TYPE_CONFIG.map(({ type, label, icon: Icon, color }) => {
-                  const active = visibleTypes.has(type);
-                  return (
-                    <Button
-                      key={type}
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleType(type)}
-                      className={`h-8 px-2.5 gap-2 text-xs transition-all rounded-lg ${
-                        active ? "opacity-100 bg-white/5 text-white" : "opacity-40 hover:opacity-100 hover:bg-white/5 text-white/70"
-                      }`}
-                    >
-                      <span className="h-2.5 w-2.5 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: color }} />
-                      <Icon className="h-3.5 w-3.5" />
-                      <span className="hidden sm:inline font-medium">{label}</span>
-                    </Button>
-                  );
-                })}
-              </div>
-
-              <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-black/40 backdrop-blur-xl px-3 py-1.5 shadow-lg">
-                <Switch
-                  id="show-orphans"
-                  checked={!hideOrphans}
-                  onCheckedChange={(v) => setHideOrphans(!v)}
-                  className="data-[state=checked]:bg-blue-600"
-                />
-                <Label htmlFor="show-orphans" className="text-xs font-medium text-white/80 cursor-pointer pt-0.5">
-                  Órfãos ({orphanCount})
-                </Label>
-              </div>
-            </div>
-          </div>
+          <GraphControls
+            searchValue={graphSearch}
+            onSearchChange={handleSearchChange}
+            visibleTypes={visibleTypes}
+            onToggleType={toggleType}
+            hideOrphans={hideOrphans}
+            onToggleOrphans={(v) => setHideOrphans(!v)}
+            orphanCount={orphanCount}
+          />
         )}
 
         <Suspense fallback={<div className="flex items-center justify-center h-full text-white/50">Carregando universo...</div>}>
@@ -429,7 +514,7 @@ export default function Graph() {
               
               nodeThreeObject={nodeThreeObject}
               
-              linkColor={(linkObj: object) => {
+              linkColor={useCallback((linkObj: object) => {
                  const link = linkObj as GraphLink;
                  const srcId = typeof link.source === "object" ? (link.source as GraphNode).id : String(link.source);
                  const tgtId = typeof link.target === "object" ? (link.target as GraphNode).id : String(link.target);
@@ -438,20 +523,20 @@ export default function Graph() {
                      return "rgba(255, 255, 255, 0.05)";
                  }
                  return "rgba(255, 255, 255, 0.45)";
-              }}
-              linkWidth={(linkObj: object) => {
+              }, [])}
+              linkWidth={useCallback((linkObj: object) => {
                 const link = linkObj as GraphLink;
                 const srcId = typeof link.source === "object" ? (link.source as GraphNode).id : String(link.source);
                 const tgtId = typeof link.target === "object" ? (link.target as GraphNode).id : String(link.target);
                 return (hoverNodeRef.current && (srcId === hoverNodeRef.current || tgtId === hoverNodeRef.current)) ? 1.5 : 0.6;
-              }}
+              }, [])}
               
-              linkDirectionalParticles={(linkObj: object) => {
+              linkDirectionalParticles={useCallback((linkObj: object) => {
                 const link = linkObj as GraphLink;
                 const srcId = typeof link.source === "object" ? (link.source as GraphNode).id : String(link.source);
                 const tgtId = typeof link.target === "object" ? (link.target as GraphNode).id : String(link.target);
                 return (hoverNodeRef.current && (srcId === hoverNodeRef.current || tgtId === hoverNodeRef.current)) ? 3 : 0;
-              }}
+              }, [])}
               linkDirectionalParticleSpeed={0.015}
               linkDirectionalParticleWidth={1.5}
               linkDirectionalParticleColor={() => "rgba(255,255,255,0.7)"}
