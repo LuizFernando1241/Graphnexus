@@ -132,21 +132,40 @@ export default function Graph() {
   const orphanCount = useMemo(() => data?.nodes.filter((n) => n.isOrphan).length ?? 0, [data]);
 
   const filteredData = useMemo(() => {
-    if (!data) return data;
+    if (!data) return null; // Retornar nulo se não houver dados
+    
     const visibleNodeIds = new Set<string>();
-    const nodes = data.nodes.filter((n) => {
-      if (hideOrphans && n.isOrphan) return false;
-      if (!visibleTypes.has(n.type)) return false;
-      visibleNodeIds.add(n.id);
-      return true;
-    });
-    const links = data.links.filter(
-      (l) => {
-        const srcId = typeof l.source === "string" ? l.source : (l.source as any).id;
-        const tgtId = typeof l.target === "string" ? l.target : (l.target as any).id;
+    
+    // Precisamos recriar os objetos completamente porque o useQuery faz cache dos dados.
+    // O react-force-graph muta esses objetos injetando x,y,z e __spriteCache.
+    // Se não limparmos ao remontar a página, as posições velhas e os WebGL contexts velhos quebram o canvas!
+    const nodes = data.nodes
+      .filter((n) => {
+        if (hideOrphans && n.isOrphan) return false;
+        if (!visibleTypes.has(n.type)) return false;
+        visibleNodeIds.add(n.id);
+        return true;
+      })
+      .map((n) => ({ 
+        ...n, 
+        x: undefined, y: undefined, z: undefined, // Limpa física antiga
+        vx: undefined, vy: undefined, vz: undefined,
+        __spriteCache: undefined // Limpa instâncias Three.js que pertenciam a um canvas destruído
+      }));
+
+    const links = data.links
+      .filter((l) => {
+        const srcId = typeof l.source === "object" ? l.source.id : l.source;
+        const tgtId = typeof l.target === "object" ? l.target.id : l.target;
         return visibleNodeIds.has(srcId) && visibleNodeIds.has(tgtId);
-      }
-    );
+      })
+      .map((l) => ({
+        // O react-force-graph troca as strings originais por referências de objeto.
+        // Precisamos garantir que sempre passamos strings novas na remontagem.
+        source: typeof l.source === "object" ? l.source.id : l.source,
+        target: typeof l.target === "object" ? l.target.id : l.target
+      }));
+
     return { nodes, links };
   }, [data, hideOrphans, visibleTypes]);
 
