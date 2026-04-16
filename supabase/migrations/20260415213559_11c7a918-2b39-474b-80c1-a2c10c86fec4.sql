@@ -80,15 +80,18 @@ CREATE POLICY "entity_links_own" ON public.entity_links FOR ALL TO authenticated
 
 CREATE OR REPLACE FUNCTION public.auto_triage_tasks()
 RETURNS void
-LANGUAGE sql
-SECURITY DEFINER
+LANGUAGE plpgsql
+SECURITY INVOKER
 SET search_path = public
 AS $$
+BEGIN
   UPDATE tasks
   SET status = 'todo'
   WHERE status = 'backlog'
     AND due_date IS NOT NULL
-    AND due_date <= (CURRENT_DATE + INTERVAL '2 days');
+    AND due_date <= (CURRENT_DATE + INTERVAL '2 days')
+    AND user_id = auth.uid();
+END;
 $$;
 
 INSERT INTO storage.buckets (id, name, public) VALUES ('nexus_files', 'nexus_files', false) ON CONFLICT (id) DO NOTHING;

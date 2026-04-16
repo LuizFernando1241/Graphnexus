@@ -1,4 +1,5 @@
 import { lazy, Suspense, useRef, useCallback, useEffect, useState, useMemo } from "react";
+import { useDebouncedCallback } from "use-debounce";
 import { Search, StickyNote, CheckSquare, FolderKanban } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -115,11 +116,22 @@ export default function Graph() {
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
   const [hideOrphans, setHideOrphans] = useState(false);
   const [graphSearch, setGraphSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [visibleTypes, setVisibleTypes] = useState<Set<EntityType>>(new Set(["note", "task", "project"]));
   
   const hoverNodeRef = useRef<string | null>(null);
 
-  const toggleType = (type: EntityType) => {
+  const debouncedSetSearch = useDebouncedCallback((value: string) => {
+    setDebouncedSearch(value);
+  }, 150);
+
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setGraphSearch(value);
+    debouncedSetSearch(value);
+  }, [debouncedSetSearch]);
+
+  const toggleType = useCallback((type: EntityType) => {
     setVisibleTypes((prev) => {
       const next = new Set(prev);
       if (next.has(type)) {
@@ -129,7 +141,7 @@ export default function Graph() {
       }
       return next;
     });
-  };
+  }, []);
 
   const { data, isLoading } = useQuery({
     queryKey: ["graph-data"],
@@ -211,78 +223,77 @@ export default function Graph() {
   const searchIndex = useMemo(() => {
     const index = new Map<string, string>();
     if (!data?.nodes) return index;
-    data.nodes.forEach((node) => {
+    for (const node of data.nodes) {
       const searchableText = [node.label, node.content, node.description]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
       index.set(node.id, searchableText);
-    });
+    }
     return index;
   }, [data?.nodes]);
 
   const nodeMatchesSearch = useCallback(
     (node: GraphNode): boolean => {
-      if (!graphSearch.trim()) return true;
-      const term = graphSearch.toLowerCase();
+      if (!debouncedSearch.trim()) return true;
+      const term = debouncedSearch.toLowerCase();
       const searchableText = searchIndex.get(node.id) || "";
       return searchableText.includes(term);
     },
-    [graphSearch, searchIndex]
+    [debouncedSearch, searchIndex]
   );
+
+  // Cache global de objetos Three.js por node id
+  const nodeObjCache = useRef<Map<string, THREE.Group>>(new Map());
+  const emptyGroup = useMemo(() => new THREE.Group(), []);
 
   const nodeThreeObject = useCallback(
     (nodeObj: object) => {
       const node = nodeObj as GraphNode;
-      if (hideOrphans && node.isOrphan) return new THREE.Group();
+      if (hideOrphans && node.isOrphan) return emptyGroup;
+
+      const cached = nodeObjCache.current.get(node.id);
+      if (cached) return cached;
 
       const rawR = node.isOrphan ? 4 : 6 + (node.linkCount || 0) * 1.1;
       const r = Math.min(rawR, 14);
 
-      if (!node.__nodeObj) {
-        const group = new THREE.Group();
-
-        const color = node.isOrphan ? ORPHAN_COLOR : node.color;
-        
-        const material = new THREE.MeshBasicMaterial({ 
-          color, 
-          transparent: true, 
-          opacity: node.isOrphan ? 0.3 : 0.95,
-          depthWrite: false 
-        });
-        
-        const sphere = new THREE.Mesh(baseGeometry, material);
-        sphere.scale.set(r, r, r);
-        sphere.userData = { isSphere: true, defaultOpacity: node.isOrphan ? 0.3 : 0.95 };
-        group.add(sphere);
-
-        const label = node.emoji ? `${node.emoji} ${node.label}` : node.label;
-        const truncated = label.length > 25 ? label.slice(0, 23) + "…" : label;
-
-        const sprite = new SpriteText(truncated);
-        sprite.color = node.isOrphan ? ORPHAN_TEXT_COLOR : "#F4F4F8";
-        sprite.textHeight = node.isOrphan ? 3 : 4.5;
-        sprite.position.y = r + 4;
-        sprite.center.set(0.5, 0);
-        
-        if (sprite.material) {
-           sprite.material.depthWrite = false;
-        }
-
-        sprite.userData = { isText: true, defaultOpacity: node.isOrphan ? 0.3 : 0.95 };
-        group.add(sprite);
-
-        node.__nodeObj = group;
-      }
+      const group = new THREE.Group();
+      const color = node.isOrphan ? ORPHAN_COLOR : node.color;
       
-      const sphereMesh = node.__nodeObj.children.find((c) => c.userData.isSphere) as THREE.Mesh | undefined;
-      if (sphereMesh) {
-        sphereMesh.scale.set(r, r, r);
-      }
+      const material = new THREE.MeshBasicMaterial({ 
+        color, 
+        transparent: true, 
+        opacity: node.isOrphan ? 0.3 : 0.95,
+        depthWrite: false 
+      });
       
-      return node.__nodeObj;
+      const sphere = new THREE.Mesh(baseGeometry, material);
+      sphere.scale.set(r, r, r);
+      sphere.userData = { isSphere: true, defaultOpacity: node.isOrphan ? 0.3 : 0.95, nodeId: node.id };
+      group.add(sphere);
+
+      const label = node.emoji ? `${node.emoji} ${node.label}` : node.label;
+      const truncated = label.length > 25 ? label.slice(0, 23) + "…" : label;
+
+      const sprite = new SpriteText(truncated);
+      sprite.color = node.isOrphan ? ORPHAN_TEXT_COLOR : "#F4F4F8";
+      sprite.textHeight = node.isOrphan ? 3 : 4.5;
+      sprite.position.y = r + 4;
+      sprite.center.set(0.5, 0);
+      
+      if (sprite.material) {
+         sprite.material.depthWrite = false;
+      }
+
+      sprite.userData = { isText: true, defaultOpacity: node.isOrphan ? 0.3 : 0.95, nodeId: node.id };
+      group.add(sprite);
+
+      node.__nodeObj = group;
+      nodeObjCache.current.set(node.id, group);
+      return group;
     },
-    [hideOrphans]
+    [hideOrphans, emptyGroup]
   );
 
   const updateVisualState = useCallback((hoverJustChanged = false) => {
@@ -308,15 +319,22 @@ export default function Graph() {
       }
     }
 
-    filteredData.nodes.forEach((node) => {
-      const group = node.__nodeObj;
-      if (!group) return;
+    const hasSearch = debouncedSearch.trim().length > 0;
+    const searchTerm = hasSearch ? debouncedSearch.toLowerCase() : "";
 
-      const matchesSearch = nodeMatchesSearch(node);
-      const isDimmedBySearch = graphSearch.trim() && !matchesSearch;
+    for (const node of filteredData.nodes) {
+      const group = node.__nodeObj;
+      if (!group) continue;
+
+      let matchesSearch = true;
+      if (hasSearch) {
+        const searchableText = searchIndex.get(node.id) || "";
+        matchesSearch = searchableText.includes(searchTerm);
+      }
+      const isDimmedBySearch = hasSearch && !matchesSearch;
       const isDimmedByHover = hoverId && !connected.has(node.id);
 
-      group.children.forEach((child) => {
+      for (const child of group.children) {
         const c = child as THREE.Mesh | SpriteText;
         const defaultOp = Number(c.userData.defaultOpacity);
         
@@ -331,19 +349,19 @@ export default function Graph() {
         if (material) {
           material.opacity = targetOpacity;
         }
-      });
-    });
+      }
+    }
 
     if (hoverJustChanged && fgRef.current) {
         fgRef.current.linkColor(fgRef.current.linkColor());
         fgRef.current.linkWidth(fgRef.current.linkWidth());
         fgRef.current.linkDirectionalParticles(fgRef.current.linkDirectionalParticles());
     }
-  }, [filteredData, graphSearch, nodeMatchesSearch]);
+  }, [filteredData, debouncedSearch, searchIndex]);
 
   useEffect(() => {
     updateVisualState(false);
-  }, [graphSearch, updateVisualState]);
+  }, [debouncedSearch, updateVisualState]);
 
   if (isLoading) return <GraphSkeleton />;
 
@@ -357,7 +375,7 @@ export default function Graph() {
               <Input
                 placeholder="Explorar cosmos..."
                 value={graphSearch}
-                onChange={(e) => setGraphSearch(e.target.value)}
+                onChange={handleSearchChange}
                 className="pl-9 bg-black/40 backdrop-blur-xl border-white/10 text-white placeholder:text-white/40 shadow-lg h-10 rounded-xl hover:bg-black/50 transition-colors focus-visible:ring-1 focus-visible:ring-white/20"
                 aria-label="Buscar no grafo"
               />
