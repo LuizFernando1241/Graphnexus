@@ -219,30 +219,33 @@ export default function Graph() {
       const rawR = node.isOrphan ? 6 : 8 + (node.linkCount || 0) * 1.5;
       const r = Math.min(rawR, 24);
 
-      // Main sphere
-      const geometry = new THREE.SphereGeometry(r);
-      const material = new THREE.MeshLambertMaterial({
+      // Main sphere (ultra smooth)
+      const geometry = new THREE.SphereGeometry(r, 32, 32);
+      // Flat color, no shadows (glow effect)
+      const material = new THREE.MeshBasicMaterial({
         color: node.isOrphan ? ORPHAN_COLOR : node.color,
         transparent: true,
-        opacity: isDimmed ? 0.05 : node.isOrphan ? 0.3 : 0.9,
+        opacity: isDimmed ? 0.05 : node.isOrphan ? 0.3 : 1,
       });
       const sphere = new THREE.Mesh(geometry, material);
       group.add(sphere);
 
       // Label text
       const label = node.emoji ? `${node.emoji} ${node.label}` : node.label;
-      const truncated = label.length > 20 ? label.slice(0, 18) + "…" : label;
+      const truncated = label.length > 25 ? label.slice(0, 23) + "…" : label;
       
       const sprite = new SpriteText(truncated);
       sprite.color = node.isOrphan ? ORPHAN_TEXT_COLOR : "#F4F4F8";
-      sprite.textHeight = 6;
-      // Position label above the sphere
-      sprite.position.y = r + 8;
+      sprite.textHeight = 4;
+      // Position label above the sphere tight
+      sprite.position.y = r + 5;
       
       if (isDimmed) {
-        sprite.material.opacity = 0.05;
+        sprite.material.opacity = 0.02;
       } else if (node.isOrphan) {
-        sprite.material.opacity = 0.3;
+        sprite.material.opacity = 0.2;
+      } else {
+        sprite.material.opacity = 0.8;
       }
       
       group.add(sprite);
@@ -316,8 +319,8 @@ export default function Graph() {
               width={dimensions.width}
               height={dimensions.height}
               backgroundColor="#0F0F13"
-              linkColor={() => "rgba(255, 255, 255, 0.3)"}
-              linkWidth={1.5}
+              linkColor={() => "rgba(255, 255, 255, 0.15)"}
+              linkWidth={0.6}
               d3AlphaDecay={0.04}
               d3VelocityDecay={0.4}
               nodeThreeObject={nodeThreeObject as any}
