@@ -268,7 +268,7 @@ export default function Dashboard() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
-              <Clock className="h-4 w-4 text-muted-foreground" />
+              <ClockIcon className="h-4 w-4 text-muted-foreground" />
               Notas recentes
             </CardTitle>
           </CardHeader>
