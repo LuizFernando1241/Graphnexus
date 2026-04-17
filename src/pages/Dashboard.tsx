@@ -47,8 +47,8 @@ async function fetchDashboardData() {
     supabase.from("tasks").select("id", { count: "exact", head: true }).eq("archived", false).neq("status", "cancelled"),
     supabase.from("projects").select("id", { count: "exact", head: true }).eq("archived", false),
     supabase.from("notes").select("id, title, emoji, color, updated_at").eq("archived", false).order("updated_at", { ascending: false }).limit(5),
-    supabase.from("tasks").select("id, title, due_date, priority, status, recurrence_rule, recurrence_days").eq("archived", false).neq("status", "done").neq("status", "cancelled").lt("due_date", today).not("due_date", "is", null),
-    supabase.from("tasks").select("id, title, due_date, priority, status, recurrence_rule, recurrence_days").eq("archived", false).neq("status", "done").neq("status", "cancelled").gte("due_date", today).lte("due_date", threeDaysFromNow).not("due_date", "is", null).order("due_date", { ascending: true }),
+    supabase.from("tasks").select("*").eq("archived", false).neq("status", "done").neq("status", "cancelled").lt("due_date", today).not("due_date", "is", null),
+    supabase.from("tasks").select("*").eq("archived", false).neq("status", "done").neq("status", "cancelled").gte("due_date", today).lte("due_date", threeDaysFromNow).not("due_date", "is", null).order("due_date", { ascending: true }),
     supabase.from("tasks").select("id, title, status, updated_at").eq("archived", false).order("updated_at", { ascending: false }).limit(8),
   ]);
 
@@ -59,8 +59,8 @@ async function fetchDashboardData() {
       projects: projectsCount.count || 0,
     },
     recentNotes: recentNotes.data || [],
-    overdueTasks: overdueTasks.data || [],
-    upcomingTasks: upcomingTasks.data || [],
+    overdueTasks: (overdueTasks.data || []) as unknown as Task[],
+    upcomingTasks: (upcomingTasks.data || []) as unknown as Task[],
     activityFeed: activityFeed.data || [],
   };
 }
@@ -100,10 +100,13 @@ export default function Dashboard() {
     },
   });
 
+  const allDueTasks = useMemo(
+    () => (data ? [...data.overdueTasks, ...data.upcomingTasks] : []),
+    [data]
+  );
+
   if (isLoading) return <DashboardSkeleton />;
   if (!data) return null;
-
-  const allDueTasks = [...data.overdueTasks, ...data.upcomingTasks];
 
   return (
     <PageTransition>
@@ -211,7 +214,7 @@ export default function Dashboard() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base">
-              <AlertTriangle className="h-4 w-4 text-amber-400" />
+              <AlertTriangle className="h-4 w-4 text-warning" />
               Tarefas urgentes
             </CardTitle>
           </CardHeader>
@@ -221,24 +224,24 @@ export default function Dashboard() {
             ) : (
               <div className="flex flex-col gap-2">
                 {allDueTasks.map((task) => {
-                  const due = new Date(task.due_date + "T00:00:00");
+                  const due = new Date(task.due_date! + "T00:00:00");
                   const overdue = isBefore(due, startOfDay(new Date()));
                   return (
                     <SwipeableItem
                       key={task.id}
                       onSwipeRight={() =>
-                        completeRecurring.mutate(task as any)
+                        completeRecurring.mutate(task)
                       }
                       onSwipeLeft={() =>
                         postponeMutation.mutate({
                           id: task.id,
-                          dueDate: task.due_date,
+                          dueDate: task.due_date!,
                         })
                       }
                       rightIcon={Check}
                       leftIcon={ClockIcon}
-                      rightBgColor="bg-green-600"
-                      leftBgColor="bg-amber-600"
+                      rightBgColor="bg-success"
+                      leftBgColor="bg-warning"
                     >
                       <button
                         onClick={() => navigate(`/tasks/${task.id}`)}
