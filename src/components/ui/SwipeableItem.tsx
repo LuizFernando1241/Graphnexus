@@ -22,7 +22,7 @@ export function SwipeableItem({
   leftIcon: LeftIcon,
   rightIcon: RightIcon,
   leftBgColor = "bg-destructive",
-  rightBgColor = "bg-green-600",
+  rightBgColor = "bg-success",
 }: SwipeableItemProps) {
   const x = useMotionValue(0);
   const fired = useRef(false);

@@ -88,7 +88,7 @@ export function useCompleteRecurringTask() {
           priority: task.priority,
           due_date: nextDue,
           estimated_minutes: task.estimated_minutes,
-          subtasks: task.subtasks?.map((st: any) => ({ ...st, completed: false })) || [],
+          subtasks: task.subtasks?.map((st: Record<string, unknown>) => ({ ...st, completed: false })) || [],
           recurrence_rule: task.recurrence_rule,
           recurrence_end_date: task.recurrence_end_date,
           recurrence_parent_id: task.recurrence_parent_id || task.id,
