@@ -339,7 +339,7 @@ function StepOrphanNotes({ onNext }: { onNext: () => void }) {
                 title="Arquivar"
                 onClick={() => archiveMut.mutate(note.id)}
               >
-                <Archive className="h-5 w-5 text-amber-400" />
+                <Archive className="h-5 w-5 text-warning" />
               </Button>
               <Button
                 variant="ghost"

@@ -199,7 +199,7 @@ const GraphControls = memo(function GraphControls({
             id="show-orphans"
             checked={!hideOrphans}
             onCheckedChange={onToggleOrphans}
-            className="data-[state=checked]:bg-blue-600"
+            className="data-[state=checked]:bg-primary"
           />
           <Label htmlFor="show-orphans" className="text-xs font-medium text-white/80 cursor-pointer pt-0.5">
             Órfãos ({orphanCount})
