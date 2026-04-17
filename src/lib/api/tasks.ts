@@ -94,7 +94,7 @@ export async function createTask(task: {
 
 export async function updateTask(
   id: string,
-  updates: Partial<Pick<Task, "title" | "description" | "status" | "priority" | "due_date" | "completed_at" | "estimated_minutes" | "subtasks" | "archived" | "recurrence_rule" | "recurrence_end_date" | "recurrence_days">>
+  updates: Partial<Pick<Task, "title" | "description" | "status" | "priority" | "due_date" | "completed_at" | "estimated_minutes" | "subtasks" | "archived" | "recurrence_rule" | "recurrence_end_date" | "recurrence_days">> & { manualStatusChange?: boolean }
 ) {
   const payload: TaskUpdate = {};
   if (updates.title !== undefined) payload.title = updates.title;
@@ -109,6 +109,12 @@ export async function updateTask(
   if (updates.recurrence_rule !== undefined) payload.recurrence_rule = updates.recurrence_rule;
   if (updates.recurrence_end_date !== undefined) payload.recurrence_end_date = updates.recurrence_end_date;
   if (updates.recurrence_days !== undefined) (payload as Record<string, unknown>).recurrence_days = updates.recurrence_days;
+
+  // Quando o usuário muda o status manualmente, registra o timestamp para que o
+  // auto_triage_tasks() respeite a decisão por 24h.
+  if (updates.manualStatusChange && updates.status !== undefined) {
+    (payload as Record<string, unknown>).manual_status_override = new Date().toISOString();
+  }
 
   const { data, error } = await supabase
     .from("tasks")

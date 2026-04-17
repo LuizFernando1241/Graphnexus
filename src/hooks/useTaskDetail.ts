@@ -121,6 +121,7 @@ export function useTaskDetail(id: string | undefined) {
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!id) throw new Error("No task ID");
+      const statusChanged = !!task && task.status !== status;
       return updateTask(id, {
         title,
         description: description || null,
@@ -130,6 +131,7 @@ export function useTaskDetail(id: string | undefined) {
         recurrence_rule: recurrenceRule,
         recurrence_days: recurrenceDays,
         estimated_minutes: estimatedMinutes ? parseInt(estimatedMinutes, 10) : null,
+        manualStatusChange: statusChanged,
       });
     },
     onSuccess: () => {

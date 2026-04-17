@@ -196,7 +196,7 @@ export default function Tasks() {
 
   const moveMutation = useMutation({
     mutationFn: ({ taskId, newStatus }: { taskId: string; newStatus: TaskStatus }) =>
-      updateTask(taskId, { status: newStatus }),
+      updateTask(taskId, { status: newStatus, manualStatusChange: true }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tasks"] }),
   });
 
