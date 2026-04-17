@@ -1,13 +1,14 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { StickyNote, CheckSquare, FolderKanban, AlertTriangle, Clock, Activity, Settings, Sparkles, Check } from "lucide-react";
+import { StickyNote, CheckSquare, FolderKanban, AlertTriangle, Clock as ClockIcon, Activity, Settings, Sparkles, Check } from "lucide-react";
 import { format, isToday, isBefore, startOfDay, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { updateTask } from "@/lib/api/tasks";
 import { useCompleteRecurringTask } from "@/hooks/useRecurrence";
+import type { Task } from "@/types/entities";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,7 +18,6 @@ import { Label } from "@/components/ui/label";
 import { SwipeableItem } from "@/components/ui/SwipeableItem";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { WeeklyReview } from "@/components/WeeklyReview";
-import { Clock as ClockIcon } from "lucide-react";
 import { PageTransition } from "@/components/PageTransition";
 import { DashboardSkeleton } from "@/components/ui/page-skeleton";
 
