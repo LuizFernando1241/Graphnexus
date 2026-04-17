@@ -143,6 +143,7 @@ export type Database = {
           due_date: string | null
           estimated_minutes: number | null
           id: string
+          manual_status_override: string | null
           priority: string
           recurrence_days: number[] | null
           recurrence_end_date: string | null
@@ -162,6 +163,7 @@ export type Database = {
           due_date?: string | null
           estimated_minutes?: number | null
           id?: string
+          manual_status_override?: string | null
           priority?: string
           recurrence_days?: number[] | null
           recurrence_end_date?: string | null
@@ -181,6 +183,7 @@ export type Database = {
           due_date?: string | null
           estimated_minutes?: number | null
           id?: string
+          manual_status_override?: string | null
           priority?: string
           recurrence_days?: number[] | null
           recurrence_end_date?: string | null
