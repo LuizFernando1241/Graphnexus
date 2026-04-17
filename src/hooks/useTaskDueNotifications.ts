@@ -24,7 +24,9 @@ async function fetchUpcomingDueTasks() {
 }
 
 export function useTaskDueNotifications() {
-  const notified = useRef(false);
+  // Rastreia quais IDs já foram notificados, em vez de um boolean global.
+  // Assim, novas tarefas que aparecerem em refetches subsequentes ainda notificam.
+  const notifiedIds = useRef<Set<string>>(new Set());
 
   const { data: tasks } = useQuery({
     queryKey: ["due-notifications"],
@@ -33,13 +35,17 @@ export function useTaskDueNotifications() {
   });
 
   useEffect(() => {
-    if (!tasks || tasks.length === 0 || notified.current) return;
-    notified.current = true;
+    if (!tasks || tasks.length === 0) return;
 
-    if (tasks.length === 1) {
-      toast.warning(`⏰ "${tasks[0].title}" vence em breve!`);
+    const newTasks = tasks.filter((t) => !notifiedIds.current.has(t.id));
+    if (newTasks.length === 0) return;
+
+    newTasks.forEach((t) => notifiedIds.current.add(t.id));
+
+    if (newTasks.length === 1) {
+      toast.warning(`⏰ "${newTasks[0].title}" vence em breve!`);
     } else {
-      toast.warning(`⏰ ${tasks.length} tarefas vencem nos próximos 3 dias!`);
+      toast.warning(`⏰ ${newTasks.length} tarefas vencem nos próximos 3 dias!`);
     }
   }, [tasks]);
 }
