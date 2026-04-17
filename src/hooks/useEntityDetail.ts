@@ -70,6 +70,8 @@ export function useEntityDetail<T extends { id: string; title: string; descripti
   // Track if component is mounted to avoid state updates after unmount
   const isMounted = useRef(true);
   useEffect(() => {
+    // Garante que isMounted volte a true em re-mount (StrictMode roda effects 2x).
+    isMounted.current = true;
     return () => {
       isMounted.current = false;
     };

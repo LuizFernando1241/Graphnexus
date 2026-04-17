@@ -181,8 +181,12 @@ function NoteCard({ note, onClick }: { note: Note; onClick: () => void }) {
       {note.content && (
         <p className="mt-2 text-sm text-muted-foreground line-clamp-4 flex-1">
           {(() => {
-            const doc = new DOMParser().parseFromString(note.content, "text/html");
-            return (doc.body.textContent || "").slice(0, 200);
+            try {
+              const doc = new DOMParser().parseFromString(note.content, "text/html");
+              return (doc.body?.textContent || "").slice(0, 200);
+            } catch {
+              return "";
+            }
           })()}
         </p>
       )}

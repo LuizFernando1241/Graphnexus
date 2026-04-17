@@ -72,6 +72,7 @@ const PRIORITY_COLORS: Record<string, string> = {
   low: "#3B82F6",
   none: "#6B7280",
 };
+const DEFAULT_PRIORITY_COLOR = "#6B7280";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -245,7 +246,7 @@ export default function Dashboard() {
                       >
                         <div
                           className="h-2 w-2 rounded-full shrink-0"
-                          style={{ backgroundColor: PRIORITY_COLORS[task.priority] }}
+                          style={{ backgroundColor: PRIORITY_COLORS[task.priority] ?? DEFAULT_PRIORITY_COLOR }}
                         />
                         <span className="flex-1 truncate text-foreground">{task.title}</span>
                         <Badge variant={overdue ? "destructive" : "secondary"} className="text-xs">

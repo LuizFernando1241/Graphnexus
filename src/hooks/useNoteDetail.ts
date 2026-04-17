@@ -12,6 +12,8 @@ export function useNoteDetail(id: string | undefined) {
   const isMounted = useRef(true);
 
   useEffect(() => {
+    // Garante que isMounted volte a true em re-mount (StrictMode roda effects 2x).
+    isMounted.current = true;
     return () => {
       isMounted.current = false;
     };
