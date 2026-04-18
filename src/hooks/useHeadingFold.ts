@@ -44,13 +44,37 @@ export function useHeadingFold(
 
       const containerRect = overlay.getBoundingClientRect();
 
+      // First pass: compute folded-by mapping so we can skip chevrons
+      // for headings that are themselves hidden under a parent fold.
+      const foldedBy = new Map<HTMLElement, string>();
+      headings.forEach((heading, index) => {
+        const key = headingKey(heading, index);
+        if (!collapsedKeys.has(key)) return;
+        const level = parseInt(heading.tagName.substring(1), 10);
+        let sibling = heading.nextElementSibling as HTMLElement | null;
+        while (sibling) {
+          if (/^H[1-6]$/.test(sibling.tagName)) {
+            const sibLevel = parseInt(sibling.tagName.substring(1), 10);
+            if (sibLevel <= level) break;
+          }
+          foldedBy.set(sibling, key);
+          sibling.dataset.foldedBy = key;
+          sibling = sibling.nextElementSibling as HTMLElement | null;
+        }
+      });
+
+      // Second pass: render chevrons only for visible headings
       headings.forEach((heading, index) => {
         const key = headingKey(heading, index);
         const isCollapsed = collapsedKeys.has(key);
         heading.dataset.folded = isCollapsed ? "true" : "false";
 
-        // --- Render chevron in overlay ---
+        // Skip rendering chevron if this heading is hidden under a parent
+        if (foldedBy.has(heading)) return;
+
         const rect = heading.getBoundingClientRect();
+        if (rect.width === 0 && rect.height === 0) return;
+
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "heading-fold-toggle";
@@ -65,7 +89,6 @@ export function useHeadingFold(
           '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
 
         btn.addEventListener("mousedown", (e) => {
-          // Don't steal focus / move caret
           e.preventDefault();
           e.stopPropagation();
         });
@@ -80,19 +103,6 @@ export function useHeadingFold(
           applyFolding();
         });
         overlay.appendChild(btn);
-
-        // --- Apply folding to subsequent siblings ---
-        if (!isCollapsed) return;
-        const level = parseInt(heading.tagName.substring(1), 10);
-        let sibling = heading.nextElementSibling as HTMLElement | null;
-        while (sibling) {
-          if (/^H[1-6]$/.test(sibling.tagName)) {
-            const sibLevel = parseInt(sibling.tagName.substring(1), 10);
-            if (sibLevel <= level) break;
-          }
-          sibling.dataset.foldedBy = key;
-          sibling = sibling.nextElementSibling as HTMLElement | null;
-        }
       });
     };
 
