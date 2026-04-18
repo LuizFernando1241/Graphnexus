@@ -15,6 +15,7 @@ import {
   Strikethrough,
   Heading1,
   Heading2,
+  Heading3,
   List,
   ListOrdered,
   Code,
@@ -35,6 +36,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
 import { uploadFile, isImageFile } from "@/lib/storage";
+import { useHeadingFold } from "@/hooks/useHeadingFold";
 
 interface RichTextEditorProps {
   content: string;
@@ -308,6 +310,9 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [content]);
 
+  // Obsidian-style hierarchical heading folding
+  useHeadingFold(editor);
+
   if (!editor) return null;
 
   return (
@@ -335,6 +340,9 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
         </ToolbarButton>
         <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} isActive={editor.isActive("heading", { level: 2 })} title="Título 2">
           <Heading2 className="h-4 w-4" />
+        </ToolbarButton>
+        <ToolbarButton onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()} isActive={editor.isActive("heading", { level: 3 })} title="Título 3">
+          <Heading3 className="h-4 w-4" />
         </ToolbarButton>
 
         <div className="mx-1 h-5 w-px bg-border" />
