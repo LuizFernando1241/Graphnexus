@@ -109,48 +109,42 @@
   @apply text-base font-heading font-semibold mt-2 mb-1;
 }
 
-/* Heading fold (Obsidian-style) */
+/* Heading fold (Obsidian-style) — chevron rendered in overlay layer */
 .prose-editor h1,
 .prose-editor h2,
 .prose-editor h3,
 .prose-editor h4,
 .prose-editor h5,
 .prose-editor h6 {
-  position: relative;
   padding-left: 1.5rem;
 }
 
-.prose-editor .heading-fold-toggle {
+.heading-fold-toggle {
   position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
+  transform: translate(-0.25rem, -50%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 1.25rem;
   height: 1.25rem;
+  padding: 0;
   border-radius: 0.25rem;
   color: hsl(var(--muted-foreground));
   background: transparent;
   border: none;
   cursor: pointer;
+  pointer-events: auto;
   transition: background-color 0.15s, color 0.15s, transform 0.15s;
   user-select: none;
 }
 
-.prose-editor .heading-fold-toggle:hover {
+.heading-fold-toggle:hover {
   background-color: hsl(var(--accent));
   color: hsl(var(--foreground));
 }
 
-.prose-editor h1[data-folded="true"] > .heading-fold-toggle,
-.prose-editor h2[data-folded="true"] > .heading-fold-toggle,
-.prose-editor h3[data-folded="true"] > .heading-fold-toggle,
-.prose-editor h4[data-folded="true"] > .heading-fold-toggle,
-.prose-editor h5[data-folded="true"] > .heading-fold-toggle,
-.prose-editor h6[data-folded="true"] > .heading-fold-toggle {
-  transform: translateY(-50%) rotate(-90deg);
+.heading-fold-toggle[data-folded="true"] {
+  transform: translate(-0.25rem, -50%) rotate(-90deg);
 }
 
 /* Hide content folded under a collapsed heading */
