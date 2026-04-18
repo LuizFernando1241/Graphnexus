@@ -1,55 +1,91 @@
-import { useEffect } from "react";
+import { useEffect, type RefObject } from "react";
 import type { Editor } from "@tiptap/react";
 
 /**
  * Adds Obsidian-style hierarchical folding to headings inside a TipTap editor.
  *
- * For every <h1>-<h6> rendered by ProseMirror, injects a chevron toggle button.
- * Clicking it folds (visually hides) all sibling nodes that come AFTER the heading
- * until the next heading of equal or higher level is reached. Nested headings
- * (deeper level) are folded together with their parent, matching Obsidian behavior.
+ * Strategy: instead of injecting buttons inside ProseMirror's managed DOM
+ * (which it actively rewrites on every transaction and would strip), we render
+ * the chevron toggles in a sibling overlay layer (`overlayRef`) and absolutely
+ * position them next to each heading.
  *
- * The folding is purely visual (CSS via `data-folded-by`). The HTML content saved
- * to the database is not modified.
+ * Folding hides every following sibling element until the next heading of equal
+ * or higher level, matching Obsidian's behavior. It is purely visual — the
+ * stored HTML is untouched.
  */
-export function useHeadingFold(editor: Editor | null) {
+export function useHeadingFold(
+  editor: Editor | null,
+  overlayRef: RefObject<HTMLDivElement>,
+) {
   useEffect(() => {
     if (!editor) return;
-
     const root = editor.view.dom as HTMLElement;
-    if (!root) return;
+    const overlay = overlayRef.current;
+    if (!root || !overlay) return;
 
-    // Track collapsed state by heading text+level signature so it survives re-renders.
+    // Persistent collapsed-state set keyed by heading position+level+text.
     const collapsedKeys = new Set<string>();
 
     const headingKey = (h: HTMLElement, index: number) =>
-      `${h.tagName}-${index}-${h.textContent?.slice(0, 60) ?? ""}`;
+      `${h.tagName}-${index}-${(h.textContent ?? "").slice(0, 60)}`;
 
     const applyFolding = () => {
       const headings = Array.from(
         root.querySelectorAll<HTMLElement>("h1, h2, h3, h4, h5, h6"),
       );
 
-      // Reset previous fold markers
+      // Reset previous fold state
       root
         .querySelectorAll<HTMLElement>("[data-folded-by]")
         .forEach((el) => el.removeAttribute("data-folded-by"));
 
-      headings.forEach((heading, index) => {
-        // Make sure each heading has a chevron button
-        ensureChevron(heading);
+      // Clear overlay (we'll re-render all chevrons)
+      overlay.innerHTML = "";
 
+      const containerRect = overlay.getBoundingClientRect();
+
+      headings.forEach((heading, index) => {
         const key = headingKey(heading, index);
         const isCollapsed = collapsedKeys.has(key);
         heading.dataset.folded = isCollapsed ? "true" : "false";
 
-        if (!isCollapsed) return;
+        // --- Render chevron in overlay ---
+        const rect = heading.getBoundingClientRect();
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "heading-fold-toggle";
+        btn.setAttribute(
+          "aria-label",
+          isCollapsed ? "Expandir seção" : "Recolher seção",
+        );
+        btn.dataset.folded = isCollapsed ? "true" : "false";
+        btn.style.top = `${rect.top - containerRect.top + rect.height / 2}px`;
+        btn.style.left = `${rect.left - containerRect.left}px`;
+        btn.innerHTML =
+          '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
 
+        btn.addEventListener("mousedown", (e) => {
+          // Don't steal focus / move caret
+          e.preventDefault();
+          e.stopPropagation();
+        });
+        btn.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (collapsedKeys.has(key)) {
+            collapsedKeys.delete(key);
+          } else {
+            collapsedKeys.add(key);
+          }
+          applyFolding();
+        });
+        overlay.appendChild(btn);
+
+        // --- Apply folding to subsequent siblings ---
+        if (!isCollapsed) return;
         const level = parseInt(heading.tagName.substring(1), 10);
         let sibling = heading.nextElementSibling as HTMLElement | null;
-
         while (sibling) {
-          // Stop when reaching a heading of equal or higher importance
           if (/^H[1-6]$/.test(sibling.tagName)) {
             const sibLevel = parseInt(sibling.tagName.substring(1), 10);
             if (sibLevel <= level) break;
@@ -60,56 +96,27 @@ export function useHeadingFold(editor: Editor | null) {
       });
     };
 
-    const ensureChevron = (heading: HTMLElement) => {
-      if (heading.querySelector(":scope > .heading-fold-toggle")) return;
+    // Run after layout settles
+    const schedule = () => requestAnimationFrame(applyFolding);
 
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.contentEditable = "false";
-      btn.className = "heading-fold-toggle";
-      btn.setAttribute("aria-label", "Recolher seção");
-      btn.innerHTML =
-        '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+    schedule();
 
-      btn.addEventListener("mousedown", (e) => {
-        // Prevent ProseMirror from stealing focus / moving caret
-        e.preventDefault();
-        e.stopPropagation();
-      });
+    // Re-render on content changes, selection changes (caret may shift layout),
+    // and viewport resize.
+    editor.on("update", schedule);
+    editor.on("selectionUpdate", schedule);
+    window.addEventListener("resize", schedule);
 
-      btn.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        // Determine current index of this heading at click time (DOM may have changed)
-        const all = Array.from(
-          root.querySelectorAll<HTMLElement>("h1, h2, h3, h4, h5, h6"),
-        );
-        const idx = all.indexOf(heading);
-        if (idx === -1) return;
-        const key = headingKey(heading, idx);
-        if (collapsedKeys.has(key)) {
-          collapsedKeys.delete(key);
-        } else {
-          collapsedKeys.add(key);
-        }
-        applyFolding();
-      });
-
-      // Insert chevron as first child so it sits before the heading text.
-      heading.insertBefore(btn, heading.firstChild);
-    };
-
-    // Initial pass
-    applyFolding();
-
-    // Re-apply whenever the editor content changes
-    const onUpdate = () => applyFolding();
-    editor.on("update", onUpdate);
-    editor.on("selectionUpdate", onUpdate);
+    // Observe layout shifts inside the editor (e.g., images loading)
+    const ro = new ResizeObserver(schedule);
+    ro.observe(root);
 
     return () => {
-      editor.off("update", onUpdate);
-      editor.off("selectionUpdate", onUpdate);
+      editor.off("update", schedule);
+      editor.off("selectionUpdate", schedule);
+      window.removeEventListener("resize", schedule);
+      ro.disconnect();
+      overlay.innerHTML = "";
     };
-  }, [editor]);
+  }, [editor, overlayRef]);
 }
