@@ -252,6 +252,7 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<ReturnType<typeof useEditor>>(null);
+  const foldOverlayRef = useRef<HTMLDivElement>(null);
 
   const handleUpload = useCallback(async (file: File | null | undefined) => {
     if (!file) return;
@@ -310,8 +311,8 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [content]);
 
-  // Obsidian-style hierarchical heading folding
-  useHeadingFold(editor);
+  // Obsidian-style hierarchical heading folding (renders chevrons in overlay)
+  useHeadingFold(editor, foldOverlayRef);
 
   if (!editor) return null;
 
@@ -450,8 +451,15 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
         </label>
       </div>
 
-      {/* Editor */}
-      <EditorContent editor={editor} />
+      {/* Editor (with overlay layer for heading-fold chevrons) */}
+      <div className="relative">
+        <div
+          ref={foldOverlayRef}
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 z-10"
+        />
+        <EditorContent editor={editor} />
+      </div>
     </div>
   );
 }
