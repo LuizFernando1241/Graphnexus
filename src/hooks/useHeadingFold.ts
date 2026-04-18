@@ -30,8 +30,10 @@ export function useHeadingFold(
       `${h.tagName}-${index}-${(h.textContent ?? "").slice(0, 60)}`;
 
     const applyFolding = () => {
-      const headings = Array.from(
-        root.querySelectorAll<HTMLElement>("h1, h2, h3, h4, h5, h6"),
+      // Only consider top-level headings (direct children of the editor root).
+      // This skips headings inside tables, list items, blockquotes, etc.
+      const headings = Array.from(root.children).filter(
+        (el): el is HTMLElement => /^H[1-6]$/.test(el.tagName),
       );
 
       // Reset previous fold state
