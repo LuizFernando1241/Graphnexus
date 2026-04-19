@@ -41,6 +41,12 @@ import { useHeadingFold } from "@/hooks/useHeadingFold";
 interface RichTextEditorProps {
   content: string;
   onChange: (html: string) => void;
+  /**
+   * Optional storage key used to persist the collapsed-headings state
+   * (Obsidian-style folding) across reloads. When omitted, fold state is
+   * kept only in memory for the current editor session.
+   */
+  foldStorageKey?: string;
 }
 
 interface SearchResult {
