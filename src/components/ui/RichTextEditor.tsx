@@ -254,7 +254,7 @@ function InternalLinkPicker({ editor }: { editor: ReturnType<typeof useEditor> }
   );
 }
 
-export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
+export function RichTextEditor({ content, onChange, foldStorageKey }: RichTextEditorProps) {
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<ReturnType<typeof useEditor>>(null);
@@ -277,9 +277,7 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
 
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({
-        link: false,
-      }),
+      StarterKit.configure({ link: false }),
       Placeholder.configure({ placeholder: "Comece a escrever..." }),
       Table.configure({ resizable: true }),
       TableRow,
@@ -306,7 +304,7 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
         class: "prose-editor outline-none min-h-[300px] px-4 py-3 text-foreground",
       },
     },
-  }, [onChange]);
+  });
 
   useEffect(() => {
     editorRef.current = editor;
@@ -320,7 +318,7 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
   }, [content]);
 
   // Obsidian-style hierarchical heading folding (renders chevrons in overlay)
-  useHeadingFold(editor, foldOverlayRef);
+  useHeadingFold(editor, foldOverlayRef, foldStorageKey);
 
   if (!editor) return null;
 
