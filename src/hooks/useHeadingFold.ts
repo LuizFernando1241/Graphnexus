@@ -9,6 +9,33 @@ function getHeadingLevel(element: Element): number {
   return parseInt(element.tagName.substring(1), 10);
 }
 
+const STORAGE_PREFIX = "heading-fold:";
+
+function loadCollapsedKeys(storageKey: string | undefined): Set<string> {
+  if (!storageKey || typeof window === "undefined") return new Set();
+  try {
+    const raw = window.localStorage.getItem(`${STORAGE_PREFIX}${storageKey}`);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return new Set(parsed.filter((v) => typeof v === "string"));
+  } catch {
+    /* ignore corrupted storage */
+  }
+  return new Set();
+}
+
+function persistCollapsedKeys(storageKey: string | undefined, keys: Set<string>) {
+  if (!storageKey || typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(
+      `${STORAGE_PREFIX}${storageKey}`,
+      JSON.stringify(Array.from(keys)),
+    );
+  } catch {
+    /* storage may be full or unavailable */
+  }
+}
+
 /**
  * Adds Obsidian-style hierarchical folding to headings inside a TipTap editor.
  *
@@ -19,12 +46,15 @@ function getHeadingLevel(element: Element): number {
 export function useHeadingFold(
   editor: Editor | null,
   overlayRef: RefObject<HTMLDivElement>,
+  storageKey?: string,
 ) {
   const collapsedKeysRef = useRef<Set<string>>(new Set());
   const frameRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!editor) return;
+
+    collapsedKeysRef.current = loadCollapsedKeys(storageKey);
 
     const root = editor.view.dom as HTMLElement;
     const overlay = overlayRef.current;
@@ -115,6 +145,7 @@ export function useHeadingFold(
             collapsedKeys.add(key);
           }
 
+          persistCollapsedKeys(storageKey, collapsedKeys);
           applyFolding();
         });
 
@@ -159,5 +190,5 @@ export function useHeadingFold(
       overlay.innerHTML = "";
       resetVisibility();
     };
-  }, [editor, overlayRef]);
+  }, [editor, overlayRef, storageKey]);
 }
