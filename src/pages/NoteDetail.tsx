@@ -109,7 +109,11 @@ export default function NoteDetail() {
           </div>
 
           {/* Editor */}
-          <RichTextEditor content={content} onChange={setContent} />
+          <RichTextEditor
+            content={content}
+            onChange={setContent}
+            foldStorageKey={id ? `note:${id}` : undefined}
+          />
         </div>
 
         {/* Right sidebar - Links */}
