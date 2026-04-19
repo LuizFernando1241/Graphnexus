@@ -21,6 +21,7 @@ export function useHeadingFold(
   overlayRef: RefObject<HTMLDivElement>,
 ) {
   const collapsedKeysRef = useRef<Set<string>>(new Set());
+  const frameRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!editor) return;
@@ -121,7 +122,16 @@ export function useHeadingFold(
       });
     };
 
-    const schedule = () => requestAnimationFrame(applyFolding);
+    const schedule = () => {
+      if (frameRef.current !== null) {
+        cancelAnimationFrame(frameRef.current);
+      }
+
+      frameRef.current = requestAnimationFrame(() => {
+        frameRef.current = null;
+        applyFolding();
+      });
+    };
 
     schedule();
 
@@ -132,11 +142,20 @@ export function useHeadingFold(
     const resizeObserver = new ResizeObserver(schedule);
     resizeObserver.observe(root);
 
+    const mutationObserver = new MutationObserver(schedule);
+    mutationObserver.observe(root, { childList: true });
+
     return () => {
+      if (frameRef.current !== null) {
+        cancelAnimationFrame(frameRef.current);
+        frameRef.current = null;
+      }
+
       editor.off("update", schedule);
       editor.off("selectionUpdate", schedule);
       window.removeEventListener("resize", schedule);
       resizeObserver.disconnect();
+      mutationObserver.disconnect();
       overlay.innerHTML = "";
       resetVisibility();
     };

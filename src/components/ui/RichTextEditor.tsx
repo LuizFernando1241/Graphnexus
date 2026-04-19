@@ -271,7 +271,9 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
 
   const editor = useEditor({
     extensions: [
-      StarterKit,
+      StarterKit.configure({
+        link: false,
+      }),
       Placeholder.configure({ placeholder: "Comece a escrever..." }),
       Table.configure({ resizable: true }),
       TableRow,
@@ -298,7 +300,7 @@ export function RichTextEditor({ content, onChange }: RichTextEditorProps) {
         class: "prose-editor outline-none min-h-[300px] px-4 py-3 text-foreground",
       },
     },
-  });
+  }, [onChange]);
 
   useEffect(() => {
     editorRef.current = editor;
