@@ -74,9 +74,9 @@ export default function NoteDetail() {
         </span>
       </nav>
 
-      <div className="flex flex-col lg:flex-row gap-6 max-w-5xl">
+      <div className="flex flex-col lg:flex-row gap-6 w-full">
         {/* Main content */}
-        <div className="flex-1 flex flex-col gap-4 min-w-0">
+        <div className="flex-1 flex flex-col gap-4 min-w-0 w-full">
           {/* Top bar */}
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <Button variant="ghost" size="sm" onClick={() => navigate("/notes")} className="min-h-[44px]">
