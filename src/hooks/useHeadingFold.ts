@@ -1,48 +1,62 @@
 import { useEffect, useRef, type RefObject } from "react";
 import type { Editor } from "@tiptap/react";
 
-function isHeadingElement(element: Element): element is HTMLElement {
-  return /^H[1-6]$/.test(element.tagName);
+/**
+ * Obsidian-style hierarchical heading folding for a TipTap editor.
+ *
+ * Strategy (robust against ProseMirror re-rendering):
+ *   1. We never write `style.display` or attributes to ProseMirror-owned nodes
+ *      (it will strip / overwrite them on the next view update).
+ *   2. Instead we generate a CSS rule that targets
+ *        `.ProseMirror > :nth-child(N)`
+ *      for the indices that should be hidden, and inject that rule into a
+ *      `<style>` tag we own. The selector evaluates fresh on every paint, so
+ *      it survives ProseMirror swapping individual child elements.
+ *   3. Chevrons are rendered into an overlay div the caller provides, with
+ *      absolute positioning computed from each heading's bounding rect.
+ *   4. Collapsed headings are tracked by a content-derived key and persisted
+ *      to localStorage per `storageKey` (e.g. `note:<id>`).
+ */
+
+function isHeadingTag(tag: string) {
+  return /^H[1-6]$/.test(tag);
 }
 
-function getHeadingLevel(element: Element): number {
-  return parseInt(element.tagName.substring(1), 10);
+function levelFromTag(tag: string) {
+  return parseInt(tag.substring(1), 10);
 }
 
 const STORAGE_PREFIX = "heading-fold:";
 
-function loadCollapsedKeys(storageKey: string | undefined): Set<string> {
+function loadCollapsedKeys(storageKey?: string): Set<string> {
   if (!storageKey || typeof window === "undefined") return new Set();
   try {
-    const raw = window.localStorage.getItem(`${STORAGE_PREFIX}${storageKey}`);
+    const raw = window.localStorage.getItem(STORAGE_PREFIX + storageKey);
     if (!raw) return new Set();
     const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed)) return new Set(parsed.filter((v) => typeof v === "string"));
+    if (Array.isArray(parsed)) {
+      return new Set(parsed.filter((v) => typeof v === "string"));
+    }
   } catch {
-    /* ignore corrupted storage */
+    /* ignore */
   }
   return new Set();
 }
 
-function persistCollapsedKeys(storageKey: string | undefined, keys: Set<string>) {
+function saveCollapsedKeys(storageKey: string | undefined, keys: Set<string>) {
   if (!storageKey || typeof window === "undefined") return;
   try {
     window.localStorage.setItem(
-      `${STORAGE_PREFIX}${storageKey}`,
+      STORAGE_PREFIX + storageKey,
       JSON.stringify(Array.from(keys)),
     );
   } catch {
-    /* storage may be full or unavailable */
+    /* ignore */
   }
 }
 
-/**
- * Adds Obsidian-style hierarchical folding to headings inside a TipTap editor.
- *
- * IMPORTANT: ProseMirror owns the editor DOM and can strip arbitrary attributes/classes
- * written onto managed nodes. Because of that, folding is applied by directly toggling
- * `style.display` on top-level sibling blocks instead of relying on custom attributes.
- */
+let styleIdCounter = 0;
+
 export function useHeadingFold(
   editor: Editor | null,
   overlayRef: RefObject<HTMLDivElement>,
@@ -50,6 +64,8 @@ export function useHeadingFold(
 ) {
   const collapsedKeysRef = useRef<Set<string>>(new Set());
   const frameRef = useRef<number | null>(null);
+  const styleElRef = useRef<HTMLStyleElement | null>(null);
+  const instanceIdRef = useRef<string>(`fold-${++styleIdCounter}`);
 
   useEffect(() => {
     if (!editor) return;
@@ -60,62 +76,94 @@ export function useHeadingFold(
     const overlay = overlayRef.current;
     if (!root || !overlay) return;
 
-    const getTopLevelChildren = () => Array.from(root.children) as HTMLElement[];
+    // Tag the root with a unique attribute so our CSS only targets THIS editor.
+    const instanceId = instanceIdRef.current;
+    root.setAttribute("data-fold-instance", instanceId);
 
-    const getTopLevelHeadings = () =>
-      getTopLevelChildren().filter((element): element is HTMLElement => isHeadingElement(element));
+    // Inject a stylesheet we own. ProseMirror does not touch document-level
+    // styles, so rules here always win.
+    const styleEl = document.createElement("style");
+    styleEl.setAttribute("data-fold-style", instanceId);
+    document.head.appendChild(styleEl);
+    styleElRef.current = styleEl;
 
-    const headingKey = (heading: HTMLElement, index: number) =>
-      `${heading.tagName}-${index}-${(heading.textContent ?? "").trim().slice(0, 80)}`;
+    // Persist state under a stable key derived from the heading's tag + text.
+    // The same heading text under the same tag at the same ordinal collapses.
+    const headingKey = (tag: string, ordinal: number, text: string) =>
+      `${tag}-${ordinal}-${text.trim().slice(0, 80)}`;
 
-    const resetVisibility = () => {
-      getTopLevelChildren().forEach((element) => {
-        element.style.removeProperty("display");
-      });
-    };
-
-    const applyFolding = () => {
-      const headings = getTopLevelHeadings();
+    const apply = () => {
+      const children = Array.from(root.children) as HTMLElement[];
       const collapsedKeys = collapsedKeysRef.current;
+      const hiddenIndices: number[] = [];
 
-      resetVisibility();
-      overlay.innerHTML = "";
+      // Track ordinal per tag so keys are stable across renders.
+      const tagOrdinals = new Map<string, number>();
 
-      const hiddenElements = new Set<HTMLElement>();
+      // Pre-compute keys for headings.
+      const headingInfo: Array<{
+        index: number;
+        level: number;
+        key: string;
+        el: HTMLElement;
+      }> = [];
 
-      // First pass: decide which top-level blocks should be hidden.
-      headings.forEach((heading, index) => {
-        const key = headingKey(heading, index);
-        if (!collapsedKeys.has(key)) return;
+      children.forEach((el, index) => {
+        const tag = el.tagName;
+        if (!isHeadingTag(tag)) return;
+        const ordinal = (tagOrdinals.get(tag) ?? 0);
+        tagOrdinals.set(tag, ordinal + 1);
+        const text = el.textContent ?? "";
+        headingInfo.push({
+          index,
+          level: levelFromTag(tag),
+          key: headingKey(tag, ordinal, text),
+          el,
+        });
+      });
 
-        const level = getHeadingLevel(heading);
-        let sibling = heading.nextElementSibling;
+      // Determine which child indices must be hidden.
+      // Also track which heading indices are themselves hidden (nested
+      // under a collapsed ancestor) — we still render their chevron only if
+      // visible.
+      const hiddenIndexSet = new Set<number>();
 
-        while (sibling instanceof HTMLElement) {
-          if (isHeadingElement(sibling) && getHeadingLevel(sibling) <= level) {
-            break;
-          }
-
-          hiddenElements.add(sibling);
-          sibling = sibling.nextElementSibling;
+      headingInfo.forEach((h) => {
+        if (!collapsedKeys.has(h.key)) return;
+        // Hide every sibling after this heading until we hit a heading of
+        // equal or higher level (lower numeric value).
+        for (let i = h.index + 1; i < children.length; i++) {
+          const child = children[i];
+          const tag = child.tagName;
+          if (isHeadingTag(tag) && levelFromTag(tag) <= h.level) break;
+          hiddenIndexSet.add(i);
         }
       });
 
-      hiddenElements.forEach((element) => {
-        element.style.display = "none";
-      });
+      hiddenIndexSet.forEach((i) => hiddenIndices.push(i));
+      hiddenIndices.sort((a, b) => a - b);
 
+      // Write the stylesheet. nth-child is 1-based.
+      const selector = `[data-fold-instance="${instanceId}"]`;
+      if (hiddenIndices.length === 0) {
+        styleEl.textContent = "";
+      } else {
+        const rules = hiddenIndices
+          .map((i) => `${selector} > :nth-child(${i + 1})`)
+          .join(",\n");
+        styleEl.textContent = `${rules} { display: none !important; }`;
+      }
+
+      // Render chevrons (overlay).
+      overlay.innerHTML = "";
       const overlayRect = overlay.getBoundingClientRect();
 
-      // Second pass: render chevrons only for visible top-level headings.
-      headings.forEach((heading, index) => {
-        if (hiddenElements.has(heading)) return;
-
-        const key = headingKey(heading, index);
-        const isCollapsed = collapsedKeys.has(key);
-        const rect = heading.getBoundingClientRect();
-
+      headingInfo.forEach((h) => {
+        if (hiddenIndexSet.has(h.index)) return; // heading itself is hidden
+        const rect = h.el.getBoundingClientRect();
         if (rect.width === 0 && rect.height === 0) return;
+
+        const isCollapsed = collapsedKeys.has(h.key);
 
         const button = document.createElement("button");
         button.type = "button";
@@ -130,23 +178,22 @@ export function useHeadingFold(
         button.innerHTML =
           '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
 
-        button.addEventListener("mousedown", (event) => {
-          event.preventDefault();
-          event.stopPropagation();
+        // Prevent ProseMirror from stealing focus / changing selection.
+        button.addEventListener("mousedown", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
         });
 
-        button.addEventListener("click", (event) => {
-          event.preventDefault();
-          event.stopPropagation();
-
-          if (collapsedKeys.has(key)) {
-            collapsedKeys.delete(key);
+        button.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (collapsedKeys.has(h.key)) {
+            collapsedKeys.delete(h.key);
           } else {
-            collapsedKeys.add(key);
+            collapsedKeys.add(h.key);
           }
-
-          persistCollapsedKeys(storageKey, collapsedKeys);
-          applyFolding();
+          saveCollapsedKeys(storageKey, collapsedKeys);
+          apply();
         });
 
         overlay.appendChild(button);
@@ -154,41 +201,48 @@ export function useHeadingFold(
     };
 
     const schedule = () => {
-      if (frameRef.current !== null) {
-        cancelAnimationFrame(frameRef.current);
-      }
-
+      if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
       frameRef.current = requestAnimationFrame(() => {
         frameRef.current = null;
-        applyFolding();
+        apply();
       });
     };
 
+    // Initial pass.
     schedule();
 
+    // React to editor doc changes.
     editor.on("update", schedule);
     editor.on("selectionUpdate", schedule);
+
+    // Reposition overlay on viewport / size changes.
     window.addEventListener("resize", schedule);
+    window.addEventListener("scroll", schedule, true);
 
     const resizeObserver = new ResizeObserver(schedule);
     resizeObserver.observe(root);
 
+    // ProseMirror swaps DOM children on edits — re-run when that happens.
     const mutationObserver = new MutationObserver(schedule);
-    mutationObserver.observe(root, { childList: true });
+    mutationObserver.observe(root, { childList: true, subtree: false });
 
     return () => {
       if (frameRef.current !== null) {
         cancelAnimationFrame(frameRef.current);
         frameRef.current = null;
       }
-
       editor.off("update", schedule);
       editor.off("selectionUpdate", schedule);
       window.removeEventListener("resize", schedule);
+      window.removeEventListener("scroll", schedule, true);
       resizeObserver.disconnect();
       mutationObserver.disconnect();
       overlay.innerHTML = "";
-      resetVisibility();
+      if (styleElRef.current) {
+        styleElRef.current.remove();
+        styleElRef.current = null;
+      }
+      root.removeAttribute("data-fold-instance");
     };
   }, [editor, overlayRef, storageKey]);
 }
