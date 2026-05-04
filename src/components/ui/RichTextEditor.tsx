@@ -301,7 +301,7 @@ export function RichTextEditor({ content, onChange, foldStorageKey }: RichTextEd
     },
     editorProps: {
       attributes: {
-        class: "prose-editor outline-none min-h-[60vh] md:min-h-[70vh] lg:min-h-[75vh] px-4 md:px-6 lg:px-8 py-4 md:py-6 text-foreground text-base md:text-[17px] leading-relaxed max-w-3xl xl:max-w-4xl mx-auto w-full",
+        class: "prose-editor outline-none min-h-[60vh] md:min-h-[70vh] lg:min-h-[75vh] py-6 md:py-8 text-foreground text-base md:text-[17px] leading-relaxed w-full max-w-[720px] lg:max-w-[820px] xl:max-w-[920px] 2xl:max-w-[1040px] mx-auto",
       },
     },
   });
