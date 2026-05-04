@@ -102,8 +102,8 @@ export default function NoteDetail() {
             </div>
           </div>
 
-          {/* Title + Emoji — aligned with editor's reading column */}
-          <div className="w-full max-w-[720px] lg:max-w-[820px] xl:max-w-[920px] 2xl:max-w-[1040px] mx-auto px-[1.75rem] flex items-center gap-3">
+          {/* Title + Emoji — aligned with editor's gutter */}
+          <div className="w-full px-[1.75rem] flex items-center gap-3">
             <Input value={emoji} onChange={(e) => setEmoji(e.target.value)} placeholder="😀" className="w-14 text-center text-2xl bg-transparent border-border shrink-0" maxLength={2} aria-label="Emoji da nota" />
             <Input value={title} onChange={(e) => setTitle(e.target.value)} className="flex-1 text-2xl md:text-3xl font-heading font-bold bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-0" placeholder="Título da nota" aria-label="Título da nota" />
           </div>
