@@ -5,7 +5,7 @@ import { format } from "date-fns";
 import { useTaskDetail } from "@/hooks/useTaskDetail";
 import { useCompleteRecurringTask, useSkipRecurringTask } from "@/hooks/useRecurrence";
 import { RecurrenceSelector } from "@/components/RecurrenceSelector";
-import { LinkPanel } from "@/components/LinkPanel";
+import { LinkPanelDock } from "@/components/LinkPanelDock";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";

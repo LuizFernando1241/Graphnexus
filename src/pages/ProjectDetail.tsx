@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, Save, Trash2, Archive, ArchiveRestore, FileOutput, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { useProjectDetail } from "@/hooks/useProjectDetail";
-import { LinkPanel } from "@/components/LinkPanel";
+import { LinkPanelDock } from "@/components/LinkPanelDock";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";

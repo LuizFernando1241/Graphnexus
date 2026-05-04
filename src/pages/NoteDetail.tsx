@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, Save, Pin, PinOff, Archive, ArchiveRestore, Trash2, ChevronRight } from "lucide-react";
 import { useNoteDetail } from "@/hooks/useNoteDetail";
-import { LinkPanel } from "@/components/LinkPanel";
+import { LinkPanelDock } from "@/components/LinkPanelDock";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
