@@ -158,6 +158,13 @@ export function useHeadingFold(
       overlay.innerHTML = "";
       const overlayRect = overlay.getBoundingClientRect();
 
+      // Place the chevron inside the editor's left gutter, in a fixed column
+      // aligned with where the heading text starts.
+      const rootRect = root.getBoundingClientRect();
+      const rootStyles = window.getComputedStyle(root);
+      const gutterPx = parseFloat(rootStyles.paddingLeft || "0") || 24;
+      const chevronColumn = rootRect.left - overlayRect.left + gutterPx / 2;
+
       headingInfo.forEach((h) => {
         if (hiddenIndexSet.has(h.index)) return; // heading itself is hidden
         const rect = h.el.getBoundingClientRect();
@@ -173,8 +180,12 @@ export function useHeadingFold(
           "aria-label",
           isCollapsed ? "Expandir seção" : "Recolher seção",
         );
-        button.style.top = `${rect.top - overlayRect.top + rect.height / 2}px`;
-        button.style.left = `${rect.left - overlayRect.left}px`;
+        // Vertically center on the first line of the heading (line-height aware).
+        const headingStyles = window.getComputedStyle(h.el);
+        const lineHeight = parseFloat(headingStyles.lineHeight) ||
+          parseFloat(headingStyles.fontSize) * 1.3;
+        button.style.top = `${rect.top - overlayRect.top + lineHeight / 2}px`;
+        button.style.left = `${chevronColumn}px`;
         button.innerHTML =
           '<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
 

@@ -90,38 +90,70 @@
 
 /* TipTap / ProseMirror styles */
 .prose-editor {
+  /* Single shared gutter — every block content shares this left padding so
+     headings, paragraphs, lists and tables all align in the same column. */
+  --editor-gutter: 1.75rem;
   @apply text-foreground;
+  padding-left: var(--editor-gutter);
+  padding-right: var(--editor-gutter);
+}
+
+/* All block-level children of the editor share the same alignment. */
+.prose-editor > h1,
+.prose-editor > h2,
+.prose-editor > h3,
+.prose-editor > h4,
+.prose-editor > h5,
+.prose-editor > h6,
+.prose-editor > p,
+.prose-editor > ul,
+.prose-editor > ol,
+.prose-editor > blockquote,
+.prose-editor > pre,
+.prose-editor > table,
+.prose-editor > hr {
+  padding-left: 0;
+  margin-left: 0;
 }
 
 .prose-editor h1 {
-  @apply text-2xl font-heading font-bold mt-4 mb-2;
+  @apply text-3xl font-heading font-bold;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.25;
 }
 
 .prose-editor h2 {
-  @apply text-xl font-heading font-semibold mt-3 mb-1.5;
+  @apply text-2xl font-heading font-semibold;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.3;
 }
 
 .prose-editor h3 {
-  @apply text-lg font-heading font-semibold mt-2.5 mb-1;
+  @apply text-xl font-heading font-semibold;
+  margin-top: 1rem;
+  margin-bottom: 0.375rem;
+  line-height: 1.35;
 }
 
 .prose-editor h4 {
-  @apply text-base font-heading font-semibold mt-2 mb-1;
+  @apply text-lg font-heading font-semibold;
+  margin-top: 0.875rem;
+  margin-bottom: 0.25rem;
 }
 
-/* Heading fold (Obsidian-style) — chevron rendered in overlay layer */
-.prose-editor h1,
-.prose-editor h2,
-.prose-editor h3,
-.prose-editor h4,
-.prose-editor h5,
-.prose-editor h6 {
-  padding-left: 1.5rem;
+/* Don't push the very first block down */
+.prose-editor > :first-child {
+  margin-top: 0 !important;
 }
 
+/* Heading fold (Obsidian-style) — chevron rendered in overlay layer.
+   The chevron lives inside the editor's left gutter (no extra padding on the
+   heading itself, so the heading text aligns with paragraphs/lists). */
 .heading-fold-toggle {
   position: absolute;
-  transform: translate(-0.25rem, -50%);
+  transform: translate(-50%, -50%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -136,15 +168,18 @@
   pointer-events: auto;
   transition: background-color 0.15s, color 0.15s, transform 0.15s;
   user-select: none;
+  opacity: 0.55;
 }
 
 .heading-fold-toggle:hover {
   background-color: hsl(var(--accent));
   color: hsl(var(--foreground));
+  opacity: 1;
 }
 
 .heading-fold-toggle[data-folded="true"] {
-  transform: translate(-0.25rem, -50%) rotate(-90deg);
+  transform: translate(-50%, -50%) rotate(-90deg);
+  opacity: 1;
 }
 
 /* Hide content folded under a collapsed heading */
@@ -174,24 +209,42 @@
 }
 
 .prose-editor p {
-  @apply mb-2;
+  margin-bottom: 0.5rem;
+  line-height: 1.7;
 }
 
+/* Lists: bullets/numerals sit inside the gutter, list text aligns with paragraphs. */
 .prose-editor ul,
 .prose-editor ol {
-  @apply pl-6 mb-2;
+  margin-bottom: 0.5rem;
+  padding-left: 1.25rem;
+  list-style-position: outside;
 }
 
 .prose-editor ul {
-  @apply list-disc;
+  list-style-type: disc;
 }
 
 .prose-editor ol {
-  @apply list-decimal;
+  list-style-type: decimal;
 }
 
 .prose-editor li {
-  @apply mb-0.5;
+  margin-bottom: 0.25rem;
+  padding-left: 0.25rem;
+  line-height: 1.6;
+}
+
+.prose-editor li > p {
+  margin-bottom: 0.25rem;
+}
+
+.prose-editor blockquote {
+  border-left: 3px solid hsl(var(--border));
+  padding-left: 1rem;
+  margin: 0.75rem 0;
+  color: hsl(var(--muted-foreground));
+  font-style: italic;
 }
 
 .prose-editor p.is-editor-empty:first-child::before {
