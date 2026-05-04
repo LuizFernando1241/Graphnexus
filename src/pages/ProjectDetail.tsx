@@ -3,7 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, Save, Trash2, Archive, ArchiveRestore, FileOutput, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { useProjectDetail } from "@/hooks/useProjectDetail";
-import { LinkPanel } from "@/components/LinkPanel";
+import { LinkPanelDock } from "@/components/LinkPanelDock";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
@@ -246,10 +246,8 @@ export default function ProjectDetail() {
           </div>
         </div>
 
-        {/* Right sidebar - Links */}
-        <div className="w-full lg:w-72 shrink-0 lg:sticky lg:top-0 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto hidden-scrollbar">
-          <LinkPanel entityId={id!} entityType="project" />
-        </div>
+        {/* Right sidebar - Links (resizable on desktop) */}
+        <LinkPanelDock entityId={id!} entityType="project" />
       </div>
 
       {/* Extract Dialog */}

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, Save, Pin, PinOff, Archive, ArchiveRestore, Trash2, ChevronRight } from "lucide-react";
 import { useNoteDetail } from "@/hooks/useNoteDetail";
-import { LinkPanel } from "@/components/LinkPanel";
+import { LinkPanelDock } from "@/components/LinkPanelDock";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -116,10 +116,8 @@ export default function NoteDetail() {
           />
         </div>
 
-        {/* Right sidebar - Links */}
-        <div className="w-full lg:w-72 shrink-0 lg:sticky lg:top-0 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto hidden-scrollbar">
-          <LinkPanel entityId={id!} entityType="note" />
-        </div>
+        {/* Right sidebar - Links (resizable on desktop) */}
+        <LinkPanelDock entityId={id!} entityType="note" />
       </div>
 
       {/* Delete Confirmation */}
