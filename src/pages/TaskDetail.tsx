@@ -280,10 +280,8 @@ export default function TaskDetail() {
           </div>
         </div>
 
-        {/* Right sidebar - Links */}
-        <div className="w-full lg:w-72 shrink-0 lg:sticky lg:top-0 lg:self-start lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto hidden-scrollbar">
-          <LinkPanel entityId={id!} entityType="task" />
-        </div>
+        {/* Right sidebar - Links (resizable on desktop) */}
+        <LinkPanelDock entityId={id!} entityType="task" />
       </div>
 
       {/* Delete Dialog */}
