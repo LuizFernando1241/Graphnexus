@@ -30,6 +30,8 @@ export function useNoteDetail(id: string | undefined) {
   const [title, setTitleState] = useState("");
   const [emoji, setEmojiState] = useState("");
   const [content, setContentState] = useState("");
+  const [color, setColorState] = useState<string>("#7C3AED");
+  const [tags, setTagsState] = useState<string[]>([]);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [loadedId, setLoadedId] = useState<string | null>(null);
 
@@ -39,6 +41,8 @@ export function useNoteDetail(id: string | undefined) {
       setTitleState(note.title);
       setEmojiState(note.emoji || "");
       setContentState(note.content || "");
+      setColorState(note.color || "#7C3AED");
+      setTagsState(note.tags || []);
       setLoadedId(id!);
       setHasUnsavedChanges(false);
     }
@@ -69,6 +73,20 @@ export function useNoteDetail(id: string | undefined) {
     }
   }, [markChanged]);
 
+  const setColor = useCallback((value: string) => {
+    if (isMounted.current) {
+      setColorState(value);
+      markChanged();
+    }
+  }, [markChanged]);
+
+  const setTags = useCallback((value: string[]) => {
+    if (isMounted.current) {
+      setTagsState(value);
+      markChanged();
+    }
+  }, [markChanged]);
+
   // Auto-title helper
   const deriveTitle = useCallback((currentTitle: string, htmlContent: string): string => {
     if (currentTitle && currentTitle !== "Sem título") return currentTitle;
@@ -85,12 +103,13 @@ export function useNoteDetail(id: string | undefined) {
     mutationFn: async () => {
       if (!id) throw new Error("No note ID");
       const finalTitle = deriveTitle(title, content);
-      return updateNote(id, { title: finalTitle, emoji: emoji || null, content });
+      return updateNote(id, { title: finalTitle, emoji: emoji || null, content, color, tags });
     },
     onSuccess: () => {
       if (!isMounted.current) return;
       setHasUnsavedChanges(false);
       queryClient.invalidateQueries({ queryKey: ["note", id] });
+      queryClient.invalidateQueries({ queryKey: ["note-tags"] });
       invalidateAllEntities(queryClient);
       toast.success("Nota salva!");
     },
@@ -167,12 +186,16 @@ export function useNoteDetail(id: string | undefined) {
     title,
     emoji,
     content,
+    color,
+    tags,
     hasUnsavedChanges,
     
     // Setters
     setTitle,
     setEmoji,
     setContent,
+    setColor,
+    setTags,
     
     // Mutations
     saveMutation,

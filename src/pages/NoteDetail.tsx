@@ -6,6 +6,8 @@ import { LinkPanelDock } from "@/components/LinkPanelDock";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { DetailPageSkeleton } from "@/components/ui/page-skeleton";
 import {
   AlertDialog,
@@ -15,6 +17,8 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
 } from "@/components/ui/alert-dialog";
+
+const NOTE_COLORS = ["#7C3AED", "#2563EB", "#059669", "#D97706", "#DC2626", "#DB2777", "#4F46E5", "#0EA5E9"];
 
 export default function NoteDetail() {
   const { id } = useParams<{ id: string }>();
@@ -26,10 +30,14 @@ export default function NoteDetail() {
     title,
     emoji,
     content,
+    color,
+    tags,
     hasUnsavedChanges,
     setTitle,
     setEmoji,
     setContent,
+    setColor,
+    setTags,
     handleSave,
     handlePin,
     handleArchive,
@@ -42,6 +50,14 @@ export default function NoteDetail() {
   } = useNoteDetail(id);
 
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [tagInput, setTagInput] = useState("");
+
+  const addTag = () => {
+    const t = tagInput.trim();
+    if (t && !tags.includes(t)) setTags([...tags, t]);
+    setTagInput("");
+  };
+  const removeTag = (t: string) => setTags(tags.filter((x) => x !== t));
 
   // Ctrl+S
   useEffect(() => {
@@ -106,6 +122,49 @@ export default function NoteDetail() {
           <div className="w-full px-[1.75rem] flex items-center gap-3">
             <Input value={emoji} onChange={(e) => setEmoji(e.target.value)} placeholder="😀" className="w-14 text-center text-2xl bg-transparent border-border shrink-0" maxLength={2} aria-label="Emoji da nota" />
             <Input value={title} onChange={(e) => setTitle(e.target.value)} className="flex-1 text-2xl md:text-3xl font-heading font-bold bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-0" placeholder="Título da nota" aria-label="Título da nota" />
+          </div>
+
+          {/* Color + Tags */}
+          <div className="w-full px-[1.75rem] flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
+            <div>
+              <Label className="text-xs text-muted-foreground mb-2 block">Cor</Label>
+              <div className="flex gap-2 flex-wrap">
+                {NOTE_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setColor(c)}
+                    aria-label={`Cor ${c}`}
+                    className={`h-7 w-7 rounded-full border-2 transition-transform ${
+                      color === c ? "scale-110 border-foreground" : "border-transparent"
+                    }`}
+                    style={{ backgroundColor: c }}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <Label className="text-xs text-muted-foreground mb-2 block">Tags</Label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Adicionar tag"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
+                  className="flex-1 h-9"
+                />
+                <Button type="button" variant="secondary" size="sm" onClick={addTag}>+</Button>
+              </div>
+              {tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {tags.map((t) => (
+                    <Badge key={t} variant="secondary" className="cursor-pointer" onClick={() => removeTag(t)}>
+                      {t} ×
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Editor */}
