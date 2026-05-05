@@ -124,6 +124,49 @@ export default function NoteDetail() {
             <Input value={title} onChange={(e) => setTitle(e.target.value)} className="flex-1 text-2xl md:text-3xl font-heading font-bold bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0 px-0" placeholder="Título da nota" aria-label="Título da nota" />
           </div>
 
+          {/* Color + Tags */}
+          <div className="w-full px-[1.75rem] flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
+            <div>
+              <Label className="text-xs text-muted-foreground mb-2 block">Cor</Label>
+              <div className="flex gap-2 flex-wrap">
+                {NOTE_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setColor(c)}
+                    aria-label={`Cor ${c}`}
+                    className={`h-7 w-7 rounded-full border-2 transition-transform ${
+                      color === c ? "scale-110 border-foreground" : "border-transparent"
+                    }`}
+                    style={{ backgroundColor: c }}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="flex-1 min-w-0">
+              <Label className="text-xs text-muted-foreground mb-2 block">Tags</Label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Adicionar tag"
+                  value={tagInput}
+                  onChange={(e) => setTagInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
+                  className="flex-1 h-9"
+                />
+                <Button type="button" variant="secondary" size="sm" onClick={addTag}>+</Button>
+              </div>
+              {tags.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {tags.map((t) => (
+                    <Badge key={t} variant="secondary" className="cursor-pointer" onClick={() => removeTag(t)}>
+                      {t} ×
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Editor */}
           <RichTextEditor
             content={content}
