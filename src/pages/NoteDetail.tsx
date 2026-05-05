@@ -30,10 +30,14 @@ export default function NoteDetail() {
     title,
     emoji,
     content,
+    color,
+    tags,
     hasUnsavedChanges,
     setTitle,
     setEmoji,
     setContent,
+    setColor,
+    setTags,
     handleSave,
     handlePin,
     handleArchive,
@@ -46,6 +50,14 @@ export default function NoteDetail() {
   } = useNoteDetail(id);
 
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [tagInput, setTagInput] = useState("");
+
+  const addTag = () => {
+    const t = tagInput.trim();
+    if (t && !tags.includes(t)) setTags([...tags, t]);
+    setTagInput("");
+  };
+  const removeTag = (t: string) => setTags(tags.filter((x) => x !== t));
 
   // Ctrl+S
   useEffect(() => {
