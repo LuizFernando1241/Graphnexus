@@ -6,6 +6,8 @@ import { LinkPanelDock } from "@/components/LinkPanelDock";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { DetailPageSkeleton } from "@/components/ui/page-skeleton";
 import {
   AlertDialog,
@@ -15,6 +17,8 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
 } from "@/components/ui/alert-dialog";
+
+const NOTE_COLORS = ["#7C3AED", "#2563EB", "#059669", "#D97706", "#DC2626", "#DB2777", "#4F46E5", "#0EA5E9"];
 
 export default function NoteDetail() {
   const { id } = useParams<{ id: string }>();
