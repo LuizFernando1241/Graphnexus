@@ -119,8 +119,8 @@ export default function TaskDetail() {
         <span className="text-foreground truncate max-w-[200px]">{title || "Sem título"}</span>
       </nav>
 
-      <div className="flex flex-col lg:flex-row gap-6 max-w-5xl">
-        <div className="flex-1 flex flex-col gap-6 min-w-0">
+      <div className="flex flex-col lg:flex-row gap-6 w-full">
+        <div className="flex-1 flex flex-col gap-6 min-w-0 w-full">
           {/* Top bar */}
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <Button variant="ghost" size="sm" onClick={() => navigate("/tasks")} className="min-h-[44px]">

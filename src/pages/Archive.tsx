@@ -178,7 +178,7 @@ export default function Archive() {
       </div>
     );
     return (
-      <div className="flex flex-col gap-2">
+      <div className="grid gap-2 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
         {items.map((item) => (
           <ItemRow
             key={item.id}
@@ -194,7 +194,7 @@ export default function Archive() {
 
   return (
     <PageTransition>
-    <div className="max-w-3xl">
+    <div className="w-full">
       <h1 className="text-2xl font-heading font-bold text-foreground mb-6">Arquivos</h1>
 
       <Tabs defaultValue="notes">
