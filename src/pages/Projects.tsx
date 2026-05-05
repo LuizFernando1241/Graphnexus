@@ -178,7 +178,7 @@ export default function Projects() {
           <p>Nenhum projeto ainda.</p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
           {projects.map((p) => (
             <ProjectCard key={p.id} project={p} onClick={() => navigate(`/projects/${p.id}`)} />
           ))}
