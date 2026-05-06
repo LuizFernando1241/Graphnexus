@@ -138,6 +138,7 @@ export function useTaskDetail(id: string | undefined) {
         status,
         priority,
         due_date: dueDate ? format(dueDate, "yyyy-MM-dd") : null,
+        due_time: dueDate && dueTime ? dueTime : null,
         recurrence_rule: recurrenceRule,
         recurrence_days: recurrenceDays,
         estimated_minutes: estimatedMinutes ? parseInt(estimatedMinutes, 10) : null,
