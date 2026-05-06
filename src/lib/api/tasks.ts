@@ -64,6 +64,7 @@ export async function createTask(task: {
   status?: string;
   priority?: string;
   due_date?: string | null;
+  due_time?: string | null;
   estimated_minutes?: number | null;
   recurrence_rule?: string | null;
   recurrence_end_date?: string | null;
