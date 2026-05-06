@@ -7,6 +7,8 @@ interface ResizeHandleProps {
   width: number;
   /** Called with new width while dragging. */
   onChange: (next: number) => void;
+  /** Called with final width on mouseup (after dragging finishes). */
+  onCommit?: (next: number) => void;
   min?: number;
   max?: number;
   className?: string;
