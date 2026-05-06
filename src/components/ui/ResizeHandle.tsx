@@ -23,6 +23,7 @@ export function ResizeHandle({
   side,
   width,
   onChange,
+  onCommit,
   min = 180,
   max = 600,
   className = "",
@@ -31,6 +32,11 @@ export function ResizeHandle({
   const startXRef = useRef(0);
   const startWidthRef = useRef(0);
   const draggingRef = useRef(false);
+  const lastValueRef = useRef(width);
+
+  useEffect(() => {
+    lastValueRef.current = width;
+  }, [width]);
 
   useEffect(() => {
     const handleMove = (e: MouseEvent) => {
@@ -40,13 +46,16 @@ export function ResizeHandle({
         side === "right"
           ? startWidthRef.current + delta
           : startWidthRef.current - delta;
-      onChange(Math.max(min, Math.min(max, next)));
+      const clamped = Math.max(min, Math.min(max, next));
+      lastValueRef.current = clamped;
+      onChange(clamped);
     };
     const handleUp = () => {
       if (!draggingRef.current) return;
       draggingRef.current = false;
       document.body.style.cursor = "";
       document.body.style.userSelect = "";
+      onCommit?.(lastValueRef.current);
     };
     window.addEventListener("mousemove", handleMove);
     window.addEventListener("mouseup", handleUp);
@@ -54,7 +63,7 @@ export function ResizeHandle({
       window.removeEventListener("mousemove", handleMove);
       window.removeEventListener("mouseup", handleUp);
     };
-  }, [side, min, max, onChange]);
+  }, [side, min, max, onChange, onCommit]);
 
   return (
     <div
