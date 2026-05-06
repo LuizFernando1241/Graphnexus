@@ -65,6 +65,7 @@ export default function TaskDetail() {
     status,
     priority,
     dueDate,
+    dueTime,
     recurrenceRule,
     recurrenceDays,
     estimatedMinutes,
