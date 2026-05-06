@@ -200,8 +200,10 @@ export default function Tasks() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const completeRecurring = useCompleteRecurringTask();
+  const isMobile = useIsMobile();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [moveTask, setMoveTask] = useState<Task | null>(null);
+  const [newTaskOpen, setNewTaskOpen] = useState(false);
 
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ["tasks"],
