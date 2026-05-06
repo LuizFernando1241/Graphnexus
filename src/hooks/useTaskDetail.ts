@@ -94,6 +94,14 @@ export function useTaskDetail(id: string | undefined) {
   const setDueDate = useCallback((value: Date | undefined) => {
     if (isMounted.current) {
       setDueDateState(value);
+      if (!value) setDueTimeState("");
+      markChanged();
+    }
+  }, [markChanged]);
+
+  const setDueTime = useCallback((value: string) => {
+    if (isMounted.current) {
+      setDueTimeState(value);
       markChanged();
     }
   }, [markChanged]);
