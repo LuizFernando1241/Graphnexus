@@ -35,6 +35,7 @@ export function useTaskDetail(id: string | undefined) {
   const [status, setStatusState] = useState<TaskStatus>("backlog");
   const [priority, setPriorityState] = useState<TaskPriority>("none");
   const [dueDate, setDueDateState] = useState<Date | undefined>();
+  const [dueTime, setDueTimeState] = useState<string>("");
   const [recurrenceRule, setRecurrenceRuleState] = useState<string | null>(null);
   const [recurrenceDays, setRecurrenceDaysState] = useState<number[] | null>(null);
   const [estimatedMinutes, setEstimatedMinutesState] = useState<string>("");
@@ -49,6 +50,7 @@ export function useTaskDetail(id: string | undefined) {
       setStatusState(task.status);
       setPriorityState(task.priority);
       setDueDateState(task.due_date ? new Date(task.due_date + "T00:00:00") : undefined);
+      setDueTimeState(task.due_time || "");
       setRecurrenceRule(task.recurrence_rule);
       setRecurrenceDays(task.recurrence_days);
       setEstimatedMinutes(task.estimated_minutes?.toString() || "");
@@ -92,6 +94,14 @@ export function useTaskDetail(id: string | undefined) {
   const setDueDate = useCallback((value: Date | undefined) => {
     if (isMounted.current) {
       setDueDateState(value);
+      if (!value) setDueTimeState("");
+      markChanged();
+    }
+  }, [markChanged]);
+
+  const setDueTime = useCallback((value: string) => {
+    if (isMounted.current) {
+      setDueTimeState(value);
       markChanged();
     }
   }, [markChanged]);
@@ -128,6 +138,7 @@ export function useTaskDetail(id: string | undefined) {
         status,
         priority,
         due_date: dueDate ? format(dueDate, "yyyy-MM-dd") : null,
+        due_time: dueDate && dueTime ? dueTime : null,
         recurrence_rule: recurrenceRule,
         recurrence_days: recurrenceDays,
         estimated_minutes: estimatedMinutes ? parseInt(estimatedMinutes, 10) : null,
@@ -235,6 +246,7 @@ export function useTaskDetail(id: string | undefined) {
     status,
     priority,
     dueDate,
+    dueTime,
     recurrenceRule,
     recurrenceDays,
     estimatedMinutes,
@@ -246,6 +258,7 @@ export function useTaskDetail(id: string | undefined) {
     setStatus,
     setPriority,
     setDueDate,
+    setDueTime,
     setRecurrenceRule,
     setRecurrenceDays,
     setEstimatedMinutes,
