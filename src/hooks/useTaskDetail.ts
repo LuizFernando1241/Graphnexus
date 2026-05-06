@@ -35,6 +35,7 @@ export function useTaskDetail(id: string | undefined) {
   const [status, setStatusState] = useState<TaskStatus>("backlog");
   const [priority, setPriorityState] = useState<TaskPriority>("none");
   const [dueDate, setDueDateState] = useState<Date | undefined>();
+  const [dueTime, setDueTimeState] = useState<string>("");
   const [recurrenceRule, setRecurrenceRuleState] = useState<string | null>(null);
   const [recurrenceDays, setRecurrenceDaysState] = useState<number[] | null>(null);
   const [estimatedMinutes, setEstimatedMinutesState] = useState<string>("");
