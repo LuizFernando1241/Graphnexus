@@ -80,6 +80,7 @@ export async function createTask(task: {
       status: task.status || "backlog",
       priority: task.priority || "none",
       due_date: task.due_date || null,
+      due_time: task.due_time || null,
       estimated_minutes: task.estimated_minutes || null,
       subtasks: task.subtasks || [],
       recurrence_rule: task.recurrence_rule || null,
