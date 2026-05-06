@@ -105,8 +105,18 @@ function TaskCard({
   );
 }
 
-function NewTaskDialog() {
-  const [open, setOpen] = useState(false);
+function NewTaskDialog({
+  open: controlledOpen,
+  onOpenChange,
+  hideTrigger,
+}: {
+  open?: boolean;
+  onOpenChange?: (o: boolean) => void;
+  hideTrigger?: boolean;
+} = {}) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
   const [title, setTitle] = useState("");
   const queryClient = useQueryClient();
 
@@ -123,11 +133,13 @@ function NewTaskDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" /> Nova Tarefa
-        </Button>
-      </DialogTrigger>
+      {!hideTrigger && (
+        <DialogTrigger asChild>
+          <Button>
+            <Plus className="mr-2 h-4 w-4" /> Nova Tarefa
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Nova Tarefa</DialogTitle>
