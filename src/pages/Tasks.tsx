@@ -18,9 +18,11 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { fetchTasks, updateTask, createTask } from "@/lib/api/tasks";
 import { useCompleteRecurringTask } from "@/hooks/useRecurrence";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { PageTransition } from "@/components/PageTransition";
 import { TasksBoardSkeleton } from "@/components/ui/page-skeleton";
 import { MoveTaskDrawer } from "@/components/tasks/MoveTaskDrawer";
+import { TasksMobileList } from "@/components/tasks/TasksMobileList";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -103,8 +105,18 @@ function TaskCard({
   );
 }
 
-function NewTaskDialog() {
-  const [open, setOpen] = useState(false);
+function NewTaskDialog({
+  open: controlledOpen,
+  onOpenChange,
+  hideTrigger,
+}: {
+  open?: boolean;
+  onOpenChange?: (o: boolean) => void;
+  hideTrigger?: boolean;
+} = {}) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
   const [title, setTitle] = useState("");
   const queryClient = useQueryClient();
 
@@ -121,11 +133,13 @@ function NewTaskDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" /> Nova Tarefa
-        </Button>
-      </DialogTrigger>
+      {!hideTrigger && (
+        <DialogTrigger asChild>
+          <Button>
+            <Plus className="mr-2 h-4 w-4" /> Nova Tarefa
+          </Button>
+        </DialogTrigger>
+      )}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Nova Tarefa</DialogTitle>
@@ -186,8 +200,10 @@ export default function Tasks() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const completeRecurring = useCompleteRecurringTask();
+  const isMobile = useIsMobile();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
   const [moveTask, setMoveTask] = useState<Task | null>(null);
+  const [newTaskOpen, setNewTaskOpen] = useState(false);
 
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ["tasks"],
@@ -242,45 +258,57 @@ export default function Tasks() {
       <div className="flex flex-col gap-6 h-full">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Tarefas</h1>
-          <NewTaskDialog />
+          {!isMobile && <NewTaskDialog />}
+          {isMobile && (
+            <NewTaskDialog open={newTaskOpen} onOpenChange={setNewTaskOpen} hideTrigger />
+          )}
         </div>
 
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-        >
-          <div className="flex md:grid md:grid-cols-2 xl:grid-cols-4 gap-4 flex-1 overflow-x-auto snap-x snap-mandatory pb-4 md:overflow-x-visible md:pb-0">
-            {COLUMNS.map((col) => (
-              <DroppableColumn key={col.id} id={col.id}>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: col.color }} />
-                  <h2 className="text-sm font-semibold text-foreground">{col.label}</h2>
-                  <span className="text-xs text-muted-foreground">({tasksByStatus(col.id).length})</span>
-                </div>
-                <div className="flex flex-col gap-2">
-                  {tasksByStatus(col.id).map((task) => (
-                    <DraggableTask
-                      key={task.id}
-                      task={task}
-                      onClick={() => navigate(`/tasks/${task.id}`)}
-                      onMoveClick={() => setMoveTask(task)}
-                    />
-                  ))}
-                </div>
-              </DroppableColumn>
-            ))}
-          </div>
+        {isMobile ? (
+          <TasksMobileList
+            tasks={tasks}
+            onTaskClick={(t) => navigate(`/tasks/${t.id}`)}
+            onMoveClick={(t) => setMoveTask(t)}
+            onNewTask={() => setNewTaskOpen(true)}
+          />
+        ) : (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 flex-1">
+              {COLUMNS.map((col) => (
+                <DroppableColumn key={col.id} id={col.id}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: col.color }} />
+                    <h2 className="text-sm font-semibold text-foreground">{col.label}</h2>
+                    <span className="text-xs text-muted-foreground">({tasksByStatus(col.id).length})</span>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {tasksByStatus(col.id).map((task) => (
+                      <DraggableTask
+                        key={task.id}
+                        task={task}
+                        onClick={() => navigate(`/tasks/${task.id}`)}
+                        onMoveClick={() => setMoveTask(task)}
+                      />
+                    ))}
+                  </div>
+                </DroppableColumn>
+              ))}
+            </div>
 
-          <DragOverlay>
-            {activeTask && (
-              <div className="w-64">
-                <TaskCard task={activeTask} onClick={() => {}} isDragging />
-              </div>
-            )}
-          </DragOverlay>
-        </DndContext>
+            <DragOverlay>
+              {activeTask && (
+                <div className="w-64">
+                  <TaskCard task={activeTask} onClick={() => {}} isDragging />
+                </div>
+              )}
+            </DragOverlay>
+          </DndContext>
+        )}
 
         {/* Mobile move drawer */}
         <MoveTaskDrawer

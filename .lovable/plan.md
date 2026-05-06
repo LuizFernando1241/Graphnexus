@@ -1,43 +1,100 @@
-## Objetivo
+## Problema
 
-Fazer as páginas de Tarefas, Projetos e Arquivo se ajustarem à largura do monitor (responsivas), assim como já foi feito na aba de Notas — removendo as larguras máximas fixas que hoje "espremem" o conteúdo no centro em telas grandes.
+Hoje no celular a aba **Tarefas** mostra um Kanban horizontal (Backlog / A Fazer / Em Progresso / Concluído) que rola lateralmente coluna por coluna. O usuário precisa:
 
-## Diagnóstico
+1. Rolar **horizontalmente** entre 4 colunas para descobrir onde uma tarefa está.
+2. Rolar **verticalmente** dentro de cada coluna para ver as tarefas.
+3. Não consegue ver o "todo de hoje" sem trocar de coluna.
 
-Comparando com `NoteDetail.tsx` (que usa `w-full` e o `LinkPanelDock` redimensionável), as outras telas ainda têm limitadores fixos:
+Isso é exatamente o que apps como **Todoist, Things 3, TickTick, Microsoft To Do, Linear Mobile e Notion Tasks** evitam: no celular eles abandonam o Kanban e mostram **uma única lista vertical agrupada/segmentada**, com filtros rápidos no topo.
 
-- `src/pages/TaskDetail.tsx` (linha 122): wrapper usa `max-w-5xl`, limitando o conteúdo a ~1024px mesmo em telas 1440p/4K.
-- `src/pages/ProjectDetail.tsx` (linha ~108): mesmo problema, wrapper usa `max-w-5xl`.
-- `src/pages/Archive.tsx` (linha 197): wrapper usa `max-w-3xl`, limitando a lista a ~768px.
-- `src/pages/Projects.tsx`: o grid já é responsivo (`sm:grid-cols-2 lg:grid-cols-3`), mas em monitores muito largos só vai até 3 colunas.
-- `src/pages/Tasks.tsx`: o board já é responsivo (`md:grid-cols-2 xl:grid-cols-4`), sem limitadores. OK.
+## Padrão de mercado (referência)
 
-## Mudanças
+| App | Mobile |
+|---|---|
+| Todoist | Lista única + tabs "Hoje / Próximas / Inbox" |
+| Things 3 | Lista única agrupada por seção colapsável |
+| TickTick | Lista vertical + segmented control no topo |
+| Linear | Inbox vertical + filtro por status |
+| Notion | Lista vertical agrupada |
 
-### 1. `src/pages/TaskDetail.tsx`
-- Remover `max-w-5xl` do container principal (linha 122). Substituir por `w-full`.
-- Garantir que a `Input` do título e a `RichTextEditor` ocupem toda a largura disponível, alinhadas pelo mesmo gutter usado em Notes (mesma estratégia: `w-full`, sem max-w).
+Comum a todos: **Kanban só no desktop. No mobile, lista vertical com agrupamento + filtros segmentados.**
 
-### 2. `src/pages/ProjectDetail.tsx`
-- Remover `max-w-5xl` do container principal. Substituir por `w-full`.
-- Manter o `LinkPanelDock` à direita (já redimensionável).
+## Solução
 
-### 3. `src/pages/Archive.tsx`
-- Remover `max-w-3xl` do wrapper.
-- Adicionar grid responsivo para a lista de itens em telas largas:
-  - mobile: 1 coluna
-  - `md`: 2 colunas
-  - `xl`: 3 colunas
-- Mantém o mesmo visual em mobile, mas aproveita o espaço em desktop.
+Manter o Kanban atual em `md:` para cima (desktop/tablet) e, **no mobile**, trocar por uma visualização lista-vertical otimizada.
 
-### 4. `src/pages/Projects.tsx` (ajuste fino opcional)
-- Estender o grid em telas extra-largas: `sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5` para aproveitar monitores grandes.
+### Mobile (`< md`): nova visualização "Lista"
 
-### 5. `src/pages/Tasks.tsx`
-- Sem mudanças necessárias (já é responsivo).
+```text
+┌─────────────────────────┐
+│ Tarefas         [+ Nova]│
+├─────────────────────────┤
+│ [Hoje] Próximas Todas   │ ← segmented control sticky
+│ 🔍 Buscar...            │
+├─────────────────────────┤
+│ ▾ Em Progresso (2)      │ ← seção colapsável
+│   • Estudar React       │
+│   • Refatorar API       │
+│ ▾ A Fazer (5)           │
+│   • ...                 │
+│ ▸ Backlog (12)          │ ← recolhida por padrão
+│ ▸ Concluído (3)         │ ← recolhida por padrão
+└─────────────────────────┘
+```
+
+**Componentes:**
+
+1. **Segmented control sticky no topo** com 3 filtros rápidos:
+   - **Hoje** (default): tarefas com `due_date <= hoje` ou `status = in_progress`, exceto `done/cancelled`
+   - **Próximas**: `due_date` nos próximos 7 dias
+   - **Todas**: tudo (exceto `done` antigo e `cancelled`)
+
+2. **Lista única vertical** agrupada por status (`Em Progresso → A Fazer → Backlog → Concluído`).
+   - Cada grupo é um header colapsável com contagem.
+   - **Em Progresso** e **A Fazer** abertos por padrão; **Backlog** e **Concluído** fechados.
+   - Estado de colapso persistido em `localStorage` (`ui:tasks-mobile-groups`).
+
+3. **Card compacto por tarefa** (uma linha):
+   - Bolinha de status colorida + título + (prioridade, data, recorrência) abaixo.
+   - **Tap** → abre o detalhe.
+   - **Long-press / swipe** já vai existir via `SwipeableItem` (já no projeto): swipe direito = concluir, swipe esquerdo = mover.
+   - Botão de mover (`ArrowLeftRight`) no canto direito como fallback (já existe).
+
+4. **FAB (Floating Action Button)** "+ Nova Tarefa" no canto inferior direito, fixo (padrão Todoist/TickTick) — substituindo o botão do header no mobile, que fica longe do polegar.
+
+5. **Busca/filtro** colapsado por padrão; ícone de lupa expande o input.
+
+### Desktop (`md:` em diante)
+
+- Mantém o Kanban atual sem mudança.
+
+## Arquivos a alterar/criar
+
+1. **`src/components/tasks/TasksMobileList.tsx`** (novo) — toda a UI mobile descrita acima. Recebe `tasks`, `onTaskClick`, `onMove`, `onComplete` como props para reutilizar a lógica de mutações de `Tasks.tsx`.
+
+2. **`src/components/tasks/TasksMobileFAB.tsx`** (novo, ou inline) — botão flutuante "+ Nova Tarefa".
+
+3. **`src/pages/Tasks.tsx`**:
+   - Detectar viewport com `useIsMobile()` (já existe em `src/hooks/use-mobile.tsx`).
+   - Renderizar `<TasksMobileList />` se mobile, ou o Kanban atual se desktop.
+   - Esconder o botão "Nova Tarefa" do header no mobile (FAB substitui).
+
+4. **`src/hooks/useLocalStorage.ts`** — já existe, será usado para persistir o estado de colapso dos grupos.
+
+5. **`src/components/ui/SwipeableItem.tsx`** — já existe, será reusado para swipe-to-complete e swipe-to-move.
+
+## Detalhes técnicos
+
+- **Filtros "Hoje/Próximas/Todas"**: filtragem client-side sobre `tasks` já vindas do `useQuery`. Sem nova chamada de rede.
+- **Acessibilidade**: cada header de grupo é `<button aria-expanded>`; FAB tem `aria-label="Nova tarefa"`; alvos de toque ≥ 44×44px.
+- **Performance**: lista renderizada diretamente (volume típico de tarefas pessoais é baixo, < 200). Se crescer, podemos adicionar `react-window` depois.
+- **Persistência de colapso**: `useLocalStorage<{[status]: boolean}>("ui:tasks-mobile-groups", { backlog:false, todo:true, in_progress:true, done:false })`.
+- **DnD**: removido no mobile (não é usado pelos apps de referência); movimentação via swipe + drawer existente.
 
 ## Resultado esperado
 
-- Em monitores grandes (≥1440px), as telas Tarefas (detalhe), Projetos (detalhe e lista) e Arquivo passam a ocupar toda a largura útil disponível — exatamente como Notas.
-- Em mobile/tablet o comportamento permanece idêntico (sem regressões).
-- A barra de links lateral redimensionável (já implementada) continua funcionando nos detalhes de Tarefa e Projeto.
+- O usuário abre Tarefas no celular e vê **imediatamente** o que precisa fazer hoje, sem rolar lateralmente.
+- Para ver outra "coluna", ele só expande o grupo — sem trocar de tela.
+- Botão de criar tarefa fica acessível ao polegar (FAB).
+- Desktop continua exatamente como está.
