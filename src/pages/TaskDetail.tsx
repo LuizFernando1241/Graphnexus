@@ -65,7 +65,6 @@ export default function TaskDetail() {
     status,
     priority,
     dueDate,
-    dueTime,
     recurrenceRule,
     recurrenceDays,
     estimatedMinutes,
@@ -75,7 +74,6 @@ export default function TaskDetail() {
     setStatus,
     setPriority,
     setDueDate,
-    setDueTime,
     setRecurrenceRule,
     setRecurrenceDays,
     setEstimatedMinutes,
@@ -212,40 +210,27 @@ export default function TaskDetail() {
             </div>
           </div>
 
-          {/* Due date + time */}
-          <div className="grid grid-cols-[1fr_auto] gap-3">
-            <div>
-              <Label className="text-xs text-muted-foreground mb-1 block">Data de entrega</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn("w-full justify-start text-left font-normal", !dueDate && "text-muted-foreground")}
-                  >
-                    {dueDate ? format(dueDate, "dd/MM/yyyy") : "Selecionar data"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <Calendar
-                    mode="single"
-                    selected={dueDate}
-                    onSelect={setDueDate}
-                    className={cn("p-3 pointer-events-auto")}
-                  />
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div>
-              <Label className="text-xs text-muted-foreground mb-1 block">Horário</Label>
-              <Input
-                type="time"
-                value={dueTime}
-                onChange={(e) => setDueTime(e.target.value)}
-                disabled={!dueDate}
-                className="w-32"
-                aria-label="Horário de entrega"
-              />
-            </div>
+          {/* Due date */}
+          <div>
+            <Label className="text-xs text-muted-foreground mb-1 block">Data de entrega</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className={cn("w-full justify-start text-left font-normal", !dueDate && "text-muted-foreground")}
+                >
+                  {dueDate ? format(dueDate, "dd/MM/yyyy") : "Selecionar data"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={dueDate}
+                  onSelect={setDueDate}
+                  className={cn("p-3 pointer-events-auto")}
+                />
+              </PopoverContent>
+            </Popover>
           </div>
 
           {/* Estimated minutes */}

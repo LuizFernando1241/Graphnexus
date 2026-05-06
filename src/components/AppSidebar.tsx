@@ -17,12 +17,9 @@ const navItems = [
   { title: "Arquivos", url: "/archive", icon: Archive },
 ];
 
-const SIDEBAR_MIN = 64;
+const SIDEBAR_MIN = 180;
 const SIDEBAR_MAX = 420;
 const SIDEBAR_DEFAULT = 240;
-const COLLAPSE_THRESHOLD = 140;
-const COLLAPSED_WIDTH = 72;
-const EXPANDED_WIDTH = 220;
 
 export function AppSidebar() {
   const location = useLocation();
@@ -31,22 +28,11 @@ export function AppSidebar() {
   const queryClient = useQueryClient();
   const [width, setWidth] = useLocalStorage<number>("ui:sidebar-width", SIDEBAR_DEFAULT);
 
-  const collapsed = width < COLLAPSE_THRESHOLD;
-
   const handleLogout = async () => {
     await supabase.auth.signOut();
     queryClient.clear();
     navigate("/login", { replace: true });
     toast.success("Você saiu da conta.");
-  };
-
-  // Snap on release: if user lands in the gray zone, snap to nearest mode.
-  const handleCommit = (value: number) => {
-    if (value < COLLAPSED_WIDTH + 20) {
-      setWidth(COLLAPSED_WIDTH);
-    } else if (value < COLLAPSE_THRESHOLD + 40) {
-      setWidth(value < COLLAPSE_THRESHOLD ? COLLAPSED_WIDTH : EXPANDED_WIDTH);
-    }
   };
 
   return (
@@ -56,13 +42,11 @@ export function AppSidebar() {
         style={{ width: `${width}px` }}
       >
         {/* Logo */}
-        <div className={`flex items-center gap-2 py-5 ${collapsed ? "px-3 justify-center" : "px-5"}`}>
+        <div className="flex items-center gap-2 px-5 py-5">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary shrink-0">
             <Network className="h-4 w-4 text-primary-foreground" />
           </div>
-          {!collapsed && (
-            <span className="font-heading text-lg font-bold text-foreground truncate">NexusGraph</span>
-          )}
+          <span className="font-heading text-lg font-bold text-foreground truncate">NexusGraph</span>
         </div>
 
         {/* Navigation */}
@@ -72,27 +56,21 @@ export function AppSidebar() {
               key={item.url}
               to={item.url}
               end={item.url === "/"}
-              title={collapsed ? item.title : undefined}
-              aria-label={item.title}
-              className={`flex items-center gap-3 rounded-lg py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${
-                collapsed ? "justify-center px-2" : "px-3"
-              }`}
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               activeClassName="bg-sidebar-accent text-foreground"
             >
               <item.icon className="h-4 w-4 shrink-0" />
-              {!collapsed && <span className="truncate">{item.title}</span>}
+              <span className="truncate">{item.title}</span>
             </NavLink>
           ))}
         </nav>
 
         {/* User footer */}
         <div className="border-t border-border px-3 py-3">
-          <div className={`flex items-center gap-2 ${collapsed ? "justify-center" : ""}`}>
-            {!collapsed && (
-              <div className="flex-1 min-w-0">
-                <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
-              </div>
-            )}
+          <div className="flex items-center gap-2">
+            <div className="flex-1 min-w-0">
+              <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
+            </div>
             <button
               onClick={handleLogout}
               title="Sair"
@@ -109,7 +87,6 @@ export function AppSidebar() {
         side="right"
         width={width}
         onChange={setWidth}
-        onCommit={handleCommit}
         min={SIDEBAR_MIN}
         max={SIDEBAR_MAX}
         ariaLabel="Redimensionar barra lateral"

@@ -141,7 +141,6 @@ export type Database = {
           created_at: string
           description: string | null
           due_date: string | null
-          due_time: string | null
           estimated_minutes: number | null
           id: string
           manual_status_override: string | null
@@ -162,7 +161,6 @@ export type Database = {
           created_at?: string
           description?: string | null
           due_date?: string | null
-          due_time?: string | null
           estimated_minutes?: number | null
           id?: string
           manual_status_override?: string | null
@@ -183,7 +181,6 @@ export type Database = {
           created_at?: string
           description?: string | null
           due_date?: string | null
-          due_time?: string | null
           estimated_minutes?: number | null
           id?: string
           manual_status_override?: string | null
