@@ -258,45 +258,57 @@ export default function Tasks() {
       <div className="flex flex-col gap-6 h-full">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Tarefas</h1>
-          <NewTaskDialog />
+          {!isMobile && <NewTaskDialog />}
+          {isMobile && (
+            <NewTaskDialog open={newTaskOpen} onOpenChange={setNewTaskOpen} hideTrigger />
+          )}
         </div>
 
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragStart={handleDragStart}
-          onDragEnd={handleDragEnd}
-        >
-          <div className="flex md:grid md:grid-cols-2 xl:grid-cols-4 gap-4 flex-1 overflow-x-auto snap-x snap-mandatory pb-4 md:overflow-x-visible md:pb-0">
-            {COLUMNS.map((col) => (
-              <DroppableColumn key={col.id} id={col.id}>
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: col.color }} />
-                  <h2 className="text-sm font-semibold text-foreground">{col.label}</h2>
-                  <span className="text-xs text-muted-foreground">({tasksByStatus(col.id).length})</span>
-                </div>
-                <div className="flex flex-col gap-2">
-                  {tasksByStatus(col.id).map((task) => (
-                    <DraggableTask
-                      key={task.id}
-                      task={task}
-                      onClick={() => navigate(`/tasks/${task.id}`)}
-                      onMoveClick={() => setMoveTask(task)}
-                    />
-                  ))}
-                </div>
-              </DroppableColumn>
-            ))}
-          </div>
+        {isMobile ? (
+          <TasksMobileList
+            tasks={tasks}
+            onTaskClick={(t) => navigate(`/tasks/${t.id}`)}
+            onMoveClick={(t) => setMoveTask(t)}
+            onNewTask={() => setNewTaskOpen(true)}
+          />
+        ) : (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+          >
+            <div className="grid grid-cols-2 xl:grid-cols-4 gap-4 flex-1">
+              {COLUMNS.map((col) => (
+                <DroppableColumn key={col.id} id={col.id}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: col.color }} />
+                    <h2 className="text-sm font-semibold text-foreground">{col.label}</h2>
+                    <span className="text-xs text-muted-foreground">({tasksByStatus(col.id).length})</span>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    {tasksByStatus(col.id).map((task) => (
+                      <DraggableTask
+                        key={task.id}
+                        task={task}
+                        onClick={() => navigate(`/tasks/${task.id}`)}
+                        onMoveClick={() => setMoveTask(task)}
+                      />
+                    ))}
+                  </div>
+                </DroppableColumn>
+              ))}
+            </div>
 
-          <DragOverlay>
-            {activeTask && (
-              <div className="w-64">
-                <TaskCard task={activeTask} onClick={() => {}} isDragging />
-              </div>
-            )}
-          </DragOverlay>
-        </DndContext>
+            <DragOverlay>
+              {activeTask && (
+                <div className="w-64">
+                  <TaskCard task={activeTask} onClick={() => {}} isDragging />
+                </div>
+              )}
+            </DragOverlay>
+          </DndContext>
+        )}
 
         {/* Mobile move drawer */}
         <MoveTaskDrawer
