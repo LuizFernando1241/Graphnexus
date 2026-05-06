@@ -18,9 +18,11 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import { fetchTasks, updateTask, createTask } from "@/lib/api/tasks";
 import { useCompleteRecurringTask } from "@/hooks/useRecurrence";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { PageTransition } from "@/components/PageTransition";
 import { TasksBoardSkeleton } from "@/components/ui/page-skeleton";
 import { MoveTaskDrawer } from "@/components/tasks/MoveTaskDrawer";
+import { TasksMobileList } from "@/components/tasks/TasksMobileList";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
