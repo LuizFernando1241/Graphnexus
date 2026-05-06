@@ -75,6 +75,7 @@ export default function TaskDetail() {
     setStatus,
     setPriority,
     setDueDate,
+    setDueTime,
     setRecurrenceRule,
     setRecurrenceDays,
     setEstimatedMinutes,
