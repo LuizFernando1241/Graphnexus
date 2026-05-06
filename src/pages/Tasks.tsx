@@ -81,6 +81,7 @@ function TaskCard({
             <span className="flex items-center gap-1 text-xs text-muted-foreground">
               <Calendar className="h-3 w-3" />
               {format(new Date(task.due_date + "T00:00:00"), "dd/MM")}
+              {task.due_time && ` ${task.due_time}`}
             </span>
           )}
           {task.recurrence_rule && (
