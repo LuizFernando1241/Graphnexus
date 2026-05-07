@@ -98,6 +98,13 @@ export function useTaskDetail(id: string | undefined) {
     }
   }, [markChanged]);
 
+  const setDueTime = useCallback((value: string) => {
+    if (isMounted.current) {
+      setDueTimeState(value);
+      markChanged();
+    }
+  }, [markChanged]);
+
   const setRecurrenceRule = useCallback((value: string | null) => {
     if (isMounted.current) {
       setRecurrenceRuleState(value);
