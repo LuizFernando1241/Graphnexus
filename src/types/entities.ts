@@ -30,6 +30,7 @@ export interface Task {
   status: TaskStatus;
   priority: TaskPriority;
   due_date: string | null;
+  due_time: string | null;
   completed_at: string | null;
   estimated_minutes: number | null;
   subtasks: Subtask[];
