@@ -305,6 +305,20 @@ export function RichTextEditor({ content, onChange, foldStorageKey }: RichTextEd
       attributes: {
         class: "prose-editor outline-none min-h-[60vh] md:min-h-[70vh] lg:min-h-[75vh] py-6 md:py-8 text-foreground text-base md:text-[17px] leading-relaxed w-full",
       },
+      handleClickOn: (_view, _pos, _node, _nodePos, event) => {
+        const target = event.target as HTMLElement | null;
+        const anchor = target?.closest?.("a") as HTMLAnchorElement | null;
+        if (!anchor) return false;
+        const href = anchor.getAttribute("href");
+        if (!href) return false;
+        event.preventDefault();
+        if (href.startsWith("/")) {
+          navigate(href);
+        } else {
+          window.open(href, "_blank", "noopener,noreferrer");
+        }
+        return true;
+      },
     },
   });
 
