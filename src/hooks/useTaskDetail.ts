@@ -245,6 +245,7 @@ export function useTaskDetail(id: string | undefined) {
     status,
     priority,
     dueDate,
+    dueTime,
     recurrenceRule,
     recurrenceDays,
     estimatedMinutes,
