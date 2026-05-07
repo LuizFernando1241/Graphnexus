@@ -257,6 +257,7 @@ export function useTaskDetail(id: string | undefined) {
     setStatus,
     setPriority,
     setDueDate,
+    setDueTime,
     setRecurrenceRule,
     setRecurrenceDays,
     setEstimatedMinutes,
