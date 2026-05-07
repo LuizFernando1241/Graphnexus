@@ -17,9 +17,10 @@ const navItems = [
   { title: "Arquivos", url: "/archive", icon: Archive },
 ];
 
-const SIDEBAR_MIN = 180;
+const SIDEBAR_MIN = 64;
 const SIDEBAR_MAX = 420;
 const SIDEBAR_DEFAULT = 240;
+const COLLAPSE_THRESHOLD = 140;
 
 export function AppSidebar() {
   const location = useLocation();
@@ -27,6 +28,8 @@ export function AppSidebar() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [width, setWidth] = useLocalStorage<number>("ui:sidebar-width", SIDEBAR_DEFAULT);
+  const collapsed = width < COLLAPSE_THRESHOLD;
+  const effectiveWidth = collapsed ? 64 : width;
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -39,38 +42,43 @@ export function AppSidebar() {
     <div className="flex h-screen shrink-0">
       <aside
         className="flex h-full flex-col border-r border-border/50 bg-sidebar/80 backdrop-blur-lg shrink-0"
-        style={{ width: `${width}px` }}
+        style={{ width: `${effectiveWidth}px` }}
       >
         {/* Logo */}
-        <div className="flex items-center gap-2 px-5 py-5">
+        <div className={`flex items-center gap-2 py-5 ${collapsed ? "px-3 justify-center" : "px-5"}`}>
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary shrink-0">
             <Network className="h-4 w-4 text-primary-foreground" />
           </div>
-          <span className="font-heading text-lg font-bold text-foreground truncate">NexusGraph</span>
+          {!collapsed && (
+            <span className="font-heading text-lg font-bold text-foreground truncate">NexusGraph</span>
+          )}
         </div>
 
         {/* Navigation */}
-        <nav aria-label="Navegação principal" className="flex flex-1 flex-col gap-1 px-3 pt-2 overflow-hidden">
+        <nav aria-label="Navegação principal" className={`flex flex-1 flex-col gap-1 pt-2 overflow-hidden ${collapsed ? "px-2" : "px-3"}`}>
           {navItems.map((item) => (
             <NavLink
               key={item.url}
               to={item.url}
               end={item.url === "/"}
-              className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              title={collapsed ? item.title : undefined}
+              className={`flex items-center gap-3 rounded-lg py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${collapsed ? "px-2 justify-center" : "px-3"}`}
               activeClassName="bg-sidebar-accent text-foreground"
             >
               <item.icon className="h-4 w-4 shrink-0" />
-              <span className="truncate">{item.title}</span>
+              {!collapsed && <span className="truncate">{item.title}</span>}
             </NavLink>
           ))}
         </nav>
 
         {/* User footer */}
-        <div className="border-t border-border px-3 py-3">
-          <div className="flex items-center gap-2">
-            <div className="flex-1 min-w-0">
-              <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
-            </div>
+        <div className={`border-t border-border py-3 ${collapsed ? "px-2" : "px-3"}`}>
+          <div className={`flex items-center gap-2 ${collapsed ? "justify-center" : ""}`}>
+            {!collapsed && (
+              <div className="flex-1 min-w-0">
+                <p className="truncate text-xs text-muted-foreground">{user?.email}</p>
+              </div>
+            )}
             <button
               onClick={handleLogout}
               title="Sair"
@@ -85,8 +93,8 @@ export function AppSidebar() {
 
       <ResizeHandle
         side="right"
-        width={width}
-        onChange={setWidth}
+        width={effectiveWidth}
+        onChange={(w) => setWidth(w < COLLAPSE_THRESHOLD ? 64 : w)}
         min={SIDEBAR_MIN}
         max={SIDEBAR_MAX}
         ariaLabel="Redimensionar barra lateral"

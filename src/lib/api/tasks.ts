@@ -64,6 +64,7 @@ export async function createTask(task: {
   status?: string;
   priority?: string;
   due_date?: string | null;
+  due_time?: string | null;
   estimated_minutes?: number | null;
   recurrence_rule?: string | null;
   recurrence_end_date?: string | null;
@@ -79,6 +80,7 @@ export async function createTask(task: {
       status: task.status || "backlog",
       priority: task.priority || "none",
       due_date: task.due_date || null,
+      due_time: task.due_time || null,
       estimated_minutes: task.estimated_minutes || null,
       subtasks: task.subtasks || [],
       recurrence_rule: task.recurrence_rule || null,
@@ -94,7 +96,7 @@ export async function createTask(task: {
 
 export async function updateTask(
   id: string,
-  updates: Partial<Pick<Task, "title" | "description" | "status" | "priority" | "due_date" | "completed_at" | "estimated_minutes" | "subtasks" | "archived" | "recurrence_rule" | "recurrence_end_date" | "recurrence_days">> & { manualStatusChange?: boolean }
+  updates: Partial<Pick<Task, "title" | "description" | "status" | "priority" | "due_date" | "due_time" | "completed_at" | "estimated_minutes" | "subtasks" | "archived" | "recurrence_rule" | "recurrence_end_date" | "recurrence_days">> & { manualStatusChange?: boolean }
 ) {
   const payload: TaskUpdate = {};
   if (updates.title !== undefined) payload.title = updates.title;
@@ -102,6 +104,7 @@ export async function updateTask(
   if (updates.status !== undefined) payload.status = updates.status;
   if (updates.priority !== undefined) payload.priority = updates.priority;
   if (updates.due_date !== undefined) payload.due_date = updates.due_date;
+  if (updates.due_time !== undefined) payload.due_time = updates.due_time;
   if (updates.completed_at !== undefined) payload.completed_at = updates.completed_at;
   if (updates.estimated_minutes !== undefined) payload.estimated_minutes = updates.estimated_minutes;
   if (updates.subtasks !== undefined) payload.subtasks = updates.subtasks as unknown;
