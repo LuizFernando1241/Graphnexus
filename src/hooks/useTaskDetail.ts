@@ -50,6 +50,7 @@ export function useTaskDetail(id: string | undefined) {
       setStatusState(task.status);
       setPriorityState(task.priority);
       setDueDateState(task.due_date ? new Date(task.due_date + "T00:00:00") : undefined);
+      setDueTimeState(task.due_time || "");
       setRecurrenceRule(task.recurrence_rule);
       setRecurrenceDays(task.recurrence_days);
       setEstimatedMinutes(task.estimated_minutes?.toString() || "");
