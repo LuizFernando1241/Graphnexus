@@ -256,6 +256,7 @@ function InternalLinkPicker({ editor }: { editor: ReturnType<typeof useEditor> }
 }
 
 export function RichTextEditor({ content, onChange, foldStorageKey }: RichTextEditorProps) {
+  const navigate = useNavigate();
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<ReturnType<typeof useEditor>>(null);
