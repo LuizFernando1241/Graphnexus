@@ -32,6 +32,7 @@ import {
   Minus,
 } from "lucide-react";
 import { useEffect, useState, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
@@ -255,6 +256,7 @@ function InternalLinkPicker({ editor }: { editor: ReturnType<typeof useEditor> }
 }
 
 export function RichTextEditor({ content, onChange, foldStorageKey }: RichTextEditorProps) {
+  const navigate = useNavigate();
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
   const editorRef = useRef<ReturnType<typeof useEditor>>(null);
@@ -302,6 +304,20 @@ export function RichTextEditor({ content, onChange, foldStorageKey }: RichTextEd
     editorProps: {
       attributes: {
         class: "prose-editor outline-none min-h-[60vh] md:min-h-[70vh] lg:min-h-[75vh] py-6 md:py-8 text-foreground text-base md:text-[17px] leading-relaxed w-full",
+      },
+      handleClickOn: (_view, _pos, _node, _nodePos, event) => {
+        const target = event.target as HTMLElement | null;
+        const anchor = target?.closest?.("a") as HTMLAnchorElement | null;
+        if (!anchor) return false;
+        const href = anchor.getAttribute("href");
+        if (!href) return false;
+        event.preventDefault();
+        if (href.startsWith("/")) {
+          navigate(href);
+        } else {
+          window.open(href, "_blank", "noopener,noreferrer");
+        }
+        return true;
       },
     },
   });
