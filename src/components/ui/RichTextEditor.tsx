@@ -32,6 +32,7 @@ import {
   Minus,
 } from "lucide-react";
 import { useEffect, useState, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { supabase } from "@/integrations/supabase/client";
