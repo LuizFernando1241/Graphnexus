@@ -1,12 +1,10 @@
 import { memo } from "react";
 import { format, isPast, isToday, parseISO, startOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Calendar, Flag, Repeat, MoreHorizontal, Clock } from "lucide-react";
+import { Calendar, Flag, Repeat, Clock, Check, ArrowLeftRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { SwipeableItem } from "@/components/ui/SwipeableItem";
-import { Checkbox } from "@/components/ui/checkbox";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Check, ArrowLeftRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Task, TaskPriority } from "@/types/entities";
 import type { TaskDensity } from "@/hooks/useTasksView";

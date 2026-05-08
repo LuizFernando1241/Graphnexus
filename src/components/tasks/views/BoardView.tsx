@@ -13,7 +13,6 @@ import {
   useDroppable,
   useDraggable,
 } from "@dnd-kit/core";
-import { GripVertical } from "lucide-react";
 import { useCompleteRecurringTask } from "@/hooks/useRecurrence";
 import { updateTask } from "@/lib/api/tasks";
 import { TaskRow } from "../TaskRow";
@@ -45,10 +44,6 @@ function DroppableColumn({ id, children }: { id: string; children: React.ReactNo
       {children}
     </div>
   );
-}
-
-function DraggableTask({ children }: { children: (p: { setNodeRef: any; listeners: any; attributes: any; style: any }) => React.ReactNode } & { id: string }) {
-  return null;
 }
 
 function Draggable({ task, children }: { task: Task; children: React.ReactNode }) {

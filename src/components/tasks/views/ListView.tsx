@@ -1,16 +1,15 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence } from "framer-motion";
 import { ChevronDown, ChevronRight, Sparkles } from "lucide-react";
-import { addDays, isPast, isToday, isWithinInterval, parseISO, startOfDay, format, isSameDay } from "date-fns";
+import { addDays, isPast, isToday, parseISO, startOfDay, format, isSameDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { useCompleteRecurringTask } from "@/hooks/useRecurrence";
 import { updateTask } from "@/lib/api/tasks";
 import { TaskRow } from "../TaskRow";
 import { QuickAddTaskRow, type QuickAddTaskRowHandle } from "../QuickAddTaskRow";
-import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import type { Task } from "@/types/entities";
 import type { TaskDensity, TaskView } from "@/hooks/useTasksView";
