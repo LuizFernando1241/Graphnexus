@@ -11,7 +11,7 @@ const NotFound = () => {
   }, [location.pathname]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+    <main className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="flex flex-col items-center text-center gap-6">
         <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/20">
           <Network className="h-8 w-8 text-primary" />
@@ -32,7 +32,7 @@ const NotFound = () => {
           </Link>
         </Button>
       </div>
-    </div>
+    </main>
   );
 };
 
