@@ -72,6 +72,6 @@ export default function Login() {
           </Link>
         </p>
       </div>
-    </div>
+    </main>
   );
 }
