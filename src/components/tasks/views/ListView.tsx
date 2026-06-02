@@ -207,7 +207,7 @@ function EmptyState({ view }: { view: TaskView }) {
   const m = messages[view];
   return (
     <div className="flex flex-col items-center justify-center py-16 gap-2">
-      <Sparkles className="h-10 w-10 text-muted-foreground/40" />
+      <Sparkles className="h-10 w-10 text-muted-foreground" aria-hidden="true" />
       <p className="text-base font-semibold text-foreground">{m.title}</p>
       {m.sub && <p className="text-sm text-muted-foreground">{m.sub}</p>}
     </div>

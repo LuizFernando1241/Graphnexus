@@ -169,7 +169,7 @@ const GraphControls = memo(function GraphControls({
   return (
     <div className="absolute top-4 left-4 right-4 z-10 flex flex-col sm:flex-row gap-3 justify-between pointer-events-none">
       <div className="relative flex-1 max-w-md pointer-events-auto">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Explorar cosmos..."
           value={searchValue}
@@ -550,7 +550,7 @@ export default function Graph() {
           />
         )}
 
-        <Suspense fallback={<div className="flex items-center justify-center h-full text-white/50">Carregando universo...</div>}>
+        <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground">Carregando universo...</div>}>
           {filteredData && (
             <ForceGraph3D
               ref={fgRef as React.RefObject<ForceGraphMethods>}
