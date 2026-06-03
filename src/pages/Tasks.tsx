@@ -132,6 +132,7 @@ export default function Tasks() {
           }}
         />
       </div>
+      </ImportDropzone>
     </PageTransition>
   );
 }

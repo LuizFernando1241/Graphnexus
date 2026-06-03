@@ -19,6 +19,7 @@ import {
 import { Label } from "@/components/ui/label";
 import type { Project, ProjectStatus } from "@/types/entities";
 import { PageTransition } from "@/components/PageTransition";
+import { ImportDropzone } from "@/components/import/ImportDropzone";
 import { ProjectsGridSkeleton } from "@/components/ui/page-skeleton";
 
 const STATUS_COLORS: Record<ProjectStatus, string> = {
@@ -166,6 +167,7 @@ export default function Projects() {
 
   return (
     <PageTransition>
+    <ImportDropzone defaultType="project">
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Projetos</h1>
