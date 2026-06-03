@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Save, Trash2, Check, Archive, SkipForward, FileOutput, ChevronRight } from "lucide-react";
+import { ArrowLeft, Save, Trash2, Check, Archive, SkipForward, FileOutput, ChevronRight, Download } from "lucide-react";
+import { toast } from "sonner";
+import { exportTask } from "@/lib/markdown/export";
 import { format } from "date-fns";
 import { useTaskDetail } from "@/hooks/useTaskDetail";
 import { useCompleteRecurringTask, useSkipRecurringTask } from "@/hooks/useRecurrence";
@@ -155,6 +157,18 @@ export default function TaskDetail() {
                   <SkipForward className="mr-1 h-4 w-4" /> Pular
                 </Button>
               )}
+              <Button
+                variant="ghost"
+                size="icon"
+                title="Exportar como Markdown"
+                aria-label="Exportar tarefa como Markdown"
+                onClick={async () => {
+                  try { await exportTask(task); toast.success("Exportado!"); }
+                  catch { toast.error("Falha ao exportar"); }
+                }}
+              >
+                <Download className="h-4 w-4" />
+              </Button>
               <Button
                 variant="ghost"
                 size="icon"

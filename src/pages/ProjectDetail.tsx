@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Save, Trash2, Archive, ArchiveRestore, FileOutput, ChevronRight } from "lucide-react";
+import { ArrowLeft, Save, Trash2, Archive, ArchiveRestore, FileOutput, ChevronRight, Download } from "lucide-react";
+import { toast } from "sonner";
+import { exportProject } from "@/lib/markdown/export";
 import { format } from "date-fns";
 import { useProjectDetail } from "@/hooks/useProjectDetail";
 import { LinkPanelDock } from "@/components/LinkPanelDock";
@@ -126,6 +128,18 @@ export default function ProjectDetail() {
               <Button onClick={handleSave} disabled={!hasUnsavedChanges || saveMutation.isPending} size="sm">
                 <Save className="mr-1 h-4 w-4" />
                 {saveMutation.isPending ? "Salvando..." : "Salvar"}
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                title="Exportar como Markdown"
+                aria-label="Exportar projeto como Markdown"
+                onClick={async () => {
+                  try { await exportProject(project); toast.success("Exportado!"); }
+                  catch { toast.error("Falha ao exportar"); }
+                }}
+              >
+                <Download className="h-4 w-4" />
               </Button>
               <Button variant="ghost" size="icon" onClick={handleArchive} disabled={archiveMutation.isPending} aria-label={project.archived ? "Desarquivar projeto" : "Arquivar projeto"}>
                 {project.archived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}
