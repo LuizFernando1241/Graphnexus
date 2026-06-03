@@ -23,7 +23,7 @@ export function useTasksView() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [storedView, setStoredView] = useLocalStorage<TaskView>("ui:tasks-view", "today");
   const [density, setDensity] = useLocalStorage<TaskDensity>("ui:tasks-density", "comfortable");
-  const [sort, setSort] = useLocalStorage<TaskSort>("ui:tasks-sort", "manual");
+  const [sort, setSort] = useLocalStorage<TaskSort>("ui:tasks-sort", "created");
   const [filters, setFiltersStored] = useLocalStorage<TaskFilters>("ui:tasks-filters", DEFAULT_FILTERS);
 
   const view = (searchParams.get("view") as TaskView) || storedView;
