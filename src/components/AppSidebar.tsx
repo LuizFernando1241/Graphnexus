@@ -1,4 +1,4 @@
-import { Home, StickyNote, CheckSquare, FolderKanban, Network, Archive, LogOut } from "lucide-react";
+import { Home, StickyNote, CheckSquare, FolderKanban, Network, Archive, Upload, LogOut } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,6 +15,7 @@ const navItems = [
   { title: "Projetos", url: "/projects", icon: FolderKanban },
   { title: "Grafo", url: "/graph", icon: Network },
   { title: "Arquivos", url: "/archive", icon: Archive },
+  { title: "Importar", url: "/import", icon: Upload },
 ];
 
 const SIDEBAR_MIN = 64;
