@@ -329,6 +329,7 @@ export default function Notes() {
         </div>
       )}
     </div>
+    </ImportDropzone>
     </PageTransition>
   );
 }
