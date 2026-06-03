@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { SwipeableItem } from "@/components/ui/SwipeableItem";
 import { PageTransition } from "@/components/PageTransition";
+import { ImportDropzone } from "@/components/import/ImportDropzone";
 import { NotesGridSkeleton } from "@/components/ui/page-skeleton";
 import {
   Dialog,
@@ -248,6 +249,7 @@ export default function Notes() {
 
   return (
     <PageTransition>
+    <ImportDropzone defaultType="note">
     <div className="flex flex-col gap-6">
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -327,6 +329,7 @@ export default function Notes() {
         </div>
       )}
     </div>
+    </ImportDropzone>
     </PageTransition>
   );
 }

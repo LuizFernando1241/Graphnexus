@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Save, Pin, PinOff, Archive, ArchiveRestore, Trash2, ChevronRight } from "lucide-react";
+import { ArrowLeft, Save, Pin, PinOff, Archive, ArchiveRestore, Trash2, ChevronRight, Download } from "lucide-react";
+import { toast } from "sonner";
+import { exportNote } from "@/lib/markdown/export";
 import { useNoteDetail } from "@/hooks/useNoteDetail";
 import { LinkPanelDock } from "@/components/LinkPanelDock";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
@@ -108,6 +110,18 @@ export default function NoteDetail() {
               </Button>
               <Button variant="ghost" size="icon" onClick={handlePin} disabled={pinMutation.isPending} title={note.pinned ? "Desafixar" : "Fixar"} aria-label={note.pinned ? "Desafixar nota" : "Fixar nota"}>
                 {note.pinned ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                title="Exportar como Markdown"
+                aria-label="Exportar nota como Markdown"
+                onClick={async () => {
+                  try { await exportNote(note); toast.success("Exportado!"); }
+                  catch { toast.error("Falha ao exportar"); }
+                }}
+              >
+                <Download className="h-4 w-4" />
               </Button>
               <Button variant="ghost" size="icon" onClick={handleArchive} disabled={archiveMutation.isPending} title={note.archived ? "Desarquivar" : "Arquivar"} aria-label={note.archived ? "Desarquivar nota" : "Arquivar nota"}>
                 {note.archived ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}

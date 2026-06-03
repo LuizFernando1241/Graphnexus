@@ -4,6 +4,7 @@ import { fetchTasks } from "@/lib/api/tasks";
 import { useTasksView } from "@/hooks/useTasksView";
 import { useTaskKeyboardShortcuts } from "@/hooks/useTaskKeyboardShortcuts";
 import { PageTransition } from "@/components/PageTransition";
+import { ImportDropzone } from "@/components/import/ImportDropzone";
 import { TasksBoardSkeleton } from "@/components/ui/page-skeleton";
 import { TasksToolbar } from "@/components/tasks/TasksToolbar";
 import { ListView } from "@/components/tasks/views/ListView";
@@ -83,6 +84,7 @@ export default function Tasks() {
 
   return (
     <PageTransition>
+      <ImportDropzone defaultType="task">
       <div className="flex flex-col gap-4 h-full pb-20">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold">Tarefas</h1>
@@ -130,6 +132,7 @@ export default function Tasks() {
           }}
         />
       </div>
+      </ImportDropzone>
     </PageTransition>
   );
 }

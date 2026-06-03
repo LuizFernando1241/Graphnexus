@@ -21,6 +21,7 @@ import Projects from "@/pages/Projects";
 import ProjectDetail from "@/pages/ProjectDetail";
 import Graph from "@/pages/Graph";
 import Archive from "@/pages/Archive";
+import Import from "@/pages/Import";
 import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
 import NotFound from "@/pages/NotFound";
@@ -71,6 +72,7 @@ const router = createBrowserRouter([
           { path: "/projects/:id", element: <ProjectDetail /> },
           { path: "/graph", element: <Graph /> },
           { path: "/archive", element: <Archive /> },
+          { path: "/import", element: <Import /> },
         ],
       },
     ],
