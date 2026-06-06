@@ -134,6 +134,190 @@ export type Database = {
         }
         Relationships: []
       }
+      radar_entity_links: {
+        Row: {
+          created_at: string
+          entity_id: string
+          entity_type: string
+          id: string
+          produto_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          produto_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          produto_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "radar_entity_links_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "radar_produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      radar_historico: {
+        Row: {
+          event: string
+          field: string | null
+          id: string
+          new_value: string | null
+          old_value: string | null
+          produto_id: string
+          stage: string | null
+          timestamp: string
+          user_id: string
+        }
+        Insert: {
+          event: string
+          field?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          produto_id: string
+          stage?: string | null
+          timestamp?: string
+          user_id: string
+        }
+        Update: {
+          event?: string
+          field?: string | null
+          id?: string
+          new_value?: string | null
+          old_value?: string | null
+          produto_id?: string
+          stage?: string | null
+          timestamp?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "radar_historico_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "radar_produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      radar_parametros: {
+        Row: {
+          auto_descarte: Json
+          decisao_thresholds: Json
+          faixas: Json
+          id: string
+          updated_at: string
+          user_id: string
+          weights: Json
+        }
+        Insert: {
+          auto_descarte?: Json
+          decisao_thresholds?: Json
+          faixas?: Json
+          id?: string
+          updated_at?: string
+          user_id: string
+          weights?: Json
+        }
+        Update: {
+          auto_descarte?: Json
+          decisao_thresholds?: Json
+          faixas?: Json
+          id?: string
+          updated_at?: string
+          user_id?: string
+          weights?: Json
+        }
+        Relationships: []
+      }
+      radar_produtos: {
+        Row: {
+          concorrentes_full: number | null
+          created_at: string
+          custo: number | null
+          decisao_motivo: string | null
+          decision: string
+          fornecedor: string
+          id: string
+          is_lancamento: boolean
+          link_ml: string | null
+          margem: number | null
+          nome: string
+          observacoes: string | null
+          preco_venda: number | null
+          quantidade_pedir: number | null
+          score_total: number
+          stage: string
+          stage_entered_at: string
+          status_compra: string
+          updated_at: string
+          user_id: string
+          vendas_mes: number | null
+          visitas_mes: number | null
+        }
+        Insert: {
+          concorrentes_full?: number | null
+          created_at?: string
+          custo?: number | null
+          decisao_motivo?: string | null
+          decision?: string
+          fornecedor: string
+          id?: string
+          is_lancamento?: boolean
+          link_ml?: string | null
+          margem?: number | null
+          nome: string
+          observacoes?: string | null
+          preco_venda?: number | null
+          quantidade_pedir?: number | null
+          score_total?: number
+          stage?: string
+          stage_entered_at?: string
+          status_compra?: string
+          updated_at?: string
+          user_id: string
+          vendas_mes?: number | null
+          visitas_mes?: number | null
+        }
+        Update: {
+          concorrentes_full?: number | null
+          created_at?: string
+          custo?: number | null
+          decisao_motivo?: string | null
+          decision?: string
+          fornecedor?: string
+          id?: string
+          is_lancamento?: boolean
+          link_ml?: string | null
+          margem?: number | null
+          nome?: string
+          observacoes?: string | null
+          preco_venda?: number | null
+          quantidade_pedir?: number | null
+          score_total?: number
+          stage?: string
+          stage_entered_at?: string
+          status_compra?: string
+          updated_at?: string
+          user_id?: string
+          vendas_mes?: number | null
+          visitas_mes?: number | null
+        }
+        Relationships: []
+      }
       tasks: {
         Row: {
           archived: boolean
