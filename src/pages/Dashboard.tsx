@@ -336,7 +336,7 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      </div>
+
 
       {/* Card Radar de Produtos */}
       {(radarEmAvaliacao > 0 || radarAguardando > 0 || radarEmDecisao > 0) && (
