@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { StickyNote, CheckSquare, FolderKanban, AlertTriangle, Clock as ClockIcon, Activity, Settings, Sparkles, Check } from "lucide-react";
+import { StickyNote, CheckSquare, FolderKanban, AlertTriangle, Clock as ClockIcon, Activity, Settings, Sparkles, Check, Crosshair, AlertCircle, ArrowRight } from "lucide-react";
 import { format, isToday, isBefore, startOfDay, addDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -20,6 +20,7 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { WeeklyReview } from "@/components/WeeklyReview";
 import { PageTransition } from "@/components/PageTransition";
 import { DashboardSkeleton } from "@/components/ui/page-skeleton";
+import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
 
 const DAY_NAMES = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
@@ -80,6 +81,15 @@ export default function Dashboard() {
   const [reviewDay, setReviewDay] = useLocalStorage("nexus_review_day", 5);
   const [reviewOpen, setReviewOpen] = useState(false);
   const completeRecurring = useCompleteRecurringTask();
+  const { produtos: radarProdutos } = useRadarProdutos();
+  const radarEmAvaliacao = radarProdutos.filter((p) => p.stage === "prospeccao").length;
+  const radarAguardando = radarProdutos.filter((p) => p.stage === "aguardando_custo").length;
+  const radarEmDecisao = radarProdutos.filter((p) => p.stage === "decisao").length;
+  const radarAtrasados = radarProdutos.filter((p) => {
+    if (p.stage !== "decisao") return false;
+    const dias = Math.floor((Date.now() - new Date(p.stageEnteredAt).getTime()) / 86400000);
+    return dias > 3;
+  }).length;
 
   const isReviewDay = new Date().getDay() === reviewDay;
 
@@ -325,6 +335,51 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+
+
+      {/* Card Radar de Produtos */}
+      {(radarEmAvaliacao > 0 || radarAguardando > 0 || radarEmDecisao > 0) && (
+        <Card
+          className="cursor-pointer hover:bg-accent transition-colors"
+          onClick={() => navigate("/radar")}
+        >
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Crosshair className="h-4 w-4 text-primary" />
+              Radar de Produtos
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-2">
+            {radarEmAvaliacao > 0 && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <ClockIcon className="h-3.5 w-3.5" />
+                {radarEmAvaliacao} produto(s) em avaliação
+              </div>
+            )}
+            {radarAguardando > 0 && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <ClockIcon className="h-3.5 w-3.5" />
+                {radarAguardando} aguardando custo do fornecedor
+              </div>
+            )}
+            {radarEmDecisao > 0 && (
+              <div className="flex items-center gap-2 text-sm text-foreground">
+                <AlertCircle className="h-3.5 w-3.5 text-destructive" />
+                {radarEmDecisao} produto(s) aguardam decisão
+                {radarAtrasados > 0 && (
+                  <span className="text-xs text-destructive">
+                    ({radarAtrasados} há mais de 3 dias)
+                  </span>
+                )}
+              </div>
+            )}
+            <Button variant="ghost" size="sm" className="self-start mt-1 px-2">
+              Ver pipeline <ArrowRight className="h-3.5 w-3.5 ml-1" />
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Weekly Review Modal */}
       <WeeklyReview open={reviewOpen} onOpenChange={setReviewOpen} />
