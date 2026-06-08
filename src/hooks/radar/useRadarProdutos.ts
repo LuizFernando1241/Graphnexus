@@ -246,6 +246,38 @@ export function useRadarProdutos() {
     },
   })
 
+  const recalcularTodos = useMutation({
+    mutationFn: async () => {
+      if (!user) throw new Error('Usuário não autenticado')
+      const produtos = query.data ?? []
+      let atualizados = 0
+      await Promise.all(
+        produtos.map(async (p) => {
+          const scoreResult = calcularScore(p, parametros)
+          if (
+            scoreResult.scoreTotal === p.scoreTotal &&
+            scoreResult.decision === p.decision
+          ) {
+            return
+          }
+          const { error } = await supabase
+            .from('radar_produtos')
+            .update({
+              score_total: scoreResult.scoreTotal,
+              decision: scoreResult.decision,
+            })
+            .eq('id', p.id)
+            .eq('user_id', user.id)
+          if (!error) atualizados++
+        }),
+      )
+      return atualizados
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['radar-produtos', user?.id] })
+    },
+  })
+
   return {
     produtos: query.data ?? [],
     isLoading: query.isLoading,
@@ -253,6 +285,8 @@ export function useRadarProdutos() {
     atualizarProduto: atualizarProduto.mutateAsync,
     moverEtapa: moverEtapa.mutateAsync,
     atualizarStatusCompra: atualizarStatusCompra.mutateAsync,
+    recalcularTodos: recalcularTodos.mutateAsync,
+    isRecalculando: recalcularTodos.isPending,
     isCriando: criarProduto.isPending,
     isAtualizando: atualizarProduto.isPending,
     isMovendo: moverEtapa.isPending,
