@@ -48,6 +48,7 @@ interface ProdutoDrawerProps {
   produto: RadarProduto | null;
   open: boolean;
   onClose: () => void;
+  prefill?: Partial<RadarProdutoFormData> | null;
 }
 
 const EMPTY_FORM: RadarProdutoFormData = {
