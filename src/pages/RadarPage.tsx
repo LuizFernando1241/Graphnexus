@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { Crosshair, Plus, SlidersHorizontal, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -24,6 +25,17 @@ export default function RadarPage() {
   const [produtoSelecionado, setProdutoSelecionado] = useState<RadarProduto | Record<string, never> | null>(null);
   const [historicoTarget, setHistoricoTarget] = useState<RadarProduto | null>(null);
   const [filters, setFilters] = useState<RadarFiltersState>(FILTROS_INICIAIS);
+
+  const location = useLocation();
+  useEffect(() => {
+    const preencher = (location.state as { preencherProduto?: Record<string, unknown> } | null)
+      ?.preencherProduto;
+    if (preencher) {
+      setProdutoSelecionado(preencher as Record<string, never>);
+      window.history.replaceState({}, "");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
 
   const produtosFiltrados = produtos.filter((p) => {
     if (p.stage === "aprovado") return false;
@@ -109,6 +121,11 @@ export default function RadarPage() {
         produto={produtoSelecionado && "id" in produtoSelecionado ? (produtoSelecionado as RadarProduto) : null}
         open={produtoSelecionado !== null}
         onClose={() => setProdutoSelecionado(null)}
+        prefill={
+          produtoSelecionado && !("id" in produtoSelecionado)
+            ? (produtoSelecionado as Record<string, unknown>)
+            : null
+        }
       />
 
       {historicoTarget && (

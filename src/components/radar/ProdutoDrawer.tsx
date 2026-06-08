@@ -32,6 +32,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ScorePainel } from "./ScorePainel";
 import { HistoricoModal } from "./HistoricoModal";
+import { PainelConexoes } from "./PainelConexoes";
 import {
   calcularScore,
   getStageLabel,
@@ -47,6 +48,7 @@ interface ProdutoDrawerProps {
   produto: RadarProduto | null;
   open: boolean;
   onClose: () => void;
+  prefill?: Partial<RadarProdutoFormData> | null;
 }
 
 const EMPTY_FORM: RadarProdutoFormData = {
@@ -75,7 +77,7 @@ function parseInteiro(value: string): number | undefined {
   return isNaN(n) ? undefined : n;
 }
 
-export function ProdutoDrawer({ produto, open, onClose }: ProdutoDrawerProps) {
+export function ProdutoDrawer({ produto, open, onClose, prefill }: ProdutoDrawerProps) {
   const isNovo = !produto?.id;
   const {
     produtos,
@@ -108,9 +110,9 @@ export function ProdutoDrawer({ produto, open, onClose }: ProdutoDrawerProps) {
         observacoes: produto.observacoes ?? "",
       });
     } else {
-      setForm(EMPTY_FORM);
+      setForm({ ...EMPTY_FORM, ...(prefill ?? {}) });
     }
-  }, [open, produto]);
+  }, [open, produto, prefill]);
 
   const scoreResult = useMemo(
     () => calcularScore(form, parametros),
@@ -232,14 +234,19 @@ export function ProdutoDrawer({ produto, open, onClose }: ProdutoDrawerProps) {
 
           <div className="flex-1 overflow-y-auto px-5 pb-4">
             <Tabs defaultValue="produto" className="w-full">
-              <TabsList className="grid grid-cols-3 w-full">
-                {(["produto", "mercado", "notas"] as const).map((aba) => (
+              <TabsList className={isNovo ? "grid grid-cols-3 w-full" : "grid grid-cols-4 w-full"}>
+                {(isNovo
+                  ? (["produto", "mercado", "notas"] as const)
+                  : (["produto", "mercado", "notas", "conexoes"] as const)
+                ).map((aba) => (
                   <TabsTrigger key={aba} value={aba} className="capitalize">
                     {aba === "produto"
                       ? "Produto"
                       : aba === "mercado"
                         ? "Mercado"
-                        : "Notas"}
+                        : aba === "notas"
+                          ? "Notas"
+                          : "Conexões"}
                   </TabsTrigger>
                 ))}
               </TabsList>
@@ -468,6 +475,13 @@ export function ProdutoDrawer({ produto, open, onClose }: ProdutoDrawerProps) {
                   {(form.observacoes ?? "").length}/2000
                 </p>
               </TabsContent>
+
+              {/* ── Aba Conexões ── */}
+              {!isNovo && produto && (
+                <TabsContent value="conexoes" className="mt-4">
+                  <PainelConexoes produto={produto} />
+                </TabsContent>
+              )}
             </Tabs>
           </div>
 
