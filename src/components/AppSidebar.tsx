@@ -96,9 +96,9 @@ export function AppSidebar() {
             {!collapsed && (
               <>
                 <span className="truncate flex-1">Pipeline</span>
-                {produtosEmDecisao > 0 && (
+                {badgeCount > 0 && (
                   <span className="ml-auto inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-semibold text-destructive-foreground">
-                    {produtosEmDecisao}
+                    {badgeCount}
                   </span>
                 )}
               </>
