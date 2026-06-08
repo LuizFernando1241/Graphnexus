@@ -473,6 +473,13 @@ export function ProdutoDrawer({ produto, open, onClose }: ProdutoDrawerProps) {
                   {(form.observacoes ?? "").length}/2000
                 </p>
               </TabsContent>
+
+              {/* ── Aba Conexões ── */}
+              {!isNovo && produto && (
+                <TabsContent value="conexoes" className="mt-4">
+                  <PainelConexoes produto={produto} />
+                </TabsContent>
+              )}
             </Tabs>
           </div>
 
