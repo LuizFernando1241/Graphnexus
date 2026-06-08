@@ -35,6 +35,9 @@ export function AppSidebar() {
   const effectiveWidth = collapsed ? 64 : width;
   const { produtos: radarProdutos } = useRadarProdutos();
   const produtosEmDecisao = radarProdutos.filter((p) => p.stage === "decisao").length;
+  const { urgentes } = useRadarSinais();
+  const badgeCount = urgentes.length + produtosEmDecisao;
+
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
