@@ -112,6 +112,19 @@ export function AppSidebar() {
           </NavLink>
         </nav>
 
+        {/* Settings */}
+        <div className={`border-t border-border py-2 ${collapsed ? "px-2" : "px-3"}`}>
+          <NavLink
+            to="/settings"
+            title={collapsed ? "Configurações" : undefined}
+            className={`flex items-center gap-3 rounded-lg py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${collapsed ? "px-2 justify-center" : "px-3"}`}
+            activeClassName="bg-sidebar-accent text-foreground"
+          >
+            <SettingsIcon className="h-4 w-4 shrink-0" />
+            {!collapsed && <span className="truncate">Configurações</span>}
+          </NavLink>
+        </div>
+
         {/* User footer */}
         <div className={`border-t border-border py-3 ${collapsed ? "px-2" : "px-3"}`}>
           <div className={`flex items-center gap-2 ${collapsed ? "justify-center" : ""}`}>
