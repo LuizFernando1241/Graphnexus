@@ -26,6 +26,17 @@ export default function RadarPage() {
   const [historicoTarget, setHistoricoTarget] = useState<RadarProduto | null>(null);
   const [filters, setFilters] = useState<RadarFiltersState>(FILTROS_INICIAIS);
 
+  const location = useLocation();
+  useEffect(() => {
+    const preencher = (location.state as { preencherProduto?: Record<string, unknown> } | null)
+      ?.preencherProduto;
+    if (preencher) {
+      setProdutoSelecionado(preencher as Record<string, never>);
+      window.history.replaceState({}, "");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state]);
+
   const produtosFiltrados = produtos.filter((p) => {
     if (p.stage === "aprovado") return false;
     if (filters.fornecedor !== "all" && p.fornecedor !== filters.fornecedor) return false;
