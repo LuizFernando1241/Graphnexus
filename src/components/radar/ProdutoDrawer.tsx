@@ -77,7 +77,7 @@ function parseInteiro(value: string): number | undefined {
   return isNaN(n) ? undefined : n;
 }
 
-export function ProdutoDrawer({ produto, open, onClose }: ProdutoDrawerProps) {
+export function ProdutoDrawer({ produto, open, onClose, prefill }: ProdutoDrawerProps) {
   const isNovo = !produto?.id;
   const {
     produtos,
