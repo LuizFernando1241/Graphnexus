@@ -110,9 +110,9 @@ export function ProdutoDrawer({ produto, open, onClose, prefill }: ProdutoDrawer
         observacoes: produto.observacoes ?? "",
       });
     } else {
-      setForm(EMPTY_FORM);
+      setForm({ ...EMPTY_FORM, ...(prefill ?? {}) });
     }
-  }, [open, produto]);
+  }, [open, produto, prefill]);
 
   const scoreResult = useMemo(
     () => calcularScore(form, parametros),
