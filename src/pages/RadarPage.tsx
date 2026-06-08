@@ -7,6 +7,8 @@ import { PageTransition } from "@/components/PageTransition";
 import { KanbanBoard } from "@/components/radar/KanbanBoard";
 import { RadarFilters, type RadarFiltersState } from "@/components/radar/RadarFilters";
 import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
+import { ProdutoDrawer } from "@/components/radar/ProdutoDrawer";
+import { HistoricoModal } from "@/components/radar/HistoricoModal";
 import { cn } from "@/lib/utils";
 import type { RadarProduto } from "@/types/radar";
 
