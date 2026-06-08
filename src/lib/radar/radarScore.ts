@@ -240,14 +240,16 @@ export function calcularScore(
     },
   ]
 
-  // ── Excluir pilares inativos para normalização de pesos ──
   const isAtivo = (p: PilarInput) => {
     if (p.key === 'margem' && !margemPreenchida) return false
     if (p.key === 'demanda' && produto.isLancamento) return false
     return true
   }
-  const ativos = inputs.filter(isAtivo)
-  const totalPesoAtivo = ativos.reduce((sum, p) => sum + (params.weights[p.key] ?? 0), 0)
+
+  // Peso base de referência (padrão = 20). Pesos atuam como multiplicador
+  // relativo: peso 20 → 1x, peso 40 → 2x, peso 10 → 0.5x. Assim, com pesos
+  // no padrão, o score é simplesmente a soma dos pontos dos pilares.
+  const PESO_BASE = 20
 
   let descarteByFaixa: { motivo: string } | null = null
 
@@ -260,8 +262,8 @@ export function calcularScore(
       descarteByFaixa = { motivo: `${p.nome}: valor em faixa de descarte` }
     }
 
-    const pesoNormalizado = ativo && totalPesoAtivo > 0 ? (peso / totalPesoAtivo) * 100 : 0
-    const contribuicao = ativo ? (aval.pontos * pesoNormalizado) / 100 : 0
+    const multiplicador = peso / PESO_BASE
+    const contribuicao = ativo ? aval.pontos * multiplicador : 0
 
     return {
       nome: p.nome,
@@ -270,7 +272,7 @@ export function calcularScore(
       pontos: aval.pontos,
       pontosBrutos: aval.pontos,
       peso,
-      pesoNormalizado,
+      pesoNormalizado: peso,
       contribuicao,
     }
   })
@@ -295,7 +297,7 @@ export function calcularScore(
   else if (scoreTotal >= params.decisaoThresholds.cautela) decision = 'cautela'
 
   return {
-    scoreTotal: Math.round(scoreTotal * 10) / 10,
+    scoreTotal: Math.round(scoreTotal * 100) / 100,
     decision,
     pilares,
     faturamentoEstimado,
