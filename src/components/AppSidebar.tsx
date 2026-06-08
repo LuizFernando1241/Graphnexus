@@ -1,4 +1,4 @@
-import { Home, StickyNote, CheckSquare, FolderKanban, Network, Archive, Upload, LogOut, Crosshair, ShoppingCart } from "lucide-react";
+import { Home, StickyNote, CheckSquare, FolderKanban, Network, Archive, Upload, LogOut, Crosshair, ShoppingCart, Settings as SettingsIcon } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
