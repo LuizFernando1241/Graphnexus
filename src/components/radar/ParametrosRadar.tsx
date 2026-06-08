@@ -98,12 +98,95 @@ export function ParametrosRadar() {
     setSalvoOk(false);
   }
 
+  function setFaixaCampo(
+    pilar: keyof RadarFaixas,
+    index: number,
+    campo: "limiteMin" | "limiteMax" | "pontos",
+    value: number,
+  ) {
+    setLocal((prev) => {
+      const atual = (prev.faixas?.[pilar] ?? DEFAULT_FAIXAS[pilar]).map((f, i) =>
+        i === index ? { ...f, [campo]: value } : f,
+      );
+      return { ...prev, faixas: { ...prev.faixas, [pilar]: atual } };
+    });
+    setIsDirty(true);
+    setSalvoOk(false);
+  }
+
+  function toggleFaixaFlag(
+    pilar: keyof RadarFaixas,
+    index: number,
+    campo: "escalaAberta" | "descarte",
+  ) {
+    setLocal((prev) => {
+      const atual = (prev.faixas?.[pilar] ?? DEFAULT_FAIXAS[pilar]).map((f, i) =>
+        i === index ? { ...f, [campo]: !f[campo] } : f,
+      );
+      return { ...prev, faixas: { ...prev.faixas, [pilar]: atual } };
+    });
+    setIsDirty(true);
+    setSalvoOk(false);
+  }
+
+  function addFaixa(pilar: keyof RadarFaixas) {
+    setLocal((prev) => {
+      const atual = prev.faixas?.[pilar] ?? DEFAULT_FAIXAS[pilar];
+      const nova: FaixaItem =
+        PILAR_UNIT[pilar].direcao === "min"
+          ? { limiteMin: 0, pontos: 0 }
+          : { limiteMax: 0, pontos: 0 };
+      return {
+        ...prev,
+        faixas: { ...prev.faixas, [pilar]: [...atual, nova] },
+      };
+    });
+    setIsDirty(true);
+    setSalvoOk(false);
+  }
+
+  function removeFaixa(pilar: keyof RadarFaixas, index: number) {
+    setLocal((prev) => {
+      const atual = (prev.faixas?.[pilar] ?? DEFAULT_FAIXAS[pilar]).filter(
+        (_, i) => i !== index,
+      );
+      return { ...prev, faixas: { ...prev.faixas, [pilar]: atual } };
+    });
+    setIsDirty(true);
+    setSalvoOk(false);
+  }
+
+  function resetFaixaPilar(pilar: keyof RadarFaixas) {
+    setLocal((prev) => ({
+      ...prev,
+      faixas: { ...prev.faixas, [pilar]: DEFAULT_FAIXAS[pilar] },
+    }));
+    setIsDirty(true);
+    setSalvoOk(false);
+  }
+
   async function handleSalvar() {
     if (!pesoValido) return;
     await saveParametros(local);
     setIsDirty(false);
     setSalvoOk(true);
     setTimeout(() => setSalvoOk(false), 3000);
+  }
+
+  async function handleRecalcular() {
+    try {
+      const n = await recalcularTodos();
+      toast({
+        title: "Produtos recalculados",
+        description: `${n} produto(s) tiveram score atualizado.`,
+      });
+    } catch (e: any) {
+      toast({
+        title: "Erro ao recalcular",
+        description: e?.message ?? "Tente novamente.",
+        variant: "destructive",
+      });
+    }
   }
 
   function handleResetar() {
