@@ -232,14 +232,19 @@ export function ProdutoDrawer({ produto, open, onClose }: ProdutoDrawerProps) {
 
           <div className="flex-1 overflow-y-auto px-5 pb-4">
             <Tabs defaultValue="produto" className="w-full">
-              <TabsList className="grid grid-cols-3 w-full">
-                {(["produto", "mercado", "notas"] as const).map((aba) => (
+              <TabsList className={isNovo ? "grid grid-cols-3 w-full" : "grid grid-cols-4 w-full"}>
+                {(isNovo
+                  ? (["produto", "mercado", "notas"] as const)
+                  : (["produto", "mercado", "notas", "conexoes"] as const)
+                ).map((aba) => (
                   <TabsTrigger key={aba} value={aba} className="capitalize">
                     {aba === "produto"
                       ? "Produto"
                       : aba === "mercado"
                         ? "Mercado"
-                        : "Notas"}
+                        : aba === "notas"
+                          ? "Notas"
+                          : "Conexões"}
                   </TabsTrigger>
                 ))}
               </TabsList>
