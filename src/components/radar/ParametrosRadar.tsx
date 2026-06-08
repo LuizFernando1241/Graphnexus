@@ -51,6 +51,7 @@ const DECISION_ROWS = [
 
 export function ParametrosRadar() {
   const { parametros, saveParametros, isLoading, isSaving } = useRadarParametros();
+  const { recalcularTodos, isRecalculando } = useRadarProdutos();
   const [local, setLocal] = useState<RadarParametros>(DEFAULT_PARAMETROS);
   const [isDirty, setIsDirty] = useState(false);
   const [salvoOk, setSalvoOk] = useState(false);
