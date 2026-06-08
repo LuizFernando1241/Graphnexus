@@ -382,6 +382,10 @@ export default function Dashboard() {
         </Card>
       )}
 
+      <PainelInsights />
+
+
+
       {/* Weekly Review Modal */}
       <WeeklyReview open={reviewOpen} onOpenChange={setReviewOpen} />
     </div>
