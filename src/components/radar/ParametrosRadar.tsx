@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Save, RotateCcw, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Save, RotateCcw, AlertCircle, CheckCircle2, RefreshCw, Trash2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
@@ -13,9 +13,27 @@ import {
 } from "@/components/ui/accordion";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useRadarParametros } from "@/hooks/radar/useRadarParametros";
-import { DEFAULT_PARAMETROS } from "@/lib/radar/radarScore";
+import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
+import { DEFAULT_PARAMETROS, DEFAULT_FAIXAS } from "@/lib/radar/radarScore";
+import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import type { RadarParametros, RadarWeights } from "@/types/radar";
+import type { RadarParametros, RadarWeights, RadarFaixas, FaixaItem } from "@/types/radar";
+
+const PILAR_UNIT: Record<keyof RadarFaixas, { prefix?: string; suffix?: string; direcao: "min" | "max" }> = {
+  margem: { suffix: "%", direcao: "min" },
+  ticket: { prefix: "R$", direcao: "min" },
+  demanda: { prefix: "R$", suffix: "/mês", direcao: "min" },
+  visitas: { suffix: "visitas", direcao: "min" },
+  concorrentes: { suffix: "concorrentes", direcao: "max" },
+};
+
+const PILAR_FAIXA_LABELS: Record<keyof RadarFaixas, string> = {
+  margem: "Margem de Lucro (%)",
+  ticket: "Ticket Médio (R$)",
+  demanda: "Demanda / Faturamento (R$/mês)",
+  visitas: "Visitas por Mês",
+  concorrentes: "Concorrentes no Full",
+};
 
 const PILAR_LABELS: Record<keyof RadarWeights, string> = {
   margem: "Margem de Lucro",
