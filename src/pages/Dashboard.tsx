@@ -21,6 +21,7 @@ import { WeeklyReview } from "@/components/WeeklyReview";
 import { PageTransition } from "@/components/PageTransition";
 import { DashboardSkeleton } from "@/components/ui/page-skeleton";
 import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
+import { PainelInsights } from "@/components/radar/PainelInsights";
 
 const DAY_NAMES = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
 
@@ -380,6 +381,10 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       )}
+
+      <PainelInsights />
+
+
 
       {/* Weekly Review Modal */}
       <WeeklyReview open={reviewOpen} onOpenChange={setReviewOpen} />

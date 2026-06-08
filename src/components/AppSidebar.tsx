@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { ResizeHandle } from "@/components/ui/ResizeHandle";
 import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
+import { useRadarSinais } from "@/hooks/radar/useRadarSinais";
 
 const navItems = [
   { title: "Dashboard", url: "/", icon: Home },
@@ -34,6 +35,9 @@ export function AppSidebar() {
   const effectiveWidth = collapsed ? 64 : width;
   const { produtos: radarProdutos } = useRadarProdutos();
   const produtosEmDecisao = radarProdutos.filter((p) => p.stage === "decisao").length;
+  const { urgentes } = useRadarSinais();
+  const badgeCount = urgentes.length + produtosEmDecisao;
+
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -92,9 +96,9 @@ export function AppSidebar() {
             {!collapsed && (
               <>
                 <span className="truncate flex-1">Pipeline</span>
-                {produtosEmDecisao > 0 && (
+                {badgeCount > 0 && (
                   <span className="ml-auto inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-semibold text-destructive-foreground">
-                    {produtosEmDecisao}
+                    {badgeCount}
                   </span>
                 )}
               </>
