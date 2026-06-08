@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { ResizeHandle } from "@/components/ui/ResizeHandle";
 import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
+import { useRadarSinais } from "@/hooks/radar/useRadarSinais";
 
 const navItems = [
   { title: "Dashboard", url: "/", icon: Home },
