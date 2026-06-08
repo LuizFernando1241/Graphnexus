@@ -212,7 +212,16 @@ export function ParametrosRadar() {
             Configure como o score dos produtos é calculado
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRecalcular}
+            disabled={isRecalculando}
+          >
+            <RefreshCw className={cn("h-3.5 w-3.5 mr-2", isRecalculando && "animate-spin")} />
+            {isRecalculando ? "Recalculando..." : "Recalcular produtos"}
+          </Button>
           <Button variant="outline" size="sm" onClick={handleResetar}>
             <RotateCcw className="h-3.5 w-3.5 mr-2" />
             Restaurar padrões
