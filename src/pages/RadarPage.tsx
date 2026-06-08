@@ -104,6 +104,20 @@ export default function RadarPage() {
           />
         )}
       </div>
+
+      <ProdutoDrawer
+        produto={produtoSelecionado && "id" in produtoSelecionado ? (produtoSelecionado as RadarProduto) : null}
+        open={produtoSelecionado !== null}
+        onClose={() => setProdutoSelecionado(null)}
+      />
+
+      {historicoTarget && (
+        <HistoricoModal
+          produto={historicoTarget}
+          open={!!historicoTarget}
+          onClose={() => setHistoricoTarget(null)}
+        />
+      )}
     </PageTransition>
   );
 }
