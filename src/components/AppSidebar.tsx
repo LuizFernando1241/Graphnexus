@@ -1,4 +1,4 @@
-import { Home, StickyNote, CheckSquare, FolderKanban, Network, Archive, Upload, LogOut, Crosshair, ShoppingCart } from "lucide-react";
+import { Home, StickyNote, CheckSquare, FolderKanban, Network, Archive, Upload, LogOut, Crosshair, ShoppingCart, Settings as SettingsIcon } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -111,6 +111,19 @@ export function AppSidebar() {
             {!collapsed && <span className="truncate">Aprovados</span>}
           </NavLink>
         </nav>
+
+        {/* Settings */}
+        <div className={`border-t border-border py-2 ${collapsed ? "px-2" : "px-3"}`}>
+          <NavLink
+            to="/settings"
+            title={collapsed ? "Configurações" : undefined}
+            className={`flex items-center gap-3 rounded-lg py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${collapsed ? "px-2 justify-center" : "px-3"}`}
+            activeClassName="bg-sidebar-accent text-foreground"
+          >
+            <SettingsIcon className="h-4 w-4 shrink-0" />
+            {!collapsed && <span className="truncate">Configurações</span>}
+          </NavLink>
+        </div>
 
         {/* User footer */}
         <div className={`border-t border-border py-3 ${collapsed ? "px-2" : "px-3"}`}>

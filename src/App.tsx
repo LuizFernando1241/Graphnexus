@@ -24,6 +24,7 @@ import Archive from "@/pages/Archive";
 import Import from "@/pages/Import";
 import RadarPage from "@/pages/RadarPage";
 import AprovadosPage from "@/pages/AprovadosPage";
+import Settings from "@/pages/Settings";
 import Login from "@/pages/Login";
 import Signup from "@/pages/Signup";
 import NotFound from "@/pages/NotFound";
@@ -77,6 +78,7 @@ const router = createBrowserRouter([
           { path: "/import", element: <Import /> },
           { path: "/radar", element: <RadarPage /> },
           { path: "/radar/aprovados", element: <AprovadosPage /> },
+          { path: "/settings", element: <Settings /> },
         ],
       },
     ],
