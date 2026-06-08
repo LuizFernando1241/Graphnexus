@@ -32,6 +32,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ScorePainel } from "./ScorePainel";
 import { HistoricoModal } from "./HistoricoModal";
+import { PainelConexoes } from "./PainelConexoes";
 import {
   calcularScore,
   getStageLabel,
