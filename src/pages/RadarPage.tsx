@@ -7,6 +7,8 @@ import { PageTransition } from "@/components/PageTransition";
 import { KanbanBoard } from "@/components/radar/KanbanBoard";
 import { RadarFilters, type RadarFiltersState } from "@/components/radar/RadarFilters";
 import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
+import { ProdutoDrawer } from "@/components/radar/ProdutoDrawer";
+import { HistoricoModal } from "@/components/radar/HistoricoModal";
 import { cn } from "@/lib/utils";
 import type { RadarProduto } from "@/types/radar";
 
@@ -19,8 +21,8 @@ const FILTROS_INICIAIS: RadarFiltersState = {
 export default function RadarPage() {
   const { produtos, isLoading } = useRadarProdutos();
   const [filtrosAbertos, setFiltrosAbertos] = useState(false);
-  const [, setProdutoSelecionado] = useState<RadarProduto | Record<string, never> | null>(null);
-  const [, setHistoricoTarget] = useState<RadarProduto | null>(null);
+  const [produtoSelecionado, setProdutoSelecionado] = useState<RadarProduto | Record<string, never> | null>(null);
+  const [historicoTarget, setHistoricoTarget] = useState<RadarProduto | null>(null);
   const [filters, setFilters] = useState<RadarFiltersState>(FILTROS_INICIAIS);
 
   const produtosFiltrados = produtos.filter((p) => {
@@ -102,6 +104,20 @@ export default function RadarPage() {
           />
         )}
       </div>
+
+      <ProdutoDrawer
+        produto={produtoSelecionado && "id" in produtoSelecionado ? (produtoSelecionado as RadarProduto) : null}
+        open={produtoSelecionado !== null}
+        onClose={() => setProdutoSelecionado(null)}
+      />
+
+      {historicoTarget && (
+        <HistoricoModal
+          produto={historicoTarget}
+          open={!!historicoTarget}
+          onClose={() => setHistoricoTarget(null)}
+        />
+      )}
     </PageTransition>
   );
 }
