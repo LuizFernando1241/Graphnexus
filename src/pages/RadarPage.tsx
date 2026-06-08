@@ -21,8 +21,8 @@ const FILTROS_INICIAIS: RadarFiltersState = {
 export default function RadarPage() {
   const { produtos, isLoading } = useRadarProdutos();
   const [filtrosAbertos, setFiltrosAbertos] = useState(false);
-  const [, setProdutoSelecionado] = useState<RadarProduto | Record<string, never> | null>(null);
-  const [, setHistoricoTarget] = useState<RadarProduto | null>(null);
+  const [produtoSelecionado, setProdutoSelecionado] = useState<RadarProduto | Record<string, never> | null>(null);
+  const [historicoTarget, setHistoricoTarget] = useState<RadarProduto | null>(null);
   const [filters, setFilters] = useState<RadarFiltersState>(FILTROS_INICIAIS);
 
   const produtosFiltrados = produtos.filter((p) => {
