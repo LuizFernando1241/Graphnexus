@@ -121,6 +121,11 @@ export default function RadarPage() {
         produto={produtoSelecionado && "id" in produtoSelecionado ? (produtoSelecionado as RadarProduto) : null}
         open={produtoSelecionado !== null}
         onClose={() => setProdutoSelecionado(null)}
+        prefill={
+          produtoSelecionado && !("id" in produtoSelecionado)
+            ? (produtoSelecionado as Record<string, unknown>)
+            : null
+        }
       />
 
       {historicoTarget && (
