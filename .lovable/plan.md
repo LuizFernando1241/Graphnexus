@@ -1,59 +1,55 @@
-# Melhorias de Projetos — Pacote pequeno
+## Problema
 
-Foco em duas frentes complementares: **UI/UX da página de detalhe do projeto** + **ferramentas internas** (métricas e IA), sem mexer na listagem.
+Hoje os pesos, limiares de decisão e descartes automáticos já são configuráveis, mas **as faixas de pontuação de cada pilar estão hardcoded** em `src/lib/radar/radarScore.ts` (funções `calcularPilarMargem`, `calcularPilarTicket`, etc.). Ajustar os pesos em Parâmetros não muda o quanto cada faixa pontua — só muda o peso relativo. Você quer poder editar as próprias faixas (ex.: "≥ 20% = 10 pts", "≥ 15% = 8 pts" etc.) e ver isso refletir imediatamente no score, na decisão e no kanban.
 
-## 1. UI/UX da página do projeto
+O campo `faixas` já existe em `RadarParametros` e na tabela `radar_parametros`, mas está vazio e não é lido pelo cálculo.
 
-Reorganizar `ProjectDetail.tsx` em um layout mais visual e escaneável.
+## Solução (modular, sem migration nova)
 
-### Header visual
-- Faixa de capa colorida (já existe) virando um **hero compacto** com emoji grande, título, status em badge colorido e datas (início → alvo) na mesma linha.
-- Linha de meta-info (criado em, última atualização, nº de tarefas vinculadas).
-- Ações (Salvar / Exportar / Arquivar / Excluir) agrupadas em um menu mais limpo.
+### 1. `src/lib/radar/radarScore.ts` — engine genérica baseada em faixas
 
-### Abas (Tabs)
-Substituir o scroll vertical único por 3 abas:
-- **Visão geral** — métricas + descrição + IA.
-- **Tarefas** — lista das tarefas vinculadas ao projeto (via `entity_links`), com checkbox inline e botão "+ tarefa" que já cria e vincula.
-- **Notas e arquivos** — notas vinculadas + anexos do projeto.
+- Definir `DEFAULT_FAIXAS: RadarFaixas` com as 5 faixas de cada pilar, exatamente como descrito (margem, ticket, demanda, visitas, concorrentes).
+- Cada item de faixa: `{ limiteMin, pontos, label, escalaAberta?: boolean, descarte?: boolean, divisor?: number }`. O flag `escalaAberta` ativa a fórmula `pontos = base × (valor / limiteMin)` para a faixa máxima. O flag `descarte` marca faixas que disparam descarte automático (Ticket < 30, Demanda < 100 exceto lançamentos).
+- Substituir os 5 `calcularPilarX` por uma única função `avaliarFaixa(valor, faixas)` que percorre as faixas ordenadas e retorna `{ pontos, descarte }`.
+- Em `calcularScore`, ler `params.faixas` com merge sobre `DEFAULT_FAIXAS` (qualquer pilar ausente cai no padrão), e passar para `avaliarFaixa`.
+- Manter os descartes automáticos por preço/faturamento atuais (já são parametrizados via `autoDescarte`), mas também aceitar o flag `descarte` vindo das faixas (mais flexível no futuro).
+- Adicionar `DEFAULT_PARAMETROS.faixas = DEFAULT_FAIXAS` para que projetos novos já saiam corretos.
 
-O painel direito de links (`LinkPanelDock`) continua disponível em todas as abas.
+### 2. `src/components/radar/ParametrosRadar.tsx` — UI das faixas
 
-### Cards de métricas (aba Visão geral)
-Quatro cards no topo:
-1. **Progresso** — barra `% concluído` baseada em tarefas vinculadas (`done / total`).
-2. **Contagem por status** — chips: Backlog · Em andamento · Concluídas (cores semânticas).
-3. **Próximas datas** — até 3 próximas tarefas com `due_date`, ordenadas; clique abre a tarefa.
-4. **Burndown / timeline** — mini gráfico de área (Recharts) mostrando tarefas restantes ao longo do tempo até `target_date`. Se não houver datas, mostra estado vazio amigável.
+Adicionar um 4º `AccordionItem` chamado **"Faixas de Pontuação por Pilar"**, contendo um sub-accordion (um item por pilar). Cada pilar mostra uma tabela editável com 5 linhas:
 
-## 2. Ferramentas internas (IA + auto)
+| Faixa máxima (≥) | Pontos | (badge "escala aberta" quando aplicável) |
 
-### Painel "IA do Projeto" na aba Visão geral
-Card com 3 ações via uma única edge function `project-ai` (Lovable AI, modelo `google/gemini-3-flash-preview`):
+- Campos `Input type="number"` para `limiteMin` e `pontos`.
+- Botão "Restaurar faixas padrão deste pilar".
+- Para Concorrentes (não tem escala aberta nem unidades monetárias), renderizar variante simplificada.
+- Helpers de unidade: `%` para margem, `R$` para ticket/demanda, `visitas` para visitas, `un.` para concorrentes.
+- Validação leve: avisar (sem bloquear) se as faixas não estiverem em ordem decrescente de `limiteMin`.
 
-- **Resumo do projeto** — IA lê descrição + títulos/status das tarefas e notas vinculadas e gera um resumo executivo (3-5 linhas). Resultado exibido no card, com botão "Salvar como nota" (cria nota vinculada).
-- **Quebrar em milestones + tarefas** — a partir da descrição, IA propõe milestones (3-6) e tarefas sob cada um. Modal de preview com checkbox por item; ao confirmar, cria tarefas com `entity_link` ao projeto. Milestone vira prefixo no título (`[M1] ...`) — sem mudança de schema.
-- **Status inteligente** — IA analisa progresso, datas e atividade e sugere mudança de status (ex.: `active → paused` se sem atividade há 14d, ou `→ completed` se 100% das tarefas done). Mostra sugestão + botão "Aplicar".
+O botão "Restaurar padrões" geral já existente passa a restaurar também `faixas` para `DEFAULT_FAIXAS`.
 
-Cada ação é um `type` diferente no body da edge function; respostas estruturadas via tool calling (schemas pequenos). Tratamento de 429/402 com toast amigável.
+### 3. Propagação
 
-## Detalhes técnicos
+Nada mais precisa mudar:
+- `useRadarProdutos` já chama `calcularScore(form, parametros)` ao criar/atualizar produtos.
+- `ScorePainel` (drawer) já recalcula em tempo real via `useMemo` com `parametros`.
+- O kanban e badges leem `produto.scoreTotal` / `produto.decision` já recalculados.
 
-**Arquivos novos:**
-- `supabase/functions/project-ai/index.ts` — edge function única com `type: 'summary' | 'milestones' | 'status'`.
-- `src/components/projects/ProjectHero.tsx` — header visual.
-- `src/components/projects/ProjectMetrics.tsx` — 4 cards de métricas + burndown (Recharts já está nas deps).
-- `src/components/projects/ProjectAIPanel.tsx` — painel IA com as 3 ações.
-- `src/components/projects/ProjectTasksTab.tsx` — lista de tarefas vinculadas com criação inline.
-- `src/components/projects/ProjectNotesTab.tsx` — notas + anexos.
-- `src/lib/api/projectStats.ts` — helpers `getLinkedTasks(projectId)`, `computeProgress`, `buildBurndownSeries`.
+Único cuidado: após salvar novos parâmetros, scores de produtos já salvos no banco continuam com o valor antigo até a próxima edição. Adicionar um botão discreto **"Recalcular todos os produtos"** ao lado de "Salvar" que itera os produtos do usuário, recalcula score/decision com os novos parâmetros e atualiza no Supabase (operação em lote via `Promise.all`, com toast de progresso).
 
-**Arquivos editados:**
-- `src/pages/ProjectDetail.tsx` — reorganizar em hero + Tabs (shadcn `Tabs`), mover descrição/datas/cor para aba Visão geral, manter `LinkPanelDock`.
-- `supabase/config.toml` — registrar nova função (`verify_jwt = true`).
+## Arquivos tocados
 
-**Sem migração de schema.** Tarefas vinculadas continuam via `entity_links` (`source_type='task'`, `target_type='project'`). Milestones são apenas convenção de prefixo no título.
+- `src/lib/radar/radarScore.ts` — refatorar para engine baseada em faixas + `DEFAULT_FAIXAS`.
+- `src/components/radar/ParametrosRadar.tsx` — adicionar seção de faixas + botão recalcular.
+- `src/hooks/radar/useRadarProdutos.ts` — expor uma função `recalcularTodos()` que reaproveita `calcularScore`.
+- `src/types/radar.ts` — ajuste pequeno em `FaixaItem` se necessário (adicionar `escalaAberta`, `descarte`, `divisor`).
 
-**IA:** usa `LOVABLE_API_KEY` (já configurado). Tool calling com schemas curtos para milestones/status; resumo retorna texto puro.
+Nenhuma migration nova: o campo `faixas jsonb` já existe na tabela `radar_parametros`.
 
-**Fora de escopo (este pacote):** mudanças na listagem `/projects`, criação de tabela de milestones, gráficos mais avançados, mudanças em Notas/Tarefas globais.
+## Verificação
+
+1. Mudar "Margem ≥ 20% = 10 pts" para "≥ 25% = 12 pts" → produto com 22% de margem que antes dava 10 pts passa a dar pontos pela faixa inferior; score recalcula no drawer ao vivo.
+2. Mudar threshold de "Excelente" para 50 → produto com score 42 muda de 🚀 para ✅ no kanban após recalcular.
+3. Clicar "Restaurar padrões" volta tudo (pesos, limiares, descartes, faixas) ao default.
+4. "Recalcular todos os produtos" atualiza scores no banco e o kanban reflete sem reload.

@@ -5,8 +5,51 @@ import type {
   PilarResult,
   DecisionBadge,
   RadarWeights,
+  RadarFaixas,
+  FaixaItem,
   PipelineStage,
 } from '@/types/radar'
+
+// ─── Faixas padrão (editáveis em Parâmetros) ─────────────────────────────────
+
+export const DEFAULT_FAIXAS: RadarFaixas = {
+  margem: [
+    { limiteMin: 20, pontos: 10, escalaAberta: true, label: '≥ 20%' },
+    { limiteMin: 15, pontos: 8, label: '≥ 15%' },
+    { limiteMin: 10, pontos: 5, label: '≥ 10%' },
+    { limiteMin: 5, pontos: 3, label: '≥ 5%' },
+    { limiteMin: 0, pontos: 0, label: '< 5%' },
+  ],
+  ticket: [
+    { limiteMin: 500, pontos: 10, escalaAberta: true, label: '≥ R$ 500' },
+    { limiteMin: 200, pontos: 8, label: '≥ R$ 200' },
+    { limiteMin: 79, pontos: 6, label: '≥ R$ 79' },
+    { limiteMin: 30, pontos: 3, label: '≥ R$ 30' },
+    { limiteMin: 0, pontos: 0, descarte: true, label: '< R$ 30 (descarte)' },
+  ],
+  demanda: [
+    { limiteMin: 5000, pontos: 10, escalaAberta: true, label: '≥ R$ 5.000/mês' },
+    { limiteMin: 2000, pontos: 8, label: '≥ R$ 2.000/mês' },
+    { limiteMin: 1000, pontos: 5, label: '≥ R$ 1.000/mês' },
+    { limiteMin: 500, pontos: 3, label: '≥ R$ 500/mês' },
+    { limiteMin: 0, pontos: 0, label: '< R$ 500/mês' },
+  ],
+  visitas: [
+    { limiteMin: 1500, pontos: 10, escalaAberta: true, label: '≥ 1.500 visitas' },
+    { limiteMin: 1000, pontos: 8, label: '≥ 1.000 visitas' },
+    { limiteMin: 600, pontos: 5, label: '≥ 600 visitas' },
+    { limiteMin: 450, pontos: 3, label: '≥ 450 visitas' },
+    { limiteMin: 0, pontos: 0, label: '< 450 visitas' },
+  ],
+  concorrentes: [
+    { limiteMax: 0, pontos: 15, label: '0 concorrentes' },
+    { limiteMax: 1, pontos: 10, label: '1 concorrente' },
+    { limiteMax: 3, pontos: 8, label: '2 a 3' },
+    { limiteMax: 5, pontos: 5, label: '4 a 5' },
+    { limiteMax: 8, pontos: 3, label: '6 a 8' },
+    { limiteMin: 9, pontos: 0, label: '≥ 9 (saturado)' },
+  ],
+}
 
 // ─── Parâmetros padrão ────────────────────────────────────────────────────────
 
@@ -27,50 +70,71 @@ export const DEFAULT_PARAMETROS: RadarParametros = {
     ticketMinimo: 30,
     faturamentoMinimo: 100,
   },
-  faixas: {},
+  faixas: DEFAULT_FAIXAS,
 }
 
-// ─── Pontuação dos pilares ────────────────────────────────────────────────────
+// ─── Avaliador genérico de faixas ────────────────────────────────────────────
 
-function calcularPilarMargem(margem: number): number {
-  if (margem >= 20) return 10 * (margem / 20)
-  if (margem >= 12.5) return 8
-  if (margem >= 10) return 6
-  if (margem >= 5) return 3
-  return 0
+interface AvaliacaoFaixa {
+  pontos: number
+  descarte: boolean
+  faixaCasada?: FaixaItem
 }
 
-function calcularPilarTicket(preco: number): number {
-  if (preco >= 500) return 10 * (preco / 500)
-  if (preco >= 200) return 8
-  if (preco >= 79) return 6
-  if (preco >= 30) return 3
-  return 0
+/**
+ * Avalia um valor contra uma lista de faixas.
+ * - Faixas com `limiteMin` (maior é melhor) → ordenadas desc, casa a primeira em que valor >= limiteMin.
+ * - Faixas com `limiteMax` (menor é melhor) → ordenadas asc, casa a primeira em que valor <= limiteMax.
+ * - Se a faixa casada tem `escalaAberta`, pontos = pontos * (valor / limiteMin).
+ */
+function avaliarFaixa(valor: number, faixas: FaixaItem[]): AvaliacaoFaixa {
+  if (!faixas || faixas.length === 0) return { pontos: 0, descarte: false }
+
+  // Direção: se a primeira faixa tem limiteMax definido sem limiteMin, assume "menor é melhor".
+  const usaLimiteMax = faixas.some((f) => f.limiteMax != null) && !faixas.every((f) => f.limiteMin != null && f.limiteMin > 0)
+
+  if (usaLimiteMax) {
+    const ordenadas = [...faixas].sort((a, b) => {
+      const aMax = a.limiteMax ?? Infinity
+      const bMax = b.limiteMax ?? Infinity
+      return aMax - bMax
+    })
+    for (const f of ordenadas) {
+      if (f.limiteMax != null && valor <= f.limiteMax) {
+        return { pontos: f.pontos, descarte: !!f.descarte, faixaCasada: f }
+      }
+    }
+    // catch-all (faixa sem limiteMax)
+    const fallback = ordenadas.find((f) => f.limiteMax == null)
+    if (fallback) return { pontos: fallback.pontos, descarte: !!fallback.descarte, faixaCasada: fallback }
+    return { pontos: 0, descarte: false }
+  }
+
+  // Direção padrão: maior é melhor
+  const ordenadas = [...faixas].sort((a, b) => (b.limiteMin ?? 0) - (a.limiteMin ?? 0))
+  for (const f of ordenadas) {
+    const limite = f.limiteMin ?? 0
+    if (valor >= limite) {
+      let pontos = f.pontos
+      if (f.escalaAberta && limite > 0) {
+        pontos = f.pontos * (valor / limite)
+      }
+      return { pontos, descarte: !!f.descarte, faixaCasada: f }
+    }
+  }
+  return { pontos: 0, descarte: false }
 }
 
-function calcularPilarDemanda(faturamento: number): number {
-  if (faturamento >= 5000) return 10 * (faturamento / 5000)
-  if (faturamento >= 2000) return 8
-  if (faturamento >= 1000) return 6
-  if (faturamento >= 500) return 3
-  return 0
-}
+// ─── Merge das faixas configuradas com os defaults ──────────────────────────
 
-function calcularPilarVisitas(visitas: number): number {
-  if (visitas >= 1500) return 10 * (visitas / 1500)
-  if (visitas >= 1000) return 8
-  if (visitas >= 600) return 6
-  if (visitas >= 450) return 3
-  return 0
-}
-
-function calcularPilarConcorrentes(concorrentes: number): number {
-  if (concorrentes === 0) return 15
-  if (concorrentes === 1) return 10
-  if (concorrentes <= 3) return 8
-  if (concorrentes <= 5) return 5
-  if (concorrentes <= 8) return 3
-  return 0
+function resolverFaixas(custom?: Partial<RadarFaixas>): RadarFaixas {
+  return {
+    margem: custom?.margem?.length ? custom.margem : DEFAULT_FAIXAS.margem,
+    ticket: custom?.ticket?.length ? custom.ticket : DEFAULT_FAIXAS.ticket,
+    demanda: custom?.demanda?.length ? custom.demanda : DEFAULT_FAIXAS.demanda,
+    visitas: custom?.visitas?.length ? custom.visitas : DEFAULT_FAIXAS.visitas,
+    concorrentes: custom?.concorrentes?.length ? custom.concorrentes : DEFAULT_FAIXAS.concorrentes,
+  }
 }
 
 // ─── Função principal ─────────────────────────────────────────────────────────
@@ -80,12 +144,14 @@ export function calcularScore(
   params: RadarParametros = DEFAULT_PARAMETROS
 ): ScoreResult {
   const alertas: string[] = []
+  const faixas = resolverFaixas(params.faixas)
+
   const faturamentoEstimado =
     produto.vendasMes != null && produto.precoVenda != null
       ? produto.vendasMes * produto.precoVenda
       : undefined
 
-  // ── Verificar descartes automáticos ──
+  // ── Descartes automáticos por valores absolutos (autoDescarte) ──
   if (
     produto.precoVenda != null &&
     produto.precoVenda < params.autoDescarte.ticketMinimo
@@ -130,91 +196,99 @@ export function calcularScore(
     alertas.push('Vendas maiores que visitas — verifique os dados')
   }
 
-  // ── Calcular pontos brutos de cada pilar ──
+  // ── Avaliar cada pilar via engine genérica ──
   const margemPreenchida = produto.margem != null
   const demandaAtiva = !produto.isLancamento && produto.vendasMes != null
 
-  const pilaresData: Array<{
+  type PilarInput = {
     key: keyof RadarWeights
     nome: string
     preenchido: boolean
-    pontosBrutos: number
-    peso: number
-  }> = [
+    valor: number | null
+  }
+
+  const inputs: PilarInput[] = [
     {
       key: 'margem',
       nome: 'Margem de Lucro',
       preenchido: margemPreenchida,
-      pontosBrutos: margemPreenchida ? calcularPilarMargem(produto.margem!) : 0,
-      peso: params.weights.margem,
+      valor: margemPreenchida ? produto.margem! : null,
     },
     {
       key: 'ticket',
       nome: 'Ticket Médio',
       preenchido: produto.precoVenda != null,
-      pontosBrutos: produto.precoVenda != null ? calcularPilarTicket(produto.precoVenda) : 0,
-      peso: params.weights.ticket,
+      valor: produto.precoVenda ?? null,
     },
     {
       key: 'demanda',
       nome: 'Demanda / Faturamento',
       preenchido: demandaAtiva,
-      pontosBrutos:
-        demandaAtiva && faturamentoEstimado != null
-          ? calcularPilarDemanda(faturamentoEstimado)
-          : 0,
-      peso: params.weights.demanda,
+      valor: demandaAtiva && faturamentoEstimado != null ? faturamentoEstimado : null,
     },
     {
       key: 'visitas',
       nome: 'Visitas por Mês',
       preenchido: produto.visitasMes != null,
-      pontosBrutos: produto.visitasMes != null ? calcularPilarVisitas(produto.visitasMes) : 0,
-      peso: params.weights.visitas,
+      valor: produto.visitasMes ?? null,
     },
     {
       key: 'concorrentes',
       nome: 'Concorrentes no Full',
       preenchido: produto.concorrentesFull != null,
-      pontosBrutos:
-        produto.concorrentesFull != null
-          ? calcularPilarConcorrentes(produto.concorrentesFull)
-          : 0,
-      peso: params.weights.concorrentes,
+      valor: produto.concorrentesFull ?? null,
     },
   ]
 
-  // ── Excluir pilares inativos e normalizar pesos ──
-  const pilaresAtivos = pilaresData.filter((p) => {
+  // ── Excluir pilares inativos para normalização de pesos ──
+  const isAtivo = (p: PilarInput) => {
     if (p.key === 'margem' && !margemPreenchida) return false
     if (p.key === 'demanda' && produto.isLancamento) return false
     return true
-  })
+  }
+  const ativos = inputs.filter(isAtivo)
+  const totalPesoAtivo = ativos.reduce((sum, p) => sum + (params.weights[p.key] ?? 0), 0)
 
-  const totalPesoAtivo = pilaresAtivos.reduce((sum, p) => sum + p.peso, 0)
+  let descarteByFaixa: { motivo: string } | null = null
 
-  // ── Montar resultado dos pilares ──
-  const pilares: PilarResult[] = pilaresData.map((p) => {
-    const ativo = pilaresAtivos.find((pa) => pa.key === p.key)
-    const pesoNormalizado = ativo && totalPesoAtivo > 0 ? (p.peso / totalPesoAtivo) * 100 : 0
-    const contribuicao = ativo ? (p.pontosBrutos * pesoNormalizado) / 100 : 0
+  const pilares: PilarResult[] = inputs.map((p) => {
+    const peso = params.weights[p.key] ?? 0
+    const ativo = isAtivo(p)
+    const aval = p.valor != null ? avaliarFaixa(p.valor, faixas[p.key]) : { pontos: 0, descarte: false }
+
+    if (ativo && aval.descarte && !descarteByFaixa) {
+      descarteByFaixa = { motivo: `${p.nome}: valor em faixa de descarte` }
+    }
+
+    const pesoNormalizado = ativo && totalPesoAtivo > 0 ? (peso / totalPesoAtivo) * 100 : 0
+    const contribuicao = ativo ? (aval.pontos * pesoNormalizado) / 100 : 0
 
     return {
       nome: p.nome,
       key: p.key,
       preenchido: p.preenchido,
-      pontos: p.pontosBrutos,
-      pontosBrutos: p.pontosBrutos,
-      peso: p.peso,
+      pontos: aval.pontos,
+      pontosBrutos: aval.pontos,
+      peso,
       pesoNormalizado,
       contribuicao,
     }
   })
 
-  // ── Score total ──
+  if (descarteByFaixa) {
+    return {
+      scoreTotal: 0,
+      decision: 'descarte',
+      pilares,
+      faturamentoEstimado,
+      descarteAutomatico: true,
+      motivoDescarte: descarteByFaixa.motivo,
+      alertas,
+    }
+  }
+
   const scoreTotal = pilares.reduce((sum, p) => sum + p.contribuicao, 0)
 
-  // ── Decision ──
   let decision: DecisionBadge = 'descarte'
   if (scoreTotal >= params.decisaoThresholds.excelente) decision = 'excelente'
   else if (scoreTotal >= params.decisaoThresholds.viavel) decision = 'viavel'
