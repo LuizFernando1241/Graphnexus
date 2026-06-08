@@ -78,6 +78,7 @@ const router = createBrowserRouter([
           { path: "/import", element: <Import /> },
           { path: "/radar", element: <RadarPage /> },
           { path: "/radar/aprovados", element: <AprovadosPage /> },
+          { path: "/settings", element: <Settings /> },
         ],
       },
     ],
