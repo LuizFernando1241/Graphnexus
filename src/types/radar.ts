@@ -79,7 +79,9 @@ export interface FaixaItem {
   limiteMin?: number
   limiteMax?: number
   pontos: number
-  label: string
+  label?: string
+  escalaAberta?: boolean
+  descarte?: boolean
 }
 
 export interface RadarFaixas {
