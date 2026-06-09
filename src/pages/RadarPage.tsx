@@ -44,7 +44,14 @@ export default function RadarPage() {
     if (filters.fornecedor !== "all" && p.fornecedor !== filters.fornecedor) return false;
     if (filters.decision !== "all" && p.decision !== filters.decision) return false;
     if (filters.stage !== "all" && p.stage !== filters.stage) return false;
+    if (filters.busca.trim()) {
+      const termo = filters.busca.toLowerCase().trim();
+      const nomeBate = p.nome.toLowerCase().includes(termo);
+      const fornecedorBate = p.fornecedor.toLowerCase().includes(termo);
+      if (!nomeBate && !fornecedorBate) return false;
+    }
     return true;
+
   });
 
   const emDecisao = produtos.filter((p) => p.stage === "decisao").length;
