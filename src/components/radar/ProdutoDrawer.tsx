@@ -355,7 +355,63 @@ export function ProdutoDrawer({ produto, open, onClose, prefill }: ProdutoDrawer
                     />
                   </div>
                 </div>
+
+                {/* Bloco para registrar decisão (aguardando_custo) */}
+                {!isNovo && produto?.stage === "aguardando_custo" && (
+                  <div className="rounded-lg border border-primary/40 bg-primary/5 p-3 flex flex-col gap-3 mt-1">
+                    <p className="text-xs text-foreground/80">
+                      📋 Preencha o custo e a margem real do fornecedor para registrar a decisão.
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex flex-col gap-1.5">
+                        <Label htmlFor="rd-custo-real">Custo real (R$)</Label>
+                        <Input
+                          id="rd-custo-real"
+                          inputMode="decimal"
+                          value={form.custo ?? ""}
+                          onChange={(e) => setField("custo", parseNum(e.target.value))}
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <Label htmlFor="rd-margem-real">Margem real (%)</Label>
+                        <div className="relative">
+                          <Input
+                            id="rd-margem-real"
+                            inputMode="decimal"
+                            value={form.margem ?? ""}
+                            onChange={(e) => setField("margem", parseNum(e.target.value))}
+                            className="pr-8"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                            %
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={async () => {
+                        if (!produto) return;
+                        await atualizarProduto({
+                          id: produto.id,
+                          formData: form,
+                          produtoAtual: produto,
+                        });
+                        await moverEtapa({
+                          id: produto.id,
+                          novaEtapa: "decisao",
+                          produtoAtual: produto,
+                        });
+                        onClose();
+                      }}
+                      disabled={isBusy}
+                    >
+                      Registrar decisão →
+                    </Button>
+                  </div>
+                )}
               </TabsContent>
+
+
 
               {/* ── Aba Mercado ── */}
               <TabsContent value="mercado" className="flex flex-col gap-4 mt-4">
