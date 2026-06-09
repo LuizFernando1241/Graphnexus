@@ -96,10 +96,14 @@ export function ProdutoDrawer({ produto, open, onClose, prefill }: ProdutoDrawer
     produtos,
     criarProduto,
     atualizarProduto,
+    moverEtapa,
+    deletarProduto,
     isCriando,
     isAtualizando,
+    isDeletando,
   } = useRadarProdutos();
   const { parametros } = useRadarParametros();
+
 
   const [form, setForm] = useState<RadarProdutoFormData>(EMPTY_FORM);
   const [showHistorico, setShowHistorico] = useState(false);
