@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { useDraggable } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 import { Building2, Clock, ExternalLink, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,7 +12,9 @@ import { ScoreBar } from "./ScoreBar";
 import { PilarDots } from "./PilarDots";
 import { formatCurrency } from "@/lib/radar/radarScore";
 import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
+import { cn } from "@/lib/utils";
 import type { RadarProduto, PipelineStage } from "@/types/radar";
+
 
 interface ProdutoCardProps {
   produto: RadarProduto;
