@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageTransition } from "@/components/PageTransition";
-import { KanbanBoard } from "@/components/radar/KanbanBoard";
+import { KanbanDnD } from "@/components/radar/KanbanDnD";
 import { RadarFilters, type RadarFiltersState } from "@/components/radar/RadarFilters";
 import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
 import { ProdutoDrawer } from "@/components/radar/ProdutoDrawer";
@@ -17,7 +17,9 @@ const FILTROS_INICIAIS: RadarFiltersState = {
   fornecedor: "all",
   decision: "all",
   stage: "all",
+  busca: "",
 };
+
 
 export default function RadarPage() {
   const { produtos, isLoading } = useRadarProdutos();
@@ -42,7 +44,14 @@ export default function RadarPage() {
     if (filters.fornecedor !== "all" && p.fornecedor !== filters.fornecedor) return false;
     if (filters.decision !== "all" && p.decision !== filters.decision) return false;
     if (filters.stage !== "all" && p.stage !== filters.stage) return false;
+    if (filters.busca.trim()) {
+      const termo = filters.busca.toLowerCase().trim();
+      const nomeBate = p.nome.toLowerCase().includes(termo);
+      const fornecedorBate = p.fornecedor.toLowerCase().includes(termo);
+      if (!nomeBate && !fornecedorBate) return false;
+    }
     return true;
+
   });
 
   const emDecisao = produtos.filter((p) => p.stage === "decisao").length;
@@ -109,7 +118,7 @@ export default function RadarPage() {
             ))}
           </div>
         ) : (
-          <KanbanBoard
+          <KanbanDnD
             produtos={produtosFiltrados}
             onEdit={(p) => setProdutoSelecionado(p)}
             onHistorico={(p) => setHistoricoTarget(p)}

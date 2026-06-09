@@ -278,6 +278,21 @@ export function useRadarProdutos() {
     },
   })
 
+  const deletarProduto = useMutation({
+    mutationFn: async (id: string) => {
+      if (!user) throw new Error('Usuário não autenticado')
+      const { error } = await supabase
+        .from('radar_produtos')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id)
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['radar-produtos', user?.id] })
+    },
+  })
+
   return {
     produtos: query.data ?? [],
     isLoading: query.isLoading,
@@ -287,8 +302,11 @@ export function useRadarProdutos() {
     atualizarStatusCompra: atualizarStatusCompra.mutateAsync,
     recalcularTodos: recalcularTodos.mutateAsync,
     isRecalculando: recalcularTodos.isPending,
+    deletarProduto: deletarProduto.mutateAsync,
+    isDeletando: deletarProduto.isPending,
     isCriando: criarProduto.isPending,
     isAtualizando: atualizarProduto.isPending,
     isMovendo: moverEtapa.isPending,
   }
 }
+

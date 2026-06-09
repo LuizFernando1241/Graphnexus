@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
-import { Clock, ExternalLink, AlertTriangle } from "lucide-react";
+import { Clock, ExternalLink, AlertTriangle, Trash2 } from "lucide-react";
+
 import {
   Sheet,
   SheetContent,
@@ -28,7 +29,9 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+
 import { Badge } from "@/components/ui/badge";
 import { ScorePainel } from "./ScorePainel";
 import { HistoricoModal } from "./HistoricoModal";
@@ -66,16 +69,26 @@ const EMPTY_FORM: RadarProdutoFormData = {
 };
 
 function parseNum(value: string): number | undefined {
-  if (!value.trim()) return undefined;
-  const n = parseFloat(value.replace(",", "."));
+  if (!value || value.trim() === "") return undefined;
+  // Aceita vírgula ou ponto como decimal; remove separadores de milhar.
+  let s = value.trim().replace(/\s/g, "");
+  const hasComma = s.includes(",");
+  if (hasComma) {
+    // Ex: "1.200,50" -> "1200.50"
+    s = s.replace(/\./g, "").replace(",", ".");
+  }
+  // Sem vírgula: assumir que ponto é decimal (ex: "299.90")
+  const n = parseFloat(s);
   return isNaN(n) ? undefined : n;
 }
 
 function parseInteiro(value: string): number | undefined {
   if (!value.trim()) return undefined;
-  const n = parseInt(value, 10);
+  const limpo = value.replace(/[^\d-]/g, "");
+  const n = parseInt(limpo, 10);
   return isNaN(n) ? undefined : n;
 }
+
 
 export function ProdutoDrawer({ produto, open, onClose, prefill }: ProdutoDrawerProps) {
   const isNovo = !produto?.id;
@@ -83,10 +96,14 @@ export function ProdutoDrawer({ produto, open, onClose, prefill }: ProdutoDrawer
     produtos,
     criarProduto,
     atualizarProduto,
+    moverEtapa,
+    deletarProduto,
     isCriando,
     isAtualizando,
+    isDeletando,
   } = useRadarProdutos();
   const { parametros } = useRadarParametros();
+
 
   const [form, setForm] = useState<RadarProdutoFormData>(EMPTY_FORM);
   const [showHistorico, setShowHistorico] = useState(false);
@@ -338,7 +355,63 @@ export function ProdutoDrawer({ produto, open, onClose, prefill }: ProdutoDrawer
                     />
                   </div>
                 </div>
+
+                {/* Bloco para registrar decisão (aguardando_custo) */}
+                {!isNovo && produto?.stage === "aguardando_custo" && (
+                  <div className="rounded-lg border border-primary/40 bg-primary/5 p-3 flex flex-col gap-3 mt-1">
+                    <p className="text-xs text-foreground/80">
+                      📋 Preencha o custo e a margem real do fornecedor para registrar a decisão.
+                    </p>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex flex-col gap-1.5">
+                        <Label htmlFor="rd-custo-real">Custo real (R$)</Label>
+                        <Input
+                          id="rd-custo-real"
+                          inputMode="decimal"
+                          value={form.custo ?? ""}
+                          onChange={(e) => setField("custo", parseNum(e.target.value))}
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <Label htmlFor="rd-margem-real">Margem real (%)</Label>
+                        <div className="relative">
+                          <Input
+                            id="rd-margem-real"
+                            inputMode="decimal"
+                            value={form.margem ?? ""}
+                            onChange={(e) => setField("margem", parseNum(e.target.value))}
+                            className="pr-8"
+                          />
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                            %
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={async () => {
+                        if (!produto) return;
+                        await atualizarProduto({
+                          id: produto.id,
+                          formData: form,
+                          produtoAtual: produto,
+                        });
+                        await moverEtapa({
+                          id: produto.id,
+                          novaEtapa: "decisao",
+                          produtoAtual: produto,
+                        });
+                        onClose();
+                      }}
+                      disabled={isBusy}
+                    >
+                      Registrar decisão →
+                    </Button>
+                  </div>
+                )}
               </TabsContent>
+
+
 
               {/* ── Aba Mercado ── */}
               <TabsContent value="mercado" className="flex flex-col gap-4 mt-4">
@@ -486,13 +559,51 @@ export function ProdutoDrawer({ produto, open, onClose, prefill }: ProdutoDrawer
           </div>
 
           <div className="px-5 py-4 border-t flex items-center justify-between gap-3 flex-shrink-0 bg-background">
-            <Button
-              variant="ghost"
-              onClick={onClose}
-              className="text-muted-foreground"
-            >
-              Cancelar
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                onClick={onClose}
+                className="text-muted-foreground"
+              >
+                Cancelar
+              </Button>
+              {!isNovo && produto?.id && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      title="Apagar produto"
+                      disabled={isDeletando}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Apagar produto?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        "{produto.nome}" será apagado permanentemente junto com todo o seu histórico.
+                        Esta ação não pode ser desfeita.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        onClick={async () => {
+                          await deletarProduto(produto.id);
+                          onClose();
+                        }}
+                      >
+                        Apagar permanentemente
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
             <Button
               onClick={handleSalvar}
               disabled={!podeSalvar}
@@ -500,6 +611,7 @@ export function ProdutoDrawer({ produto, open, onClose, prefill }: ProdutoDrawer
             >
               {isBusy ? "Salvando..." : "Salvar"}
             </Button>
+
           </div>
         </SheetContent>
       </Sheet>

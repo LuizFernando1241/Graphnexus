@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
+import { useDraggable } from "@dnd-kit/core";
+import { CSS } from "@dnd-kit/utilities";
 import { Building2, Clock, ExternalLink, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,7 +12,9 @@ import { ScoreBar } from "./ScoreBar";
 import { PilarDots } from "./PilarDots";
 import { formatCurrency } from "@/lib/radar/radarScore";
 import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
+import { cn } from "@/lib/utils";
 import type { RadarProduto, PipelineStage } from "@/types/radar";
+
 
 interface ProdutoCardProps {
   produto: RadarProduto;
@@ -21,6 +25,13 @@ interface ProdutoCardProps {
 export function ProdutoCard({ produto, onEdit, onHistorico }: ProdutoCardProps) {
   const [acoesVisiveis, setAcoesVisiveis] = useState(false);
   const { moverEtapa, isMovendo } = useRadarProdutos();
+
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
+    useDraggable({ id: produto.id });
+
+  const dragStyle = transform
+    ? { transform: CSS.Translate.toString(transform) }
+    : undefined;
 
   const faturamentoEstimado =
     produto.vendasMes != null && produto.precoVenda != null
@@ -38,6 +49,10 @@ export function ProdutoCard({ produto, onEdit, onHistorico }: ProdutoCardProps) 
 
   return (
     <motion.div
+      ref={setNodeRef}
+      style={dragStyle}
+      {...attributes}
+      {...listeners}
       layout
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
@@ -45,7 +60,9 @@ export function ProdutoCard({ produto, onEdit, onHistorico }: ProdutoCardProps) 
       transition={{ duration: 0.2 }}
       onMouseEnter={() => setAcoesVisiveis(true)}
       onMouseLeave={() => setAcoesVisiveis(false)}
+      className={cn(isDragging ? "opacity-40 cursor-grabbing" : "cursor-grab")}
     >
+
       <Card
         className="cursor-pointer hover:border-primary/40 hover:shadow-sm transition-all"
         onClick={() => onEdit(produto)}
