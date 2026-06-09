@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageTransition } from "@/components/PageTransition";
-import { KanbanBoard } from "@/components/radar/KanbanBoard";
+import { KanbanDnD } from "@/components/radar/KanbanDnD";
 import { RadarFilters, type RadarFiltersState } from "@/components/radar/RadarFilters";
 import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
 import { ProdutoDrawer } from "@/components/radar/ProdutoDrawer";
@@ -17,7 +17,9 @@ const FILTROS_INICIAIS: RadarFiltersState = {
   fornecedor: "all",
   decision: "all",
   stage: "all",
+  busca: "",
 };
+
 
 export default function RadarPage() {
   const { produtos, isLoading } = useRadarProdutos();
