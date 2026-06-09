@@ -69,16 +69,26 @@ const EMPTY_FORM: RadarProdutoFormData = {
 };
 
 function parseNum(value: string): number | undefined {
-  if (!value.trim()) return undefined;
-  const n = parseFloat(value.replace(",", "."));
+  if (!value || value.trim() === "") return undefined;
+  // Aceita vírgula ou ponto como decimal; remove separadores de milhar.
+  let s = value.trim().replace(/\s/g, "");
+  const hasComma = s.includes(",");
+  if (hasComma) {
+    // Ex: "1.200,50" -> "1200.50"
+    s = s.replace(/\./g, "").replace(",", ".");
+  }
+  // Sem vírgula: assumir que ponto é decimal (ex: "299.90")
+  const n = parseFloat(s);
   return isNaN(n) ? undefined : n;
 }
 
 function parseInteiro(value: string): number | undefined {
   if (!value.trim()) return undefined;
-  const n = parseInt(value, 10);
+  const limpo = value.replace(/[^\d-]/g, "");
+  const n = parseInt(limpo, 10);
   return isNaN(n) ? undefined : n;
 }
+
 
 export function ProdutoDrawer({ produto, open, onClose, prefill }: ProdutoDrawerProps) {
   const isNovo = !produto?.id;
