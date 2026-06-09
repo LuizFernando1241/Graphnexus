@@ -111,7 +111,7 @@ export default function RadarPage() {
             ))}
           </div>
         ) : (
-          <KanbanBoard
+          <KanbanDnD
             produtos={produtosFiltrados}
             onEdit={(p) => setProdutoSelecionado(p)}
             onHistorico={(p) => setHistoricoTarget(p)}
