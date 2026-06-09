@@ -97,7 +97,7 @@ export function RadarFilters({ produtos, filters, onChange }: RadarFiltersProps)
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => onChange({ fornecedor: "all", decision: "all", stage: "all" })}
+          onClick={() => onChange({ fornecedor: "all", decision: "all", stage: "all", busca: "" })}
         >
           <X className="h-4 w-4 mr-1" />
           Limpar
