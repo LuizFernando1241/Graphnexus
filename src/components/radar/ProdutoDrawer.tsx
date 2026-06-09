@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
-import { Clock, ExternalLink, AlertTriangle } from "lucide-react";
+import { Clock, ExternalLink, AlertTriangle, Trash2 } from "lucide-react";
+
 import {
   Sheet,
   SheetContent,
