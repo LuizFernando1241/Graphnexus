@@ -26,6 +26,13 @@ export function ProdutoCard({ produto, onEdit, onHistorico }: ProdutoCardProps) 
   const [acoesVisiveis, setAcoesVisiveis] = useState(false);
   const { moverEtapa, isMovendo } = useRadarProdutos();
 
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
+    useDraggable({ id: produto.id });
+
+  const dragStyle = transform
+    ? { transform: CSS.Translate.toString(transform) }
+    : undefined;
+
   const faturamentoEstimado =
     produto.vendasMes != null && produto.precoVenda != null
       ? produto.vendasMes * produto.precoVenda
@@ -42,6 +49,10 @@ export function ProdutoCard({ produto, onEdit, onHistorico }: ProdutoCardProps) 
 
   return (
     <motion.div
+      ref={setNodeRef}
+      style={dragStyle}
+      {...attributes}
+      {...listeners}
       layout
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
@@ -49,7 +60,9 @@ export function ProdutoCard({ produto, onEdit, onHistorico }: ProdutoCardProps) 
       transition={{ duration: 0.2 }}
       onMouseEnter={() => setAcoesVisiveis(true)}
       onMouseLeave={() => setAcoesVisiveis(false)}
+      className={cn(isDragging ? "opacity-40 cursor-grabbing" : "cursor-grab")}
     >
+
       <Card
         className="cursor-pointer hover:border-primary/40 hover:shadow-sm transition-all"
         onClick={() => onEdit(produto)}
