@@ -1,4 +1,5 @@
 import { AnimatePresence } from "framer-motion";
+import { useDroppable } from "@dnd-kit/core";
 import { ProdutoCard } from "./ProdutoCard";
 import { cn } from "@/lib/utils";
 import type { RadarProduto, PipelineStage } from "@/types/radar";
@@ -15,6 +16,7 @@ interface KanbanColumnProps {
 }
 
 export function KanbanColumn({
+  stage,
   label,
   produtos,
   accentColor,
@@ -23,8 +25,18 @@ export function KanbanColumn({
   onEdit,
   onHistorico,
 }: KanbanColumnProps) {
+  const { setNodeRef, isOver } = useDroppable({ id: stage });
+
   return (
-    <div className="flex flex-col rounded-lg border border-border bg-card/40 overflow-hidden min-h-[300px]">
+    <div
+      ref={setNodeRef}
+      className={cn(
+        "flex flex-col rounded-lg border bg-card/40 overflow-hidden min-h-[300px] transition-colors",
+        isOver
+          ? "border-primary/60 bg-primary/5 ring-2 ring-primary/30"
+          : "border-border",
+      )}
+    >
       {/* Topo colorido */}
       <div className={cn("h-1 w-full", accentColor)} />
 
@@ -59,3 +71,4 @@ export function KanbanColumn({
     </div>
   );
 }
+
