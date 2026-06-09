@@ -559,13 +559,51 @@ export function ProdutoDrawer({ produto, open, onClose, prefill }: ProdutoDrawer
           </div>
 
           <div className="px-5 py-4 border-t flex items-center justify-between gap-3 flex-shrink-0 bg-background">
-            <Button
-              variant="ghost"
-              onClick={onClose}
-              className="text-muted-foreground"
-            >
-              Cancelar
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                onClick={onClose}
+                className="text-muted-foreground"
+              >
+                Cancelar
+              </Button>
+              {!isNovo && produto?.id && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                      title="Apagar produto"
+                      disabled={isDeletando}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Apagar produto?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        "{produto.nome}" será apagado permanentemente junto com todo o seu histórico.
+                        Esta ação não pode ser desfeita.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        onClick={async () => {
+                          await deletarProduto(produto.id);
+                          onClose();
+                        }}
+                      >
+                        Apagar permanentemente
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
             <Button
               onClick={handleSalvar}
               disabled={!podeSalvar}
@@ -573,6 +611,7 @@ export function ProdutoDrawer({ produto, open, onClose, prefill }: ProdutoDrawer
             >
               {isBusy ? "Salvando..." : "Salvar"}
             </Button>
+
           </div>
         </SheetContent>
       </Sheet>
