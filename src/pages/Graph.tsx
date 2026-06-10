@@ -320,13 +320,17 @@ export default function Graph() {
     (node: object) => {
       const gNode = node as GraphNode;
       if (!gNode.type || !gNode.id) return;
-      
-      const routes: Record<EntityType, string> = {
+
+      if (gNode.type === "product") {
+        navigate("/radar", { state: { selecionarProdutoId: gNode.id } });
+        return;
+      }
+      const routes: Record<Exclude<EntityType, "product">, string> = {
         note: "/notes",
         task: "/tasks",
         project: "/projects",
       };
-      navigate(`${routes[gNode.type]}/${gNode.id}`);
+      navigate(`${routes[gNode.type as Exclude<EntityType, "product">]}/${gNode.id}`);
     },
     [navigate]
   );
