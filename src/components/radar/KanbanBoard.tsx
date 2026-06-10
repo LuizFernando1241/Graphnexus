@@ -1,4 +1,4 @@
-import { Crosshair, Clock, CheckCircle2, Archive } from "lucide-react";
+import { Crosshair, Clock, CheckCircle2 } from "lucide-react";
 import { KanbanColumn } from "./KanbanColumn";
 import type { RadarProduto, PipelineStage } from "@/types/radar";
 
@@ -35,13 +35,6 @@ const COLUNAS: Array<{
     accentColor: "bg-violet-400",
     emptyMessage: "Nenhuma decisão pendente.",
     icon: <CheckCircle2 className="h-6 w-6" />,
-  },
-  {
-    stage: "arquivado",
-    label: "Arquivado",
-    accentColor: "bg-slate-300",
-    emptyMessage: "Nenhum produto arquivado.",
-    icon: <Archive className="h-6 w-6" />,
   },
 ];
 
