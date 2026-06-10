@@ -225,6 +225,23 @@ export function AprovadosTable({ onVerProduto }: AprovadosTableProps) {
                     locale: ptBR,
                   })}
                 </TableCell>
+                <TableCell className="text-right">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    title="Arquivar produto"
+                    onClick={() =>
+                      moverEtapa({
+                        id: produto.id,
+                        novaEtapa: "arquivado",
+                        produtoAtual: produto,
+                      })
+                    }
+                  >
+                    <ArchiveIcon className="h-3.5 w-3.5" />
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
