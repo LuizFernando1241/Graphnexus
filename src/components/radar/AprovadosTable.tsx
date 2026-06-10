@@ -120,6 +120,7 @@ export function AprovadosTable({ onVerProduto }: AprovadosTableProps) {
               <TableHead>Status</TableHead>
               <TableHead className="text-center">Qtd</TableHead>
               <TableHead>Aprovado em</TableHead>
+              <TableHead className="w-[60px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
