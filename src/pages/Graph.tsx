@@ -61,11 +61,12 @@ const ORPHAN_TEXT_COLOR = "rgba(244,244,248,0.3)";
 
 async function fetchGraphData() {
   try {
-    const [notes, tasks, projects, links] = await Promise.all([
+    const [notes, tasks, projects, products, links] = await Promise.all([
       supabase.from("notes").select("id, title, emoji, color, content").eq("archived", false),
       supabase.from("tasks").select("id, title, description").eq("archived", false).neq("status", "cancelled"),
       supabase.from("projects").select("id, title, emoji, cover_color, description").eq("archived", false),
-      supabase.from("entity_links").select("source_id, target_id"),
+      supabase.from("radar_produtos").select("id, nome, fornecedor, stage").neq("stage", "arquivado"),
+      supabase.from("entity_links").select("source_id, source_type, target_id, target_type"),
     ]);
 
     const linkCounts = new Map<string, number>();
@@ -93,6 +94,11 @@ async function fetchGraphData() {
     
     (projects.data || []).forEach((p) => {
       nodes.push({ id: p.id, type: "project", label: p.title, color: p.cover_color || TYPE_COLORS.project, emoji: p.emoji, description: p.description, isOrphan: !connectedIds.has(p.id), linkCount: linkCounts.get(p.id) || 0 });
+      nodeIds.add(p.id);
+    });
+
+    (products.data || []).forEach((p: { id: string; nome: string; fornecedor: string }) => {
+      nodes.push({ id: p.id, type: "product", label: p.nome, color: TYPE_COLORS.product, description: p.fornecedor, isOrphan: !connectedIds.has(p.id), linkCount: linkCounts.get(p.id) || 0 });
       nodeIds.add(p.id);
     });
 
