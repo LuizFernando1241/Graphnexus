@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Link2, Plus, Trash2, StickyNote, CheckSquare, FolderKanban } from "lucide-react";
+import { Link2, Plus, Trash2, StickyNote, CheckSquare, FolderKanban, Crosshair } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useEntityLinks, useCreateLink, useDeleteLink } from "@/hooks/useLinks";
 import { LinkPicker } from "@/components/LinkPicker";
@@ -20,18 +20,21 @@ const TYPE_ICONS: Record<EntityType, React.ElementType> = {
   note: StickyNote,
   task: CheckSquare,
   project: FolderKanban,
+  product: Crosshair,
 };
 
 const TYPE_LABELS: Record<EntityType, string> = {
   note: "Nota",
   task: "Tarefa",
   project: "Projeto",
+  product: "Produto",
 };
 
 const TYPE_ROUTES: Record<EntityType, string> = {
   note: "/notes",
   task: "/tasks",
   project: "/projects",
+  product: "/radar",
 };
 
 interface LinkPanelProps {
