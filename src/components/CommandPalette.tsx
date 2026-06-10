@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { StickyNote, CheckSquare, FolderKanban, Search } from "lucide-react";
+import { StickyNote, CheckSquare, FolderKanban, Search, Crosshair } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -23,18 +23,21 @@ const TYPE_ICONS: Record<EntityType, React.ElementType> = {
   note: StickyNote,
   task: CheckSquare,
   project: FolderKanban,
+  product: Crosshair,
 };
 
 const TYPE_LABELS: Record<EntityType, string> = {
   note: "Nota",
   task: "Tarefa",
   project: "Projeto",
+  product: "Produto",
 };
 
 const TYPE_ROUTES: Record<EntityType, string> = {
   note: "/notes",
   task: "/tasks",
   project: "/projects",
+  product: "/radar",
 };
 
 async function searchAll(query: string): Promise<SearchResult[]> {
