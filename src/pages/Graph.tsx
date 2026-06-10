@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useRef, useCallback, useEffect, useState, useMemo, memo } from "react";
 import { useDebouncedCallback } from "use-debounce";
-import { Search, StickyNote, CheckSquare, FolderKanban } from "lucide-react";
+import { Search, StickyNote, CheckSquare, FolderKanban, Crosshair } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -46,12 +46,14 @@ const TYPE_COLORS: Record<EntityType, string> = {
   note: "#7C3AED",
   task: "#3B82F6",
   project: "#10B981",
+  product: "#F59E0B",
 };
 
 const TYPE_CONFIG = [
   { type: "note" as const, label: "Notas", icon: StickyNote, color: TYPE_COLORS.note },
   { type: "task" as const, label: "Tarefas", icon: CheckSquare, color: TYPE_COLORS.task },
   { type: "project" as const, label: "Projetos", icon: FolderKanban, color: TYPE_COLORS.project },
+  { type: "product" as const, label: "Produtos", icon: Crosshair, color: TYPE_COLORS.product },
 ];
 
 const ORPHAN_COLOR = "#3F3F46";
@@ -59,11 +61,12 @@ const ORPHAN_TEXT_COLOR = "rgba(244,244,248,0.3)";
 
 async function fetchGraphData() {
   try {
-    const [notes, tasks, projects, links] = await Promise.all([
+    const [notes, tasks, projects, products, links] = await Promise.all([
       supabase.from("notes").select("id, title, emoji, color, content").eq("archived", false),
       supabase.from("tasks").select("id, title, description").eq("archived", false).neq("status", "cancelled"),
       supabase.from("projects").select("id, title, emoji, cover_color, description").eq("archived", false),
-      supabase.from("entity_links").select("source_id, target_id"),
+      supabase.from("radar_produtos").select("id, nome, fornecedor, stage").neq("stage", "arquivado"),
+      supabase.from("entity_links").select("source_id, source_type, target_id, target_type"),
     ]);
 
     const linkCounts = new Map<string, number>();
@@ -91,6 +94,11 @@ async function fetchGraphData() {
     
     (projects.data || []).forEach((p) => {
       nodes.push({ id: p.id, type: "project", label: p.title, color: p.cover_color || TYPE_COLORS.project, emoji: p.emoji, description: p.description, isOrphan: !connectedIds.has(p.id), linkCount: linkCounts.get(p.id) || 0 });
+      nodeIds.add(p.id);
+    });
+
+    (products.data || []).forEach((p: { id: string; nome: string; fornecedor: string }) => {
+      nodes.push({ id: p.id, type: "product", label: p.nome, color: TYPE_COLORS.product, description: p.fornecedor, isOrphan: !connectedIds.has(p.id), linkCount: linkCounts.get(p.id) || 0 });
       nodeIds.add(p.id);
     });
 
@@ -219,7 +227,7 @@ export default function Graph() {
   const [hideOrphans, setHideOrphans] = useState(false);
   const [graphSearch, setGraphSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [visibleTypes, setVisibleTypes] = useState<Set<EntityType>>(new Set(["note", "task", "project"]));
+  const [visibleTypes, setVisibleTypes] = useState<Set<EntityType>>(new Set(["note", "task", "project", "product"]));
   
   const hoverNodeRef = useRef<string | null>(null);
 
@@ -318,13 +326,17 @@ export default function Graph() {
     (node: object) => {
       const gNode = node as GraphNode;
       if (!gNode.type || !gNode.id) return;
-      
-      const routes: Record<EntityType, string> = {
+
+      if (gNode.type === "product") {
+        navigate("/radar", { state: { selecionarProdutoId: gNode.id } });
+        return;
+      }
+      const routes: Record<Exclude<EntityType, "product">, string> = {
         note: "/notes",
         task: "/tasks",
         project: "/projects",
       };
-      navigate(`${routes[gNode.type]}/${gNode.id}`);
+      navigate(`${routes[gNode.type as Exclude<EntityType, "product">]}/${gNode.id}`);
     },
     [navigate]
   );

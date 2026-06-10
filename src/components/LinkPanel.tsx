@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Link2, Plus, Trash2, StickyNote, CheckSquare, FolderKanban } from "lucide-react";
+import { Link2, Plus, Trash2, StickyNote, CheckSquare, FolderKanban, Crosshair } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useEntityLinks, useCreateLink, useDeleteLink } from "@/hooks/useLinks";
 import { LinkPicker } from "@/components/LinkPicker";
@@ -20,18 +20,21 @@ const TYPE_ICONS: Record<EntityType, React.ElementType> = {
   note: StickyNote,
   task: CheckSquare,
   project: FolderKanban,
+  product: Crosshair,
 };
 
 const TYPE_LABELS: Record<EntityType, string> = {
   note: "Nota",
   task: "Tarefa",
   project: "Projeto",
+  product: "Produto",
 };
 
 const TYPE_ROUTES: Record<EntityType, string> = {
   note: "/notes",
   task: "/tasks",
   project: "/projects",
+  product: "/radar",
 };
 
 interface LinkPanelProps {
@@ -54,8 +57,9 @@ async function fetchEntityTitles(
   const noteIds = items.filter(i => i.type === "note").map(i => i.id);
   const taskIds = items.filter(i => i.type === "task").map(i => i.id);
   const projectIds = items.filter(i => i.type === "project").map(i => i.id);
+  const productIds = items.filter(i => i.type === "product").map(i => i.id);
 
-  const [notes, tasks, projects] = await Promise.all([
+  const [notes, tasks, projects, products] = await Promise.all([
     noteIds.length > 0
       ? supabase.from("notes").select("id, title").in("id", noteIds)
       : Promise.resolve({ data: [] }),
@@ -65,6 +69,9 @@ async function fetchEntityTitles(
     projectIds.length > 0
       ? supabase.from("projects").select("id, title").in("id", projectIds)
       : Promise.resolve({ data: [] }),
+    productIds.length > 0
+      ? supabase.from("radar_produtos").select("id, nome").in("id", productIds)
+      : Promise.resolve({ data: [] }),
   ]);
 
   const map: Record<string, string> = {};
@@ -73,6 +80,9 @@ async function fetchEntityTitles(
       map[e.id] = e.title;
     }
   );
+  ((products.data || []) as { id: string; nome: string }[]).forEach((p) => {
+    map[p.id] = p.nome;
+  });
   return map;
 }
 
@@ -96,7 +106,11 @@ function LinkItem({
     <div className="group flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent transition-colors">
       <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
       <button
-        onClick={() => navigate(`${TYPE_ROUTES[linked.type]}/${linked.id}`)}
+        onClick={() =>
+          linked.type === "product"
+            ? navigate("/radar", { state: { selecionarProdutoId: linked.id } })
+            : navigate(`${TYPE_ROUTES[linked.type]}/${linked.id}`)
+        }
         className="flex-1 text-left text-sm truncate text-foreground hover:underline min-h-[44px] flex items-center"
         title={title || ""}
       >

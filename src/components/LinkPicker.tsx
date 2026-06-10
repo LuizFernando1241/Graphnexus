@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { StickyNote, CheckSquare, FolderKanban, Search } from "lucide-react";
+import { StickyNote, CheckSquare, FolderKanban, Search, Crosshair } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
@@ -21,16 +21,20 @@ interface SearchResult {
 
 async function searchEntities(query: string): Promise<SearchResult[]> {
   const q = `%${escapeLikePattern(query)}%`;
-  const [notes, tasks, projects] = await Promise.all([
+  const [notes, tasks, projects, products] = await Promise.all([
     supabase.from("notes").select("id, title, emoji").ilike("title", q).limit(5),
     supabase.from("tasks").select("id, title").ilike("title", q).limit(5),
     supabase.from("projects").select("id, title, emoji").ilike("title", q).limit(5),
+    supabase.from("radar_produtos").select("id, nome").ilike("nome", q).limit(5),
   ]);
 
   const results: SearchResult[] = [];
   (notes.data || []).forEach((n) => results.push({ id: n.id, type: "note", title: n.title, emoji: n.emoji }));
   (tasks.data || []).forEach((t) => results.push({ id: t.id, type: "task", title: t.title }));
   (projects.data || []).forEach((p) => results.push({ id: p.id, type: "project", title: p.title, emoji: p.emoji }));
+  (products.data || []).forEach((p: { id: string; nome: string }) =>
+    results.push({ id: p.id, type: "product", title: p.nome })
+  );
   return results;
 }
 
@@ -38,12 +42,14 @@ const TYPE_ICONS: Record<EntityType, React.ElementType> = {
   note: StickyNote,
   task: CheckSquare,
   project: FolderKanban,
+  product: Crosshair,
 };
 
 const TYPE_LABELS: Record<EntityType, string> = {
   note: "Nota",
   task: "Tarefa",
   project: "Projeto",
+  product: "Produto",
 };
 
 interface LinkPickerProps {

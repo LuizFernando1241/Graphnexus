@@ -1,4 +1,4 @@
-export type EntityType = 'note' | 'task' | 'project';
+export type EntityType = 'note' | 'task' | 'project' | 'product';
 
 export type TaskStatus = 'backlog' | 'todo' | 'in_progress' | 'done' | 'cancelled';
 export type TaskPriority = 'none' | 'low' | 'medium' | 'high' | 'urgent';

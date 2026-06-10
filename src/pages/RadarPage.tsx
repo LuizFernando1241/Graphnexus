@@ -30,17 +30,24 @@ export default function RadarPage() {
 
   const location = useLocation();
   useEffect(() => {
-    const preencher = (location.state as { preencherProduto?: Record<string, unknown> } | null)
-      ?.preencherProduto;
-    if (preencher) {
-      setProdutoSelecionado(preencher as Record<string, never>);
+    const state = location.state as
+      | { preencherProduto?: Record<string, unknown>; selecionarProdutoId?: string }
+      | null;
+    if (state?.preencherProduto) {
+      setProdutoSelecionado(state.preencherProduto as Record<string, never>);
       window.history.replaceState({}, "");
+    } else if (state?.selecionarProdutoId) {
+      const found = produtos.find((p) => p.id === state.selecionarProdutoId);
+      if (found) {
+        setProdutoSelecionado(found);
+        window.history.replaceState({}, "");
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.state]);
+  }, [location.state, produtos]);
 
   const produtosFiltrados = produtos.filter((p) => {
-    if (p.stage === "aprovado") return false;
+    if (p.stage === "aprovado" || p.stage === "arquivado") return false;
     if (filters.fornecedor !== "all" && p.fornecedor !== filters.fornecedor) return false;
     if (filters.decision !== "all" && p.decision !== filters.decision) return false;
     if (filters.stage !== "all" && p.stage !== filters.stage) return false;

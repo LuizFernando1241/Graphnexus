@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Download, PackageCheck, ShoppingCart, CheckCircle2 } from "lucide-react";
+import { Download, PackageCheck, ShoppingCart, CheckCircle2, Archive as ArchiveIcon } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -26,7 +26,7 @@ interface AprovadosTableProps {
 }
 
 export function AprovadosTable({ onVerProduto }: AprovadosTableProps) {
-  const { produtos, isLoading, atualizarStatusCompra } = useRadarProdutos();
+  const { produtos, isLoading, atualizarStatusCompra, moverEtapa } = useRadarProdutos();
   const [editandoQtd, setEditandoQtd] = useState<string | null>(null);
   const [qtdTemp, setQtdTemp] = useState("");
 
@@ -120,6 +120,7 @@ export function AprovadosTable({ onVerProduto }: AprovadosTableProps) {
               <TableHead>Status</TableHead>
               <TableHead className="text-center">Qtd</TableHead>
               <TableHead>Aprovado em</TableHead>
+              <TableHead className="w-[60px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -223,6 +224,23 @@ export function AprovadosTable({ onVerProduto }: AprovadosTableProps) {
                   {format(new Date(produto.stageEnteredAt), "d MMM yyyy", {
                     locale: ptBR,
                   })}
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    title="Arquivar produto"
+                    onClick={() =>
+                      moverEtapa({
+                        id: produto.id,
+                        novaEtapa: "arquivado",
+                        produtoAtual: produto,
+                      })
+                    }
+                  >
+                    <ArchiveIcon className="h-3.5 w-3.5" />
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}

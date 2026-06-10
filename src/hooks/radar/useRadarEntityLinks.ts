@@ -3,31 +3,56 @@ import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import type { RadarEntityLink, EntityLinkType } from '@/types/radar'
 
+/**
+ * Hook unificado: lê/grava na tabela global `entity_links` usando
+ * source_type='product' (lado do produto). Compatível com LinkPanel/Graph.
+ */
 export function useRadarEntityLinks(produtoId: string | null) {
   const { user } = useAuth()
   const queryClient = useQueryClient()
 
   const query = useQuery({
-    queryKey: ['radar-entity-links', produtoId],
+    queryKey: ['entity-links', produtoId, 'product'],
     queryFn: async () => {
       if (!produtoId || !user) return []
 
-      const { data, error } = await supabase
-        .from('radar_entity_links')
-        .select('*')
-        .eq('produto_id', produtoId)
-        .order('created_at', { ascending: false })
+      // Busca em ambos os lados (produto como source ou como target)
+      const [sourceRes, targetRes] = await Promise.all([
+        supabase
+          .from('entity_links')
+          .select('*')
+          .eq('source_type', 'product')
+          .eq('source_id', produtoId),
+        supabase
+          .from('entity_links')
+          .select('*')
+          .eq('target_type', 'product')
+          .eq('target_id', produtoId),
+      ])
 
-      if (error) throw error
+      if (sourceRes.error) throw sourceRes.error
+      if (targetRes.error) throw targetRes.error
 
-      return (data ?? []).map((row: any): RadarEntityLink => ({
-        id: row.id,
-        produtoId: row.produto_id,
-        userId: row.user_id,
-        entityType: row.entity_type as EntityLinkType,
-        entityId: row.entity_id,
-        createdAt: row.created_at,
-      }))
+      const rows = [...(sourceRes.data ?? []), ...(targetRes.data ?? [])]
+      const seen = new Set<string>()
+      const out: RadarEntityLink[] = []
+      for (const row of rows) {
+        if (seen.has(row.id)) continue
+        seen.add(row.id)
+        const isSource = row.source_type === 'product' && row.source_id === produtoId
+        const entityType = (isSource ? row.target_type : row.source_type) as EntityLinkType
+        const entityId = isSource ? row.target_id : row.source_id
+        if (!['note', 'task', 'project'].includes(entityType)) continue
+        out.push({
+          id: row.id,
+          produtoId,
+          userId: row.user_id,
+          entityType,
+          entityId,
+          createdAt: row.created_at,
+        })
+      }
+      return out
     },
     enabled: !!produtoId && !!user,
   })
@@ -42,17 +67,20 @@ export function useRadarEntityLinks(produtoId: string | null) {
     }) => {
       if (!produtoId || !user) throw new Error('Dados inválidos')
 
-      const { error } = await supabase.from('radar_entity_links').insert({
-        produto_id: produtoId,
+      const { error } = await supabase.from('entity_links').insert({
         user_id: user.id,
-        entity_type: entityType,
-        entity_id: entityId,
+        source_type: 'product',
+        source_id: produtoId,
+        target_type: entityType,
+        target_id: entityId,
       })
 
       if (error) throw error
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['radar-entity-links', produtoId] })
+    onSuccess: (_d, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['entity-links', produtoId, 'product'] })
+      queryClient.invalidateQueries({ queryKey: ['entity-links', vars.entityId, vars.entityType] })
+      queryClient.invalidateQueries({ queryKey: ['graph-data'] })
     },
   })
 
@@ -60,7 +88,7 @@ export function useRadarEntityLinks(produtoId: string | null) {
     mutationFn: async (linkId: string) => {
       if (!user) throw new Error('Não autenticado')
       const { error } = await supabase
-        .from('radar_entity_links')
+        .from('entity_links')
         .delete()
         .eq('id', linkId)
         .eq('user_id', user.id)
@@ -68,7 +96,8 @@ export function useRadarEntityLinks(produtoId: string | null) {
       if (error) throw error
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['radar-entity-links', produtoId] })
+      queryClient.invalidateQueries({ queryKey: ['entity-links'] })
+      queryClient.invalidateQueries({ queryKey: ['graph-data'] })
     },
   })
 
