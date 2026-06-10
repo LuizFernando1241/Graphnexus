@@ -13,6 +13,7 @@ const TYPE_LABEL: Record<EntityType, string> = {
   note: "Nota",
   task: "Tarefa",
   project: "Projeto",
+  product: "Produto",
 };
 
 export default function Import() {
