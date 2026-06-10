@@ -97,7 +97,7 @@ export default function Import() {
       acc[it.type] = (acc[it.type] || 0) + 1;
       return acc;
     },
-    { note: 0, task: 0, project: 0 } as Record<EntityType, number>,
+    { note: 0, task: 0, project: 0, product: 0 } as Record<EntityType, number>,
   );
 
   return (
