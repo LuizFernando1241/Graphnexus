@@ -221,7 +221,7 @@ export default function Graph() {
   const [hideOrphans, setHideOrphans] = useState(false);
   const [graphSearch, setGraphSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [visibleTypes, setVisibleTypes] = useState<Set<EntityType>>(new Set(["note", "task", "project"]));
+  const [visibleTypes, setVisibleTypes] = useState<Set<EntityType>>(new Set(["note", "task", "project", "product"]));
   
   const hoverNodeRef = useRef<string | null>(null);
 
