@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useRef, useCallback, useEffect, useState, useMemo, memo } from "react";
 import { useDebouncedCallback } from "use-debounce";
-import { Search, StickyNote, CheckSquare, FolderKanban } from "lucide-react";
+import { Search, StickyNote, CheckSquare, FolderKanban, Crosshair } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -46,12 +46,14 @@ const TYPE_COLORS: Record<EntityType, string> = {
   note: "#7C3AED",
   task: "#3B82F6",
   project: "#10B981",
+  product: "#F59E0B",
 };
 
 const TYPE_CONFIG = [
   { type: "note" as const, label: "Notas", icon: StickyNote, color: TYPE_COLORS.note },
   { type: "task" as const, label: "Tarefas", icon: CheckSquare, color: TYPE_COLORS.task },
   { type: "project" as const, label: "Projetos", icon: FolderKanban, color: TYPE_COLORS.project },
+  { type: "product" as const, label: "Produtos", icon: Crosshair, color: TYPE_COLORS.product },
 ];
 
 const ORPHAN_COLOR = "#3F3F46";
