@@ -26,7 +26,7 @@ interface AprovadosTableProps {
 }
 
 export function AprovadosTable({ onVerProduto }: AprovadosTableProps) {
-  const { produtos, isLoading, atualizarStatusCompra } = useRadarProdutos();
+  const { produtos, isLoading, atualizarStatusCompra, moverEtapa } = useRadarProdutos();
   const [editandoQtd, setEditandoQtd] = useState<string | null>(null);
   const [qtdTemp, setQtdTemp] = useState("");
 
