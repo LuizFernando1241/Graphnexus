@@ -106,7 +106,11 @@ function LinkItem({
     <div className="group flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent transition-colors">
       <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
       <button
-        onClick={() => navigate(`${TYPE_ROUTES[linked.type]}/${linked.id}`)}
+        onClick={() =>
+          linked.type === "product"
+            ? navigate("/radar", { state: { selecionarProdutoId: linked.id } })
+            : navigate(`${TYPE_ROUTES[linked.type]}/${linked.id}`)
+        }
         className="flex-1 text-left text-sm truncate text-foreground hover:underline min-h-[44px] flex items-center"
         title={title || ""}
       >
