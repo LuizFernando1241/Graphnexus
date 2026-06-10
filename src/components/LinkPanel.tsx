@@ -57,8 +57,9 @@ async function fetchEntityTitles(
   const noteIds = items.filter(i => i.type === "note").map(i => i.id);
   const taskIds = items.filter(i => i.type === "task").map(i => i.id);
   const projectIds = items.filter(i => i.type === "project").map(i => i.id);
+  const productIds = items.filter(i => i.type === "product").map(i => i.id);
 
-  const [notes, tasks, projects] = await Promise.all([
+  const [notes, tasks, projects, products] = await Promise.all([
     noteIds.length > 0
       ? supabase.from("notes").select("id, title").in("id", noteIds)
       : Promise.resolve({ data: [] }),
@@ -68,6 +69,9 @@ async function fetchEntityTitles(
     projectIds.length > 0
       ? supabase.from("projects").select("id, title").in("id", projectIds)
       : Promise.resolve({ data: [] }),
+    productIds.length > 0
+      ? supabase.from("radar_produtos").select("id, nome").in("id", productIds)
+      : Promise.resolve({ data: [] }),
   ]);
 
   const map: Record<string, string> = {};
@@ -76,6 +80,9 @@ async function fetchEntityTitles(
       map[e.id] = e.title;
     }
   );
+  ((products.data || []) as { id: string; nome: string }[]).forEach((p) => {
+    map[p.id] = p.nome;
+  });
   return map;
 }
 
