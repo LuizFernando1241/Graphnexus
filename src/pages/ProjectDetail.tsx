@@ -306,6 +306,42 @@ export default function ProjectDetail() {
         <LinkPanelDock entityId={id!} entityType="project" />
       </div>
 
+      {/* New subproject dialog */}
+      <Dialog open={subprojectOpen} onOpenChange={setSubprojectOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Novo subprojeto</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 pt-2">
+            <Label className="text-xs text-muted-foreground">
+              Será criado como filho de "{project.title}"
+            </Label>
+            <Input
+              autoFocus
+              placeholder="Nome do subprojeto"
+              value={subprojectTitle}
+              onChange={(e) => setSubprojectTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") createSubproject.mutate(subprojectTitle);
+              }}
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setSubprojectOpen(false)}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={() => createSubproject.mutate(subprojectTitle)}
+                disabled={createSubproject.isPending}
+              >
+                {createSubproject.isPending ? "Criando..." : "Criar"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+
+
       {/* Extract Dialog */}
       <AlertDialog open={extractOpen} onOpenChange={setExtractOpen}>
         <AlertDialogContent>
