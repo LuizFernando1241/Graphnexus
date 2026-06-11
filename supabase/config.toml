@@ -1,1 +1,7 @@
 project_id = "mhmjhiziyazxbochoxow"
+
+[functions.parse-task-ai]
+verify_jwt = true
+
+[functions.project-ai]
+verify_jwt = true
