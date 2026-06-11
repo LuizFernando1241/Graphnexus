@@ -64,7 +64,7 @@ async function fetchGraphData() {
     const [notes, tasks, projects, products, links] = await Promise.all([
       supabase.from("notes").select("id, title, emoji, color, content").eq("archived", false),
       supabase.from("tasks").select("id, title, description").eq("archived", false).neq("status", "cancelled"),
-      supabase.from("projects").select("id, title, emoji, cover_color, description").eq("archived", false),
+      supabase.from("projects").select("id, title, emoji, cover_color, description, parent_id").eq("archived", false),
       supabase.from("radar_produtos").select("id, nome, fornecedor, stage").neq("stage", "arquivado"),
       supabase.from("entity_links").select("source_id, source_type, target_id, target_type"),
     ]);
@@ -105,6 +105,13 @@ async function fetchGraphData() {
     const graphLinks: GraphLink[] = (links.data || [])
       .filter((l) => nodeIds.has(l.source_id) && nodeIds.has(l.target_id))
       .map((l) => ({ source: l.source_id, target: l.target_id }));
+
+    // Hierarchy edges (parent → child) from projects.parent_id
+    (projects.data || []).forEach((p: { id: string; parent_id?: string | null }) => {
+      if (p.parent_id && nodeIds.has(p.parent_id) && nodeIds.has(p.id)) {
+        graphLinks.push({ source: p.parent_id, target: p.id });
+      }
+    });
 
     return { nodes, links: graphLinks };
   } catch (error) {
