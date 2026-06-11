@@ -69,6 +69,28 @@ export default function ProjectDetail() {
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [extractOpen, setExtractOpen] = useState(false);
+  const [subprojectOpen, setSubprojectOpen] = useState(false);
+  const [subprojectTitle, setSubprojectTitle] = useState("");
+
+  const createSubproject = useMutation({
+    mutationFn: async (titleArg: string) => {
+      if (!id) throw new Error("No project ID");
+      return createProject({
+        title: titleArg.trim() || "Novo subprojeto",
+        parent_id: id,
+        cover_color: coverColor,
+      });
+    },
+    onSuccess: (created) => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      toast.success("Subprojeto criado!");
+      setSubprojectOpen(false);
+      setSubprojectTitle("");
+      if (created?.id) navigate(`/projects/${created.id}`);
+    },
+    onError: () => toast.error("Erro ao criar subprojeto"),
+  });
+
 
   const { data: linkedTasks = [], isLoading: tasksLoading } = useQuery({
     queryKey: ["project-linked-tasks", id],
@@ -97,13 +119,41 @@ export default function ProjectDetail() {
 
   return (
     <>
-      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-sm text-muted-foreground mb-4">
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-sm text-muted-foreground mb-4 flex-wrap">
         <Link to="/projects" className="hover:text-foreground transition-colors">Projetos</Link>
+        {breadcrumb.slice(0, -1).map((c) => (
+          <span key={c.id} className="flex items-center gap-1">
+            <ChevronRight className="h-3.5 w-3.5" />
+            <Link to={`/projects/${c.id}`} className="hover:text-foreground transition-colors truncate max-w-[160px]">
+              {c.emoji ? `${c.emoji} ` : ""}{c.title}
+            </Link>
+          </span>
+        ))}
         <ChevronRight className="h-3.5 w-3.5" />
         <span className="text-foreground truncate max-w-[200px]">
           {emoji && `${emoji} `}{title || "Sem título"}
         </span>
       </nav>
+
+      <div className="flex flex-col lg:flex-row gap-6 w-full">
+        <div className="flex-1 flex flex-col gap-5 min-w-0 w-full">
+          {/* Top actions */}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/projects")} className="min-h-[44px]">
+              <ArrowLeft className="mr-1 h-4 w-4" /> Voltar
+            </Button>
+            <div className="flex items-center gap-2 flex-wrap">
+              {hasUnsavedChanges && <span className="text-xs text-primary animate-pulse">Alterações não salvas</span>}
+              <Button onClick={handleSave} disabled={!hasUnsavedChanges || saveMutation.isPending} size="sm">
+                <Save className="mr-1 h-4 w-4" />
+                {saveMutation.isPending ? "Salvando..." : "Salvar"}
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setSubprojectOpen(true)}>
+                <Plus className="mr-1 h-4 w-4" /> Subprojeto
+              </Button>
+              <Button
+                variant="ghost" size="icon" title="Exportar como Markdown"
+
 
       <div className="flex flex-col lg:flex-row gap-6 w-full">
         <div className="flex-1 flex flex-col gap-5 min-w-0 w-full">
