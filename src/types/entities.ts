@@ -53,9 +53,25 @@ export interface Project {
   start_date: string | null;
   target_date: string | null;
   archived: boolean;
+  parent_id: string | null;
   created_at: string;
   updated_at: string;
+  // Computed (frontend-only)
+  children?: ProjectTree[];
+  depth?: number;
+  progressPercent?: number;
+  totalTasksRecursive?: number;
+  doneTasksRecursive?: number;
 }
+
+export interface ProjectTree extends Project {
+  children: ProjectTree[];
+  depth: number;
+  progressPercent: number;
+  totalTasksRecursive: number;
+  doneTasksRecursive: number;
+}
+
 
 export interface EntityLink {
   id: string;

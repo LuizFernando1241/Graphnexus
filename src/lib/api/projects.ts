@@ -31,6 +31,7 @@ export async function createProject(project: {
   description?: string;
   emoji?: string;
   cover_color?: string;
+  parent_id?: string | null;
 }) {
   const { data, error } = await supabase
     .from("projects")
@@ -39,6 +40,7 @@ export async function createProject(project: {
       description: project.description || null,
       emoji: project.emoji || null,
       cover_color: project.cover_color || "#7C3AED",
+      parent_id: project.parent_id ?? null,
     })
     .select()
     .single();
@@ -48,7 +50,7 @@ export async function createProject(project: {
 
 export async function updateProject(
   id: string,
-  updates: Partial<Pick<Project, "title" | "description" | "status" | "cover_color" | "emoji" | "start_date" | "target_date" | "archived">>
+  updates: Partial<Pick<Project, "title" | "description" | "status" | "cover_color" | "emoji" | "start_date" | "target_date" | "archived" | "parent_id">>
 ) {
   const { data, error } = await supabase
     .from("projects")
@@ -59,6 +61,7 @@ export async function updateProject(
   if (error) throw error;
   return data as Project;
 }
+
 
 export async function deleteProject(id: string) {
   await supabase.from("entity_links").delete().or(`source_id.eq.${id},target_id.eq.${id}`);
