@@ -1,21 +1,24 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Save, Trash2, Archive, ArchiveRestore, FileOutput, ChevronRight, Download } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, Save, Trash2, Archive, ArchiveRestore, FileOutput, ChevronRight, Download, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { exportProject } from "@/lib/markdown/export";
 import { format } from "date-fns";
 import { useProjectDetail } from "@/hooks/useProjectDetail";
+import { useProjects } from "@/hooks/useProjects";
+import { createProject } from "@/lib/api/projects";
 import { fetchLinkedTasksForProject, fetchLinkedNotesForProject } from "@/lib/api/projectStats";
 import { LinkPanelDock } from "@/components/LinkPanelDock";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { DetailPageSkeleton } from "@/components/ui/page-skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ProjectHero } from "@/components/projects/ProjectHero";
-import { ProjectMetrics } from "@/components/projects/ProjectMetrics";
+import { ProjectNarrative } from "@/components/projects/ProjectNarrative";
 import { ProjectAIPanel } from "@/components/projects/ProjectAIPanel";
 import { ProjectTasksTab } from "@/components/projects/ProjectTasksTab";
 import { ProjectNotesTab } from "@/components/projects/ProjectNotesTab";
@@ -24,11 +27,15 @@ import {
 } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import type { ProjectStatus } from "@/types/entities";
+import { wouldCreateCycle } from "@/lib/projectProgress";
 
 const STATUS_OPTIONS: { value: ProjectStatus; label: string }[] = [
   { value: "active", label: "Ativo" },
@@ -42,18 +49,48 @@ const PROJECT_COLORS = ["#7C3AED", "#2563EB", "#059669", "#D97706", "#DC2626", "
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const {
     project, isLoading,
-    title, emoji, description, status, coverColor, startDate, targetDate,
+    title, emoji, description, status, coverColor, startDate, targetDate, parentId,
     hasUnsavedChanges,
-    setTitle, setEmoji, setDescription, setStatus, setCoverColor, setStartDate, setTargetDate,
+    setTitle, setEmoji, setDescription, setStatus, setCoverColor, setStartDate, setTargetDate, setParentId,
     handleSave, handleDelete, handleArchive, handleExtract,
     blocker, saveMutation, deleteMutation, archiveMutation, extractMutation,
   } = useProjectDetail(id);
 
+  const { projects: allProjects, getBreadcrumb } = useProjects({ showArchived: true });
+  const breadcrumb = id ? getBreadcrumb(id) : [];
+  const parentCandidates = allProjects.filter(
+    (p) => p.id !== id && !wouldCreateCycle(id ?? "", p.id, allProjects),
+  );
+
+
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [extractOpen, setExtractOpen] = useState(false);
+  const [subprojectOpen, setSubprojectOpen] = useState(false);
+  const [subprojectTitle, setSubprojectTitle] = useState("");
+
+  const createSubproject = useMutation({
+    mutationFn: async (titleArg: string) => {
+      if (!id) throw new Error("No project ID");
+      return createProject({
+        title: titleArg.trim() || "Novo subprojeto",
+        parent_id: id,
+        cover_color: coverColor,
+      });
+    },
+    onSuccess: (created) => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      toast.success("Subprojeto criado!");
+      setSubprojectOpen(false);
+      setSubprojectTitle("");
+      if (created?.id) navigate(`/projects/${created.id}`);
+    },
+    onError: () => toast.error("Erro ao criar subprojeto"),
+  });
+
 
   const { data: linkedTasks = [], isLoading: tasksLoading } = useQuery({
     queryKey: ["project-linked-tasks", id],
@@ -82,8 +119,16 @@ export default function ProjectDetail() {
 
   return (
     <>
-      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-sm text-muted-foreground mb-4">
+      <nav aria-label="Breadcrumb" className="flex items-center gap-1 text-sm text-muted-foreground mb-4 flex-wrap">
         <Link to="/projects" className="hover:text-foreground transition-colors">Projetos</Link>
+        {breadcrumb.slice(0, -1).map((c) => (
+          <span key={c.id} className="flex items-center gap-1">
+            <ChevronRight className="h-3.5 w-3.5" />
+            <Link to={`/projects/${c.id}`} className="hover:text-foreground transition-colors truncate max-w-[160px]">
+              {c.emoji ? `${c.emoji} ` : ""}{c.title}
+            </Link>
+          </span>
+        ))}
         <ChevronRight className="h-3.5 w-3.5" />
         <span className="text-foreground truncate max-w-[200px]">
           {emoji && `${emoji} `}{title || "Sem título"}
@@ -102,6 +147,9 @@ export default function ProjectDetail() {
               <Button onClick={handleSave} disabled={!hasUnsavedChanges || saveMutation.isPending} size="sm">
                 <Save className="mr-1 h-4 w-4" />
                 {saveMutation.isPending ? "Salvando..." : "Salvar"}
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => setSubprojectOpen(true)}>
+                <Plus className="mr-1 h-4 w-4" /> Subprojeto
               </Button>
               <Button
                 variant="ghost" size="icon" title="Exportar como Markdown"
@@ -147,11 +195,15 @@ export default function ProjectDetail() {
             </TabsList>
 
             <TabsContent value="overview" className="space-y-5 mt-4">
-              <ProjectMetrics tasks={linkedTasks} startDate={project.start_date} targetDate={project.target_date} />
+              <ProjectNarrative
+                projectId={id!}
+                tasks={linkedTasks}
+                onAddSubproject={() => setSubprojectOpen(true)}
+              />
 
               <ProjectAIPanel project={project} tasks={linkedTasks} notes={linkedNotes} />
 
-              {/* Status + Color + Dates */}
+              {/* Status + Parent + Color + Dates */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs text-muted-foreground mb-1 block">Status</Label>
@@ -160,6 +212,23 @@ export default function ProjectDetail() {
                     <SelectContent>
                       {STATUS_OPTIONS.map((o) => (
                         <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-1 block">Projeto pai</Label>
+                  <Select
+                    value={parentId ?? "none"}
+                    onValueChange={(v) => setParentId(v === "none" ? null : v)}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Nenhum (projeto raiz)" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Nenhum (projeto raiz)</SelectItem>
+                      {parentCandidates.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.emoji ? `${p.emoji} ` : ""}{p.title}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -177,33 +246,36 @@ export default function ProjectDetail() {
                     ))}
                   </div>
                 </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground mb-1 block">Data de início</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !startDate && "text-muted-foreground")}>
-                        {startDate ? format(startDate, "dd/MM/yyyy") : "Selecionar"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar mode="single" selected={startDate} onSelect={setStartDate} className="p-3 pointer-events-auto" />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground mb-1 block">Data alvo</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !targetDate && "text-muted-foreground")}>
-                        {targetDate ? format(targetDate, "dd/MM/yyyy") : "Selecionar"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar mode="single" selected={targetDate} onSelect={setTargetDate} className="p-3 pointer-events-auto" />
-                    </PopoverContent>
-                  </Popover>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-1 block">Data de início</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !startDate && "text-muted-foreground")}>
+                          {startDate ? format(startDate, "dd/MM/yyyy") : "Selecionar"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar mode="single" selected={startDate} onSelect={setStartDate} className="p-3 pointer-events-auto" />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-1 block">Data alvo</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !targetDate && "text-muted-foreground")}>
+                          {targetDate ? format(targetDate, "dd/MM/yyyy") : "Selecionar"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar mode="single" selected={targetDate} onSelect={setTargetDate} className="p-3 pointer-events-auto" />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                 </div>
               </div>
+
 
               {/* Description */}
               <div>
@@ -233,6 +305,42 @@ export default function ProjectDetail() {
 
         <LinkPanelDock entityId={id!} entityType="project" />
       </div>
+
+      {/* New subproject dialog */}
+      <Dialog open={subprojectOpen} onOpenChange={setSubprojectOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Novo subprojeto</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 pt-2">
+            <Label className="text-xs text-muted-foreground">
+              Será criado como filho de "{project.title}"
+            </Label>
+            <Input
+              autoFocus
+              placeholder="Nome do subprojeto"
+              value={subprojectTitle}
+              onChange={(e) => setSubprojectTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") createSubproject.mutate(subprojectTitle);
+              }}
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setSubprojectOpen(false)}>
+                Cancelar
+              </Button>
+              <Button
+                onClick={() => createSubproject.mutate(subprojectTitle)}
+                disabled={createSubproject.isPending}
+              >
+                {createSubproject.isPending ? "Criando..." : "Criar"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+
 
       {/* Extract Dialog */}
       <AlertDialog open={extractOpen} onOpenChange={setExtractOpen}>

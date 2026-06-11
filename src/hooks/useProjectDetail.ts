@@ -37,6 +37,7 @@ export function useProjectDetail(id: string | undefined) {
   const [coverColor, setCoverColorState] = useState("#7C3AED");
   const [startDate, setStartDateState] = useState<Date | undefined>();
   const [targetDate, setTargetDateState] = useState<Date | undefined>();
+  const [parentId, setParentIdState] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [loadedId, setLoadedId] = useState<string | null>(null);
 
@@ -50,10 +51,12 @@ export function useProjectDetail(id: string | undefined) {
       setCoverColorState(project.cover_color || "#7C3AED");
       setStartDateState(project.start_date ? new Date(project.start_date + "T00:00:00") : undefined);
       setTargetDateState(project.target_date ? new Date(project.target_date + "T00:00:00") : undefined);
+      setParentIdState(project.parent_id ?? null);
       setLoadedId(id!);
       setHasUnsavedChanges(false);
     }
   }, [project, loadedId, id]);
+
 
   // Mark as changed
   const markChanged = useCallback(() => setHasUnsavedChanges(true), []);
@@ -108,6 +111,13 @@ export function useProjectDetail(id: string | undefined) {
     }
   }, [markChanged]);
 
+  const setParentId = useCallback((value: string | null) => {
+    if (isMounted.current) {
+      setParentIdState(value);
+      markChanged();
+    }
+  }, [markChanged]);
+
   // Save mutation
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -120,8 +130,10 @@ export function useProjectDetail(id: string | undefined) {
         cover_color: coverColor,
         start_date: startDate ? format(startDate, "yyyy-MM-dd") : null,
         target_date: targetDate ? format(targetDate, "yyyy-MM-dd") : null,
+        parent_id: parentId,
       });
     },
+
     onSuccess: () => {
       if (!isMounted.current) return;
       setHasUnsavedChanges(false);
@@ -225,8 +237,9 @@ export function useProjectDetail(id: string | undefined) {
     coverColor,
     startDate,
     targetDate,
+    parentId,
     hasUnsavedChanges,
-    
+
     // Setters
     setTitle,
     setEmoji,
@@ -235,6 +248,8 @@ export function useProjectDetail(id: string | undefined) {
     setCoverColor,
     setStartDate,
     setTargetDate,
+    setParentId,
+
     
     // Mutations
     saveMutation,
