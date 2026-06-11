@@ -97,6 +97,7 @@ export type Database = {
           description: string | null
           emoji: string | null
           id: string
+          parent_id: string | null
           start_date: string | null
           status: string
           target_date: string | null
@@ -111,6 +112,7 @@ export type Database = {
           description?: string | null
           emoji?: string | null
           id?: string
+          parent_id?: string | null
           start_date?: string | null
           status?: string
           target_date?: string | null
@@ -125,6 +127,7 @@ export type Database = {
           description?: string | null
           emoji?: string | null
           id?: string
+          parent_id?: string | null
           start_date?: string | null
           status?: string
           target_date?: string | null
@@ -132,7 +135,15 @@ export type Database = {
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "projects_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       radar_entity_links: {
         Row: {
@@ -386,7 +397,15 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      project_progress_recursive: {
+        Row: {
+          done_tasks_recursive: number | null
+          progress_percent: number | null
+          project_id: string | null
+          total_tasks_recursive: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       auto_triage_tasks: { Args: never; Returns: undefined }
