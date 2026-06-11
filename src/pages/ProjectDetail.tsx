@@ -1,21 +1,24 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, Save, Trash2, Archive, ArchiveRestore, FileOutput, ChevronRight, Download } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, Save, Trash2, Archive, ArchiveRestore, FileOutput, ChevronRight, Download, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { exportProject } from "@/lib/markdown/export";
 import { format } from "date-fns";
 import { useProjectDetail } from "@/hooks/useProjectDetail";
+import { useProjects } from "@/hooks/useProjects";
+import { createProject } from "@/lib/api/projects";
 import { fetchLinkedTasksForProject, fetchLinkedNotesForProject } from "@/lib/api/projectStats";
 import { LinkPanelDock } from "@/components/LinkPanelDock";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { Label } from "@/components/ui/label";
 import { Calendar } from "@/components/ui/calendar";
 import { DetailPageSkeleton } from "@/components/ui/page-skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ProjectHero } from "@/components/projects/ProjectHero";
-import { ProjectMetrics } from "@/components/projects/ProjectMetrics";
+import { ProjectNarrative } from "@/components/projects/ProjectNarrative";
 import { ProjectAIPanel } from "@/components/projects/ProjectAIPanel";
 import { ProjectTasksTab } from "@/components/projects/ProjectTasksTab";
 import { ProjectNotesTab } from "@/components/projects/ProjectNotesTab";
@@ -24,11 +27,15 @@ import {
 } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle,
   AlertDialogDescription, AlertDialogFooter,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import type { ProjectStatus } from "@/types/entities";
+import { wouldCreateCycle } from "@/lib/projectProgress";
 
 const STATUS_OPTIONS: { value: ProjectStatus; label: string }[] = [
   { value: "active", label: "Ativo" },
@@ -42,15 +49,23 @@ const PROJECT_COLORS = ["#7C3AED", "#2563EB", "#059669", "#D97706", "#DC2626", "
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const {
     project, isLoading,
-    title, emoji, description, status, coverColor, startDate, targetDate,
+    title, emoji, description, status, coverColor, startDate, targetDate, parentId,
     hasUnsavedChanges,
-    setTitle, setEmoji, setDescription, setStatus, setCoverColor, setStartDate, setTargetDate,
+    setTitle, setEmoji, setDescription, setStatus, setCoverColor, setStartDate, setTargetDate, setParentId,
     handleSave, handleDelete, handleArchive, handleExtract,
     blocker, saveMutation, deleteMutation, archiveMutation, extractMutation,
   } = useProjectDetail(id);
+
+  const { projects: allProjects, getBreadcrumb } = useProjects({ showArchived: true });
+  const breadcrumb = id ? getBreadcrumb(id) : [];
+  const parentCandidates = allProjects.filter(
+    (p) => p.id !== id && !wouldCreateCycle(id ?? "", p.id, allProjects),
+  );
+
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [extractOpen, setExtractOpen] = useState(false);
