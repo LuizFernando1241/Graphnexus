@@ -195,11 +195,15 @@ export default function ProjectDetail() {
             </TabsList>
 
             <TabsContent value="overview" className="space-y-5 mt-4">
-              <ProjectMetrics tasks={linkedTasks} startDate={project.start_date} targetDate={project.target_date} />
+              <ProjectNarrative
+                projectId={id!}
+                tasks={linkedTasks}
+                onAddSubproject={() => setSubprojectOpen(true)}
+              />
 
               <ProjectAIPanel project={project} tasks={linkedTasks} notes={linkedNotes} />
 
-              {/* Status + Color + Dates */}
+              {/* Status + Parent + Color + Dates */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <Label className="text-xs text-muted-foreground mb-1 block">Status</Label>
@@ -208,6 +212,23 @@ export default function ProjectDetail() {
                     <SelectContent>
                       {STATUS_OPTIONS.map((o) => (
                         <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-1 block">Projeto pai</Label>
+                  <Select
+                    value={parentId ?? "none"}
+                    onValueChange={(v) => setParentId(v === "none" ? null : v)}
+                  >
+                    <SelectTrigger><SelectValue placeholder="Nenhum (projeto raiz)" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Nenhum (projeto raiz)</SelectItem>
+                      {parentCandidates.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.emoji ? `${p.emoji} ` : ""}{p.title}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -225,33 +246,36 @@ export default function ProjectDetail() {
                     ))}
                   </div>
                 </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground mb-1 block">Data de início</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !startDate && "text-muted-foreground")}>
-                        {startDate ? format(startDate, "dd/MM/yyyy") : "Selecionar"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar mode="single" selected={startDate} onSelect={setStartDate} className="p-3 pointer-events-auto" />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div>
-                  <Label className="text-xs text-muted-foreground mb-1 block">Data alvo</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !targetDate && "text-muted-foreground")}>
-                        {targetDate ? format(targetDate, "dd/MM/yyyy") : "Selecionar"}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar mode="single" selected={targetDate} onSelect={setTargetDate} className="p-3 pointer-events-auto" />
-                    </PopoverContent>
-                  </Popover>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-1 block">Data de início</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !startDate && "text-muted-foreground")}>
+                          {startDate ? format(startDate, "dd/MM/yyyy") : "Selecionar"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar mode="single" selected={startDate} onSelect={setStartDate} className="p-3 pointer-events-auto" />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  <div>
+                    <Label className="text-xs text-muted-foreground mb-1 block">Data alvo</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !targetDate && "text-muted-foreground")}>
+                          {targetDate ? format(targetDate, "dd/MM/yyyy") : "Selecionar"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar mode="single" selected={targetDate} onSelect={setTargetDate} className="p-3 pointer-events-auto" />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
                 </div>
               </div>
+
 
               {/* Description */}
               <div>
