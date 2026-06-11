@@ -153,23 +153,6 @@ export default function ProjectDetail() {
               </Button>
               <Button
                 variant="ghost" size="icon" title="Exportar como Markdown"
-
-
-      <div className="flex flex-col lg:flex-row gap-6 w-full">
-        <div className="flex-1 flex flex-col gap-5 min-w-0 w-full">
-          {/* Top actions */}
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <Button variant="ghost" size="sm" onClick={() => navigate("/projects")} className="min-h-[44px]">
-              <ArrowLeft className="mr-1 h-4 w-4" /> Voltar
-            </Button>
-            <div className="flex items-center gap-2 flex-wrap">
-              {hasUnsavedChanges && <span className="text-xs text-primary animate-pulse">Alterações não salvas</span>}
-              <Button onClick={handleSave} disabled={!hasUnsavedChanges || saveMutation.isPending} size="sm">
-                <Save className="mr-1 h-4 w-4" />
-                {saveMutation.isPending ? "Salvando..." : "Salvar"}
-              </Button>
-              <Button
-                variant="ghost" size="icon" title="Exportar como Markdown"
                 aria-label="Exportar projeto como Markdown"
                 onClick={async () => {
                   try { await exportProject(project); toast.success("Exportado!"); }
