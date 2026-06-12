@@ -1,7 +1,15 @@
 import { LinkPanel } from "@/components/LinkPanel";
+import { RelatedSuggestions } from "@/components/RelatedSuggestions";
 import { ResizeHandle } from "@/components/ui/ResizeHandle";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import type { EntityType } from "@/types/entities";
+import type { EmbedEntityType } from "@/lib/api/embedding";
+
+function toEmbedType(t: EntityType): EmbedEntityType | null {
+  if (t === "note" || t === "task" || t === "project") return t;
+  if (t === "product") return "produto";
+  return null;
+}
 
 interface LinkPanelDockProps {
   entityId: string;
@@ -22,10 +30,13 @@ export function LinkPanelDock({ entityId, entityType }: LinkPanelDockProps) {
     LINKPANEL_DEFAULT,
   );
 
+  const embedType = toEmbedType(entityType);
+
   return (
     <>
       {/* Mobile / tablet: stacked, full width */}
-      <div className="w-full lg:hidden">
+      <div className="w-full lg:hidden flex flex-col gap-3">
+        {embedType && <RelatedSuggestions entityType={embedType} entityId={entityId} />}
         <LinkPanel entityId={entityId} entityType={entityType} />
       </div>
 
@@ -40,9 +51,10 @@ export function LinkPanelDock({ entityId, entityType }: LinkPanelDockProps) {
           ariaLabel="Redimensionar painel de links"
         />
         <div
-          className="overflow-y-auto hidden-scrollbar"
+          className="overflow-y-auto hidden-scrollbar flex flex-col gap-3"
           style={{ width: `${width}px` }}
         >
+          {embedType && <RelatedSuggestions entityType={embedType} entityId={entityId} />}
           <LinkPanel entityId={entityId} entityType={entityType} />
         </div>
       </div>
