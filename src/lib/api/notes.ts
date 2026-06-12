@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Note } from "@/types/entities";
+import { triggerEmbed } from "@/lib/api/embedding";
 
 export async function fetchNotes(opts: {
   search?: string;
@@ -103,6 +104,7 @@ export async function createNote(note: {
     .select()
     .single();
   if (error) throw error;
+  triggerEmbed("note", (data as Note).id);
   return data as Note;
 }
 
@@ -117,6 +119,7 @@ export async function updateNote(
     .select()
     .single();
   if (error) throw error;
+  triggerEmbed("note", id);
   return data as Note;
 }
 

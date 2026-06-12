@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
 import { calcularScore } from '@/lib/radar/radarScore'
 import { useRadarParametros } from './useRadarParametros'
+import { triggerEmbed } from '@/lib/api/embedding'
 import type { RadarProduto, RadarProdutoFormData, PipelineStage, DecisionBadge, StatusCompra } from '@/types/radar'
 
 // Mapper: Supabase row → RadarProduto
@@ -91,6 +92,7 @@ export function useRadarProdutos() {
         event: 'Produto criado',
       })
 
+      triggerEmbed('produto', data.id)
       return mapRow(data)
     },
     onSuccess: () => {
@@ -164,6 +166,7 @@ export function useRadarProdutos() {
         await supabase.from('radar_historico').insert(historicoEntries)
       }
 
+      triggerEmbed('produto', id)
       return mapRow(data)
     },
     onSuccess: () => {

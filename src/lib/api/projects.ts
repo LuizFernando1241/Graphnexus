@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Project } from "@/types/entities";
+import { triggerEmbed } from "@/lib/api/embedding";
 
 export async function fetchProjects(opts?: { showArchived?: boolean }) {
   let query = supabase
@@ -45,6 +46,7 @@ export async function createProject(project: {
     .select()
     .single();
   if (error) throw error;
+  triggerEmbed("project", (data as Project).id);
   return data as Project;
 }
 
@@ -59,6 +61,7 @@ export async function updateProject(
     .select()
     .single();
   if (error) throw error;
+  triggerEmbed("project", id);
   return data as Project;
 }
 

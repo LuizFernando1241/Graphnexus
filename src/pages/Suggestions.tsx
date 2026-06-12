@@ -1,0 +1,217 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { Sparkles, Link2, X, Loader2, RefreshCw, ArrowRight, StickyNote, CheckSquare, FolderKanban, Crosshair } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { PageTransition } from "@/components/PageTransition";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  acceptSuggestion,
+  dismissSuggestion,
+  fetchPendingSuggestions,
+  type EmbedEntityType,
+  type LinkSuggestion,
+} from "@/lib/api/embedding";
+
+const TYPE_LABEL: Record<EmbedEntityType, string> = {
+  note: "Nota",
+  task: "Tarefa",
+  project: "Projeto",
+  produto: "Produto",
+};
+
+const TYPE_ICON: Record<EmbedEntityType, React.ComponentType<{ className?: string }>> = {
+  note: StickyNote,
+  task: CheckSquare,
+  project: FolderKanban,
+  produto: Crosshair,
+};
+
+const TYPE_ROUTE: Record<EmbedEntityType, (id: string) => string> = {
+  note: (id) => `/notes/${id}`,
+  task: (id) => `/tasks/${id}`,
+  project: (id) => `/projects/${id}`,
+  produto: () => `/radar`,
+};
+
+type Titles = Record<string, string>;
+
+async function fetchTitles(suggestions: LinkSuggestion[]): Promise<Titles> {
+  const buckets: Record<EmbedEntityType, Set<string>> = {
+    note: new Set(), task: new Set(), project: new Set(), produto: new Set(),
+  };
+  for (const s of suggestions) {
+    buckets[s.source_type].add(s.source_id);
+    buckets[s.target_type].add(s.target_id);
+  }
+  const titles: Titles = {};
+  await Promise.all([
+    (async () => {
+      if (!buckets.note.size) return;
+      const { data } = await supabase.from("notes").select("id,title").in("id", Array.from(buckets.note));
+      data?.forEach((r) => (titles[`note:${r.id}`] = r.title || "(sem título)"));
+    })(),
+    (async () => {
+      if (!buckets.task.size) return;
+      const { data } = await supabase.from("tasks").select("id,title").in("id", Array.from(buckets.task));
+      data?.forEach((r) => (titles[`task:${r.id}`] = r.title || "(sem título)"));
+    })(),
+    (async () => {
+      if (!buckets.project.size) return;
+      const { data } = await supabase.from("projects").select("id,title").in("id", Array.from(buckets.project));
+      data?.forEach((r) => (titles[`project:${r.id}`] = r.title || "(sem título)"));
+    })(),
+    (async () => {
+      if (!buckets.produto.size) return;
+      const { data } = await supabase.from("radar_produtos").select("id,nome").in("id", Array.from(buckets.produto));
+      data?.forEach((r) => (titles[`produto:${r.id}`] = r.nome || "(sem nome)"));
+    })(),
+  ]);
+  return titles;
+}
+
+function EntityChip({ type, id, title }: { type: EmbedEntityType; id: string; title: string }) {
+  const navigate = useNavigate();
+  const Icon = TYPE_ICON[type];
+  return (
+    <button
+      onClick={() => navigate(TYPE_ROUTE[type](id))}
+      className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-left hover:bg-accent transition-colors min-w-0 flex-1"
+    >
+      <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+      <div className="flex flex-col min-w-0">
+        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{TYPE_LABEL[type]}</span>
+        <span className="truncate text-sm font-medium">{title}</span>
+      </div>
+    </button>
+  );
+}
+
+export default function Suggestions() {
+  const qc = useQueryClient();
+
+  const { data: suggestions = [], isLoading, refetch } = useQuery({
+    queryKey: ["link-suggestions"],
+    queryFn: fetchPendingSuggestions,
+    staleTime: 30_000,
+  });
+
+  const { data: titles = {} } = useQuery({
+    queryKey: ["link-suggestion-titles", suggestions.map((s) => s.id).join(",")],
+    queryFn: () => fetchTitles(suggestions),
+    enabled: suggestions.length > 0,
+  });
+
+  const scanMut = useMutation({
+    mutationFn: async () => {
+      const { error } = await supabase.functions.invoke("scan-link-suggestions", { body: {} });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["link-suggestions"] });
+      toast.success("Varredura concluída");
+    },
+    onError: (e: Error) => toast.error("Erro na varredura: " + e.message),
+  });
+
+  const acceptMut = useMutation({
+    mutationFn: (s: LinkSuggestion) => acceptSuggestion(s),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["link-suggestions"] });
+      qc.invalidateQueries({ queryKey: ["entity_links"] });
+      qc.invalidateQueries({ queryKey: ["radar-entity-links"] });
+      toast.success("Vínculo criado");
+    },
+    onError: () => toast.error("Erro ao criar vínculo"),
+  });
+
+  const dismissMut = useMutation({
+    mutationFn: (id: string) => dismissSuggestion(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["link-suggestions"] }),
+  });
+
+  return (
+    <PageTransition>
+      <div className="flex flex-col gap-6 max-w-4xl">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <h1 className="text-2xl font-bold">Sugestões da IA</h1>
+            </div>
+            <p className="text-sm text-muted-foreground mt-1">
+              A IA encontrou possíveis vínculos entre seus itens. Aceite os que fizerem sentido.
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => scanMut.mutate()}
+            disabled={scanMut.isPending}
+          >
+            {scanMut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+            Procurar agora
+          </Button>
+        </div>
+
+        {isLoading ? (
+          <div className="flex items-center justify-center py-16 text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin" />
+          </div>
+        ) : suggestions.length === 0 ? (
+          <Card className="p-10 text-center text-muted-foreground">
+            <Sparkles className="h-8 w-8 mx-auto mb-3 opacity-50" />
+            <p className="font-medium">Nenhuma sugestão no momento</p>
+            <p className="text-sm mt-1">
+              Conforme você cria notas, tarefas, projetos e produtos, a IA identifica relações automaticamente.
+            </p>
+          </Card>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {suggestions.map((s) => {
+              const srcTitle = titles[`${s.source_type}:${s.source_id}`] || "…";
+              const tgtTitle = titles[`${s.target_type}:${s.target_id}`] || "…";
+              return (
+                <Card key={s.id} className="p-4 flex flex-col gap-3">
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                    <EntityChip type={s.source_type} id={s.source_id} title={srcTitle} />
+                    <ArrowRight className="h-4 w-4 text-muted-foreground self-center shrink-0 hidden sm:block" />
+                    <EntityChip type={s.target_type} id={s.target_id} title={tgtTitle} />
+                  </div>
+                  {s.reason && (
+                    <p className="text-sm text-muted-foreground italic">"{s.reason}"</p>
+                  )}
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-xs text-muted-foreground">
+                      Confiança {Math.round(Number(s.score) * 100)}%
+                    </span>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => dismissMut.mutate(s.id)}
+                        disabled={dismissMut.isPending}
+                      >
+                        <X className="mr-1 h-3.5 w-3.5" />
+                        Ignorar
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => acceptMut.mutate(s)}
+                        disabled={acceptMut.isPending}
+                      >
+                        <Link2 className="mr-1 h-3.5 w-3.5" />
+                        Vincular
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </PageTransition>
+  );
+}

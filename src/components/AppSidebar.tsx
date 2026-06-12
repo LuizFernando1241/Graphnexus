@@ -1,4 +1,4 @@
-import { Home, StickyNote, CheckSquare, FolderKanban, Network, Archive, Upload, LogOut, Crosshair, ShoppingCart, Settings as SettingsIcon } from "lucide-react";
+import { Home, StickyNote, CheckSquare, FolderKanban, Network, Archive, Upload, LogOut, Crosshair, ShoppingCart, Settings as SettingsIcon, Sparkles } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,6 +9,7 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { ResizeHandle } from "@/components/ui/ResizeHandle";
 import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
 import { useRadarSinais } from "@/hooks/radar/useRadarSinais";
+import { usePendingSuggestionCount } from "@/hooks/useSuggestionCount";
 
 const navItems = [
   { title: "Dashboard", url: "/", icon: Home },
@@ -37,6 +38,7 @@ export function AppSidebar() {
   const produtosEmDecisao = radarProdutos.filter((p) => p.stage === "decisao").length;
   const { urgentes } = useRadarSinais();
   const badgeCount = urgentes.length + produtosEmDecisao;
+  const { data: suggestionCount = 0 } = usePendingSuggestionCount();
 
 
   const handleLogout = async () => {
@@ -77,6 +79,26 @@ export function AppSidebar() {
               {!collapsed && <span className="truncate">{item.title}</span>}
             </NavLink>
           ))}
+
+          <NavLink
+            to="/suggestions"
+            title={collapsed ? "Sugestões IA" : undefined}
+            className={`flex items-center gap-3 rounded-lg py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${collapsed ? "px-2 justify-center" : "px-3"}`}
+            activeClassName="bg-sidebar-accent text-foreground"
+          >
+            <Sparkles className="h-4 w-4 shrink-0" />
+            {!collapsed && (
+              <>
+                <span className="truncate flex-1">Sugestões IA</span>
+                {suggestionCount > 0 && (
+                  <span className="ml-auto inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground">
+                    {suggestionCount}
+                  </span>
+                )}
+              </>
+            )}
+          </NavLink>
+
 
           {/* Radar section */}
           {!collapsed && (

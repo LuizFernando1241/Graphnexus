@@ -5,3 +5,9 @@ verify_jwt = true
 
 [functions.project-ai]
 verify_jwt = true
+
+[functions.embed-entity]
+verify_jwt = true
+
+[functions.scan-link-suggestions]
+verify_jwt = true
