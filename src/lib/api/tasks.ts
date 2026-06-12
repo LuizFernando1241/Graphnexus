@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import type { Task } from "@/types/entities";
+import { triggerEmbed } from "@/lib/api/embedding";
 // NOTA: Auto-promoção removida do frontend - agora controlada pelo banco via auto_triage_tasks()
 // import { isSameDay, parseISO, startOfDay } from "date-fns";
 
@@ -91,7 +92,9 @@ export async function createTask(task: {
     .select()
     .single();
   if (error) throw error;
-  return rowToTask(data as Record<string, unknown>);
+  const created = rowToTask(data as Record<string, unknown>);
+  triggerEmbed("task", created.id);
+  return created;
 }
 
 export async function updateTask(
@@ -126,6 +129,7 @@ export async function updateTask(
     .select()
     .single();
   if (error) throw error;
+  triggerEmbed("task", id);
   return rowToTask(data as Record<string, unknown>);
 }
 
