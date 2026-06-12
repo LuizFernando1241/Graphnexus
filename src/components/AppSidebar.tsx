@@ -80,6 +80,26 @@ export function AppSidebar() {
             </NavLink>
           ))}
 
+          <NavLink
+            to="/suggestions"
+            title={collapsed ? "Sugestões IA" : undefined}
+            className={`flex items-center gap-3 rounded-lg py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${collapsed ? "px-2 justify-center" : "px-3"}`}
+            activeClassName="bg-sidebar-accent text-foreground"
+          >
+            <Sparkles className="h-4 w-4 shrink-0" />
+            {!collapsed && (
+              <>
+                <span className="truncate flex-1">Sugestões IA</span>
+                {suggestionCount > 0 && (
+                  <span className="ml-auto inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-semibold text-primary-foreground">
+                    {suggestionCount}
+                  </span>
+                )}
+              </>
+            )}
+          </NavLink>
+
+
           {/* Radar section */}
           {!collapsed && (
             <div className="mt-4 mb-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
