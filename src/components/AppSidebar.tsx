@@ -1,4 +1,4 @@
-import { Home, StickyNote, CheckSquare, FolderKanban, Network, Archive, Upload, LogOut, Crosshair, ShoppingCart, Settings as SettingsIcon } from "lucide-react";
+import { Home, StickyNote, CheckSquare, FolderKanban, Network, Archive, Upload, LogOut, Crosshair, ShoppingCart, Settings as SettingsIcon, Sparkles } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,6 +9,7 @@ import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { ResizeHandle } from "@/components/ui/ResizeHandle";
 import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
 import { useRadarSinais } from "@/hooks/radar/useRadarSinais";
+import { usePendingSuggestionCount } from "@/hooks/useSuggestionCount";
 
 const navItems = [
   { title: "Dashboard", url: "/", icon: Home },
@@ -37,6 +38,7 @@ export function AppSidebar() {
   const produtosEmDecisao = radarProdutos.filter((p) => p.stage === "decisao").length;
   const { urgentes } = useRadarSinais();
   const badgeCount = urgentes.length + produtosEmDecisao;
+  const { data: suggestionCount = 0 } = usePendingSuggestionCount();
 
 
   const handleLogout = async () => {
