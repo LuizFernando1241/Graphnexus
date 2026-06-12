@@ -1,55 +1,72 @@
-## Problema
 
-Hoje os pesos, limiares de decisão e descartes automáticos já são configuráveis, mas **as faixas de pontuação de cada pilar estão hardcoded** em `src/lib/radar/radarScore.ts` (funções `calcularPilarMargem`, `calcularPilarTicket`, etc.). Ajustar os pesos em Parâmetros não muda o quanto cada faixa pontua — só muda o peso relativo. Você quer poder editar as próprias faixas (ex.: "≥ 20% = 10 pts", "≥ 15% = 8 pts" etc.) e ver isso refletir imediatamente no score, na decisão e no kanban.
+# IA Integrada com Contexto Global — Sugestão de Links
 
-O campo `faixas` já existe em `RadarParametros` e na tabela `radar_parametros`, mas está vazio e não é lido pelo cálculo.
+## Objetivo
+Uma camada de IA que entende todo o conteúdo do workspace (notas, tarefas, projetos, produtos do radar) e identifica relações que ainda não existem como `entity_links`. O usuário recebe sugestões do tipo "esta nota fala do produto X — quer vincular?" e aprova com 1 clique.
 
-## Solução (modular, sem migration nova)
+## Como vai funcionar (visão de produto)
 
-### 1. `src/lib/radar/radarScore.ts` — engine genérica baseada em faixas
+1. **Indexação semântica em background**
+   Cada entidade (nota, tarefa, projeto, produto) vira um vetor (embedding) guardado no banco. Sempre que algo é criado/editado, o vetor é atualizado.
 
-- Definir `DEFAULT_FAIXAS: RadarFaixas` com as 5 faixas de cada pilar, exatamente como descrito (margem, ticket, demanda, visitas, concorrentes).
-- Cada item de faixa: `{ limiteMin, pontos, label, escalaAberta?: boolean, descarte?: boolean, divisor?: number }`. O flag `escalaAberta` ativa a fórmula `pontos = base × (valor / limiteMin)` para a faixa máxima. O flag `descarte` marca faixas que disparam descarte automático (Ticket < 30, Demanda < 100 exceto lançamentos).
-- Substituir os 5 `calcularPilarX` por uma única função `avaliarFaixa(valor, faixas)` que percorre as faixas ordenadas e retorna `{ pontos, descarte }`.
-- Em `calcularScore`, ler `params.faixas` com merge sobre `DEFAULT_FAIXAS` (qualquer pilar ausente cai no padrão), e passar para `avaliarFaixa`.
-- Manter os descartes automáticos por preço/faturamento atuais (já são parametrizados via `autoDescarte`), mas também aceitar o flag `descarte` vindo das faixas (mais flexível no futuro).
-- Adicionar `DEFAULT_PARAMETROS.faixas = DEFAULT_FAIXAS` para que projetos novos já saiam corretos.
+2. **Detector de links sugeridos**
+   Uma edge function compara vetores + heurísticas (menções de nome, tags, palavras-chave) e gera sugestões de link entre entidades que ainda não estão conectadas. Cada sugestão tem score de confiança e uma justificativa curta gerada pela IA ("a nota menciona 'campanha Q3' que é o título deste projeto").
 
-### 2. `src/components/radar/ParametrosRadar.tsx` — UI das faixas
+3. **Inbox de Sugestões**
+   Nova seção no Dashboard + badge no sidebar: "X sugestões de link". Cada card mostra: entidade A ↔ entidade B, motivo, botões **Vincular** / **Ignorar**. Ignorar é lembrado para não reaparecer.
 
-Adicionar um 4º `AccordionItem` chamado **"Faixas de Pontuação por Pilar"**, contendo um sub-accordion (um item por pilar). Cada pilar mostra uma tabela editável com 5 linhas:
+4. **Sugestões contextuais inline**
+   - No drawer/página de uma nota, tarefa, projeto ou produto: bloco "Pode estar relacionado a…" com top 3 sugestões para *aquela* entidade.
+   - No QuickAdd de tarefa e ao salvar nota: se a IA detecta forte relação com um projeto/produto, oferece auto-link antes de salvar.
 
-| Faixa máxima (≥) | Pontos | (badge "escala aberta" quando aplicável) |
+5. **Chat com contexto global (Ask)**
+   Command Palette ganha modo "Perguntar à IA": pergunta em linguagem natural ("o que eu tenho sobre fornecedor Y?") e a IA responde puxando notas/tarefas/produtos relevantes via busca por embedding (RAG), com links clicáveis para cada fonte citada.
 
-- Campos `Input type="number"` para `limiteMin` e `pontos`.
-- Botão "Restaurar faixas padrão deste pilar".
-- Para Concorrentes (não tem escala aberta nem unidades monetárias), renderizar variante simplificada.
-- Helpers de unidade: `%` para margem, `R$` para ticket/demanda, `visitas` para visitas, `un.` para concorrentes.
-- Validação leve: avisar (sem bloquear) se as faixas não estiverem em ordem decrescente de `limiteMin`.
+## Arquitetura técnica
 
-O botão "Restaurar padrões" geral já existente passa a restaurar também `faixas` para `DEFAULT_FAIXAS`.
+### Banco (1 migration)
+- Habilitar `pgvector`.
+- Tabela `entity_embeddings` (`entity_type`, `entity_id`, `user_id`, `content_hash`, `embedding vector(1536)`, `updated_at`) com índice HNSW e RLS por `user_id`.
+- Tabela `link_suggestions` (`id`, `user_id`, `source_type/id`, `target_type/id`, `score`, `reason`, `status` enum: pending/accepted/dismissed, `created_at`). RLS + grants.
+- Índice único `(user_id, source, target)` para não duplicar.
 
-### 3. Propagação
+### Edge functions (Lovable AI Gateway — sem chave do usuário)
+- **`embed-entity`**: recebe `{entity_type, entity_id}`, monta texto canônico da entidade, gera embedding com `google/gemini-embedding-001` (dimensions: 1536) e faz upsert em `entity_embeddings`. Pula se `content_hash` igual.
+- **`scan-link-suggestions`**: para cada entidade nova/alterada, faz `match` por similaridade (top-K) entre tipos diferentes, filtra pares já linkados ou já dismissados, e pede a `google/gemini-3-flash-preview` para validar/justificar cada candidato. Grava em `link_suggestions`.
+- **`ask-workspace`**: RAG — embed da pergunta, busca top-N entidades, monta contexto e responde streaming citando fontes.
 
-Nada mais precisa mudar:
-- `useRadarProdutos` já chama `calcularScore(form, parametros)` ao criar/atualizar produtos.
-- `ScorePainel` (drawer) já recalcula em tempo real via `useMemo` com `parametros`.
-- O kanban e badges leem `produto.scoreTotal` / `produto.decision` já recalculados.
+### Front-end
+- Hook `useEmbedOnSave`: dispara `embed-entity` ao criar/atualizar nota/tarefa/projeto/produto (fire-and-forget, debounce).
+- `src/pages/Suggestions.tsx` (rota `/suggestions`) + item no sidebar com contagem.
+- Componente `<RelatedSuggestions entityType entityId />` injetado em ProjectDetail, NoteDetail, TaskDetail e ProdutoDrawer.
+- Mutations: `acceptSuggestion` (cria `entity_link` + marca accepted), `dismissSuggestion`.
+- Command Palette: novo modo "?" para perguntar à IA, render markdown com fontes.
 
-Único cuidado: após salvar novos parâmetros, scores de produtos já salvos no banco continuam com o valor antigo até a próxima edição. Adicionar um botão discreto **"Recalcular todos os produtos"** ao lado de "Salvar" que itera os produtos do usuário, recalcula score/decision com os novos parâmetros e atualiza no Supabase (operação em lote via `Promise.all`, com toast de progresso).
+### Cron / disparo
+- `scan-link-suggestions` roda: (a) sob demanda quando o usuário abre a Inbox; (b) automaticamente após `embed-entity` da entidade que mudou (escopo: só compara essa entidade contra as outras, barato).
 
-## Arquivos tocados
+## Custo / privacidade
+- Embeddings e chamadas vão pelo Lovable AI Gateway (sem chave extra, cobrado em créditos do workspace).
+- Tudo escopado por `auth.uid()` via RLS — IA nunca vê dados de outro usuário.
+- Dismiss é persistente: a mesma sugestão não volta.
 
-- `src/lib/radar/radarScore.ts` — refatorar para engine baseada em faixas + `DEFAULT_FAIXAS`.
-- `src/components/radar/ParametrosRadar.tsx` — adicionar seção de faixas + botão recalcular.
-- `src/hooks/radar/useRadarProdutos.ts` — expor uma função `recalcularTodos()` que reaproveita `calcularScore`.
-- `src/types/radar.ts` — ajuste pequeno em `FaixaItem` se necessário (adicionar `escalaAberta`, `descarte`, `divisor`).
+## Entrega em 3 fases
 
-Nenhuma migration nova: o campo `faixas jsonb` já existe na tabela `radar_parametros`.
+**Fase 1 — Fundação (essa primeira entrega)**
+- pgvector + tabelas + RLS/grants
+- `embed-entity` + hook de indexação em todas as 4 entidades
+- Reindexação inicial (botão em Settings: "Reindexar workspace")
 
-## Verificação
+**Fase 2 — Sugestões de link**
+- `scan-link-suggestions`
+- Página `/suggestions` + badge no sidebar
+- `<RelatedSuggestions />` nas páginas de detalhe
 
-1. Mudar "Margem ≥ 20% = 10 pts" para "≥ 25% = 12 pts" → produto com 22% de margem que antes dava 10 pts passa a dar pontos pela faixa inferior; score recalcula no drawer ao vivo.
-2. Mudar threshold de "Excelente" para 50 → produto com score 42 muda de 🚀 para ✅ no kanban após recalcular.
-3. Clicar "Restaurar padrões" volta tudo (pesos, limiares, descartes, faixas) ao default.
-4. "Recalcular todos os produtos" atualiza scores no banco e o kanban reflete sem reload.
+**Fase 3 — Ask workspace (RAG)**
+- `ask-workspace` edge function
+- Modo "Perguntar" no Command Palette com streaming e citações
+
+## Confirmações antes de implementar
+1. Posso começar pela **Fase 1 + Fase 2** nesta entrega (fundação + sugestões de link, que é o pedido principal) e deixar o chat RAG para a próxima?
+2. OK usar **embeddings 1536-dim Gemini** via Lovable AI (consome créditos do workspace a cada save)?
+3. Quer também o **auto-link inline** no QuickAdd de tarefa quando a IA tem confiança alta (>0.85), ou prefere que TODA sugestão passe pela Inbox antes?
