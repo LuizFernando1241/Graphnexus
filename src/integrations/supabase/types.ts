@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      entity_embeddings: {
+        Row: {
+          content_hash: string
+          content_preview: string | null
+          embedding: string
+          entity_id: string
+          entity_type: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          content_hash: string
+          content_preview?: string | null
+          embedding: string
+          entity_id: string
+          entity_type: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          content_hash?: string
+          content_preview?: string | null
+          embedding?: string
+          entity_id?: string
+          entity_type?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       entity_links: {
         Row: {
           created_at: string
@@ -43,6 +76,48 @@ export type Database = {
           source_type?: string
           target_id?: string
           target_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      link_suggestions: {
+        Row: {
+          created_at: string
+          id: string
+          reason: string | null
+          score: number
+          source_id: string
+          source_type: string
+          status: string
+          target_id: string
+          target_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reason?: string | null
+          score: number
+          source_id: string
+          source_type: string
+          status?: string
+          target_id: string
+          target_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reason?: string | null
+          score?: number
+          source_id?: string
+          source_type?: string
+          status?: string
+          target_id?: string
+          target_type?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: []
@@ -409,6 +484,20 @@ export type Database = {
     }
     Functions: {
       auto_triage_tasks: { Args: never; Returns: undefined }
+      match_entities: {
+        Args: {
+          exclude_id?: string
+          exclude_type?: string
+          match_count?: number
+          query_embedding: string
+        }
+        Returns: {
+          content_preview: string
+          entity_id: string
+          entity_type: string
+          similarity: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
