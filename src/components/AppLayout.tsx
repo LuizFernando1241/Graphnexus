@@ -9,6 +9,7 @@ import { useTaskDueNotifications } from "@/hooks/useTaskDueNotifications";
 import { useAutoTriage } from "@/hooks/useAutoTriage";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { MobileSidebarContent } from "./MobileSidebarContent";
+import { NexusBot } from "./NexusBot/NexusBot";
 
 export function AppLayout() {
   useTaskDueNotifications();
@@ -60,6 +61,7 @@ export function AppLayout() {
       </main>
       <CommandPalette />
       <QuickAdd externalOpen={quickAddOpen} onExternalOpenChange={setQuickAddOpen} />
+      <NexusBot />
     </div>
   );
 }

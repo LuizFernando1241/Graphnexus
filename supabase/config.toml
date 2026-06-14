@@ -11,3 +11,6 @@ verify_jwt = true
 
 [functions.scan-link-suggestions]
 verify_jwt = true
+
+[functions.nexus-chat]
+verify_jwt = true
