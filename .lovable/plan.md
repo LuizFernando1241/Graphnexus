@@ -1,72 +1,57 @@
+# Assistente IA Global (NexusBot)
 
-# IA Integrada com Contexto Global — Sugestão de Links
+Botão flutuante fixo no canto inferior direito → abre um painel de chat que responde sobre notas, tarefas, projetos e produtos usando embeddings + tool calling.
 
-## Objetivo
-Uma camada de IA que entende todo o conteúdo do workspace (notas, tarefas, projetos, produtos do radar) e identifica relações que ainda não existem como `entity_links`. O usuário recebe sugestões do tipo "esta nota fala do produto X — quer vincular?" e aprova com 1 clique.
+## UX
 
-## Como vai funcionar (visão de produto)
+- **Botão flutuante** (FAB) presente em todas as páginas autenticadas, canto inferior direito, com ícone customizado (não Sparkles genérico) e badge sutil.
+- **Painel deslizante** (Sheet à direita, ~420px) com:
+  - Header: nome "NexusBot" + botão fechar + botão "nova conversa"
+  - Transcript com AI Elements (`Conversation`, `Message`, `MessageResponse`, `Tool`)
+  - Composer (`PromptInput`) com placeholder "Pergunte sobre suas notas, tarefas, projetos..."
+  - Resultados de ferramentas (entidades encontradas) clicáveis → navegam para a entidade
+- **Persistência**: localStorage, uma conversa única (botão limpa). Sem threads — mais simples e suficiente para o caso de uso "perguntar qualquer coisa".
 
-1. **Indexação semântica em background**
-   Cada entidade (nota, tarefa, projeto, produto) vira um vetor (embedding) guardado no banco. Sempre que algo é criado/editado, o vetor é atualizado.
+## Arquitetura
 
-2. **Detector de links sugeridos**
-   Uma edge function compara vetores + heurísticas (menções de nome, tags, palavras-chave) e gera sugestões de link entre entidades que ainda não estão conectadas. Cada sugestão tem score de confiança e uma justificativa curta gerada pela IA ("a nota menciona 'campanha Q3' que é o título deste projeto").
+### Edge function `nexus-chat` (nova)
+- Streaming via AI SDK (`streamText` + `toUIMessageStreamResponse`)
+- Modelo: `google/gemini-3-flash-preview`
+- System prompt: explica que é assistente do NexusGraph, deve usar ferramentas para buscar contexto antes de responder, citar entidades por título, sugerir links quando fizer sentido.
+- **Tools expostas ao modelo**:
+  1. `semantic_search({ query, limit })` — embed query → `match_entities` RPC → retorna top-N (entity_type, id, preview, similarity)
+  2. `get_entity({ type, id })` — busca conteúdo completo (note body, task details, project, produto)
+  3. `list_recent({ type, limit })` — últimas N entidades de um tipo (para "o que fiz essa semana?")
+  4. `list_overdue_tasks()` — tarefas atrasadas do usuário
+  5. `suggest_links({ type, id })` — top sugestões semânticas para uma entidade (reutiliza `match_entities` excluindo self)
+- `stopWhen: stepCountIs(8)` para permitir múltiplas chamadas de tool em sequência.
+- Auth: valida JWT do usuário em código, todas queries scoped por `auth.uid()` (via RLS no token).
 
-3. **Inbox de Sugestões**
-   Nova seção no Dashboard + badge no sidebar: "X sugestões de link". Cada card mostra: entidade A ↔ entidade B, motivo, botões **Vincular** / **Ignorar**. Ignorar é lembrado para não reaparecer.
+### Frontend
+- `src/components/NexusBot/FloatingButton.tsx` — FAB
+- `src/components/NexusBot/ChatPanel.tsx` — Sheet + AI Elements
+- `src/components/NexusBot/EntityChip.tsx` — chip clicável para resultados de tool (navega para `/notes/:id`, `/tasks`, `/projects/:id`, `/radar/produtos/:id`)
+- `useChat` da AI SDK apontando para `${SUPABASE_URL}/functions/v1/nexus-chat`
+- Mensagens persistidas em `localStorage` (`nexus-bot-messages`)
+- Montar `<NexusBot />` no `AppLayout` (dentro do `ProtectedRoute`)
 
-4. **Sugestões contextuais inline**
-   - No drawer/página de uma nota, tarefa, projeto ou produto: bloco "Pode estar relacionado a…" com top 3 sugestões para *aquela* entidade.
-   - No QuickAdd de tarefa e ao salvar nota: se a IA detecta forte relação com um projeto/produto, oferece auto-link antes de salvar.
+### AI Elements a instalar
+`conversation`, `message`, `prompt-input`, `tool`, `shimmer`
 
-5. **Chat com contexto global (Ask)**
-   Command Palette ganha modo "Perguntar à IA": pergunta em linguagem natural ("o que eu tenho sobre fornecedor Y?") e a IA responde puxando notas/tarefas/produtos relevantes via busca por embedding (RAG), com links clicáveis para cada fonte citada.
+## Pré-requisitos já existentes
+- ✅ `entity_embeddings` + `match_entities` RPC (Parte anterior)
+- ✅ `embed-entity` function para indexar
+- ✅ `LOVABLE_API_KEY` configurado
 
-## Arquitetura técnica
+## Não inclui (escopo futuro)
+- Ações de escrita (criar/editar notas/tarefas via chat) — apenas leitura/sugestão nesta fase
+- Threads múltiplas
+- Voice input
 
-### Banco (1 migration)
-- Habilitar `pgvector`.
-- Tabela `entity_embeddings` (`entity_type`, `entity_id`, `user_id`, `content_hash`, `embedding vector(1536)`, `updated_at`) com índice HNSW e RLS por `user_id`.
-- Tabela `link_suggestions` (`id`, `user_id`, `source_type/id`, `target_type/id`, `score`, `reason`, `status` enum: pending/accepted/dismissed, `created_at`). RLS + grants.
-- Índice único `(user_id, source, target)` para não duplicar.
-
-### Edge functions (Lovable AI Gateway — sem chave do usuário)
-- **`embed-entity`**: recebe `{entity_type, entity_id}`, monta texto canônico da entidade, gera embedding com `google/gemini-embedding-001` (dimensions: 1536) e faz upsert em `entity_embeddings`. Pula se `content_hash` igual.
-- **`scan-link-suggestions`**: para cada entidade nova/alterada, faz `match` por similaridade (top-K) entre tipos diferentes, filtra pares já linkados ou já dismissados, e pede a `google/gemini-3-flash-preview` para validar/justificar cada candidato. Grava em `link_suggestions`.
-- **`ask-workspace`**: RAG — embed da pergunta, busca top-N entidades, monta contexto e responde streaming citando fontes.
-
-### Front-end
-- Hook `useEmbedOnSave`: dispara `embed-entity` ao criar/atualizar nota/tarefa/projeto/produto (fire-and-forget, debounce).
-- `src/pages/Suggestions.tsx` (rota `/suggestions`) + item no sidebar com contagem.
-- Componente `<RelatedSuggestions entityType entityId />` injetado em ProjectDetail, NoteDetail, TaskDetail e ProdutoDrawer.
-- Mutations: `acceptSuggestion` (cria `entity_link` + marca accepted), `dismissSuggestion`.
-- Command Palette: novo modo "?" para perguntar à IA, render markdown com fontes.
-
-### Cron / disparo
-- `scan-link-suggestions` roda: (a) sob demanda quando o usuário abre a Inbox; (b) automaticamente após `embed-entity` da entidade que mudou (escopo: só compara essa entidade contra as outras, barato).
-
-## Custo / privacidade
-- Embeddings e chamadas vão pelo Lovable AI Gateway (sem chave extra, cobrado em créditos do workspace).
-- Tudo escopado por `auth.uid()` via RLS — IA nunca vê dados de outro usuário.
-- Dismiss é persistente: a mesma sugestão não volta.
-
-## Entrega em 3 fases
-
-**Fase 1 — Fundação (essa primeira entrega)**
-- pgvector + tabelas + RLS/grants
-- `embed-entity` + hook de indexação em todas as 4 entidades
-- Reindexação inicial (botão em Settings: "Reindexar workspace")
-
-**Fase 2 — Sugestões de link**
-- `scan-link-suggestions`
-- Página `/suggestions` + badge no sidebar
-- `<RelatedSuggestions />` nas páginas de detalhe
-
-**Fase 3 — Ask workspace (RAG)**
-- `ask-workspace` edge function
-- Modo "Perguntar" no Command Palette com streaming e citações
-
-## Confirmações antes de implementar
-1. Posso começar pela **Fase 1 + Fase 2** nesta entrega (fundação + sugestões de link, que é o pedido principal) e deixar o chat RAG para a próxima?
-2. OK usar **embeddings 1536-dim Gemini** via Lovable AI (consome créditos do workspace a cada save)?
-3. Quer também o **auto-link inline** no QuickAdd de tarefa quando a IA tem confiança alta (>0.85), ou prefere que TODA sugestão passe pela Inbox antes?
+## Critérios de aceite
+- Botão visível em toda página autenticada
+- Pergunta "quais tarefas atrasadas?" → IA chama `list_overdue_tasks` e responde com lista
+- Pergunta "tem alguma nota sobre X?" → IA chama `semantic_search`, lista entidades como chips clicáveis
+- Pergunta "esse projeto se conecta com o que?" → IA usa `suggest_links`
+- Conversa persiste ao recarregar; botão "nova conversa" limpa
+- Tool calls renderizam fechados por default (accordion)
