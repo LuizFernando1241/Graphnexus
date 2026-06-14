@@ -131,17 +131,13 @@ Deno.serve(async (req) => {
 
     const preview = text.slice(0, 300);
 
-    const { error: upsertErr } = await supabase
-      .from("entity_embeddings")
-      .upsert({
-        user_id: userId,
-        entity_type: body.entity_type,
-        entity_id: body.entity_id,
-        content_hash: hash,
-        content_preview: preview,
-        embedding: embedding as unknown as string,
-        updated_at: new Date().toISOString(),
-      }, { onConflict: "entity_type,entity_id" });
+    const { error: upsertErr } = await supabase.rpc("upsert_entity_embedding", {
+      p_entity_type: body.entity_type,
+      p_entity_id: body.entity_id,
+      p_content_hash: hash,
+      p_content_preview: preview,
+      p_embedding: embedding,
+    });
 
     if (upsertErr) throw upsertErr;
 
