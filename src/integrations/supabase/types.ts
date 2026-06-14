@@ -498,6 +498,16 @@ export type Database = {
           similarity: number
         }[]
       }
+      upsert_entity_embedding: {
+        Args: {
+          p_content_hash: string
+          p_content_preview: string
+          p_embedding: number[]
+          p_entity_id: string
+          p_entity_type: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
