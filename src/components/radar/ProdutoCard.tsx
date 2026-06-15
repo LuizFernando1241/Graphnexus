@@ -76,9 +76,8 @@ export function ProdutoCard({ produto, onEdit, onHistorico }: ProdutoCardProps) 
                 "w-1 shrink-0",
                 produto.decision === "excelente" && "bg-emerald-500",
                 produto.decision === "viavel" && "bg-blue-500",
-                produto.decision === "duvidoso" && "bg-amber-500",
-                produto.decision === "fraco" && "bg-rose-500",
-                !produto.decision && "bg-muted",
+                produto.decision === "cautela" && "bg-amber-500",
+                produto.decision === "descarte" && "bg-rose-500",
               )}
             />
             <div className="flex flex-col gap-1 py-1.5 pr-2 min-w-0 flex-1">
