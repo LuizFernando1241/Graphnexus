@@ -79,11 +79,41 @@ export default function RadarPage() {
               )}
             </div>
             {!isLoading && (
-              <p className="text-sm text-muted-foreground">
-                Prospecção ({produtos.filter((p) => p.stage === "prospeccao").length}) ·{" "}
-                Aguardando ({produtos.filter((p) => p.stage === "aguardando_custo").length}) ·{" "}
-                Decisão ({emDecisao})
-              </p>
+              <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                <button
+                  type="button"
+                  onClick={() => setFilters((f) => ({ ...f, stage: f.stage === "prospeccao" ? "all" : "prospeccao" }))}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs transition-colors",
+                    filters.stage === "prospeccao" ? "border-blue-400/60 bg-blue-400/10 text-foreground" : "border-border hover:bg-accent",
+                  )}
+                >
+                  <span className="h-2 w-2 rounded-full bg-blue-400" />
+                  Prospecção <span className="tabular-nums font-semibold">{produtos.filter((p) => p.stage === "prospeccao").length}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilters((f) => ({ ...f, stage: f.stage === "aguardando_custo" ? "all" : "aguardando_custo" }))}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs transition-colors",
+                    filters.stage === "aguardando_custo" ? "border-amber-400/60 bg-amber-400/10 text-foreground" : "border-border hover:bg-accent",
+                  )}
+                >
+                  <span className="h-2 w-2 rounded-full bg-amber-400" />
+                  Aguardando <span className="tabular-nums font-semibold">{produtos.filter((p) => p.stage === "aguardando_custo").length}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilters((f) => ({ ...f, stage: f.stage === "decisao" ? "all" : "decisao" }))}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs transition-colors",
+                    filters.stage === "decisao" ? "border-violet-400/60 bg-violet-400/10 text-foreground" : "border-border hover:bg-accent",
+                  )}
+                >
+                  <span className="h-2 w-2 rounded-full bg-violet-400" />
+                  Decisão <span className="tabular-nums font-semibold">{emDecisao}</span>
+                </button>
+              </div>
             )}
           </div>
 
@@ -114,8 +144,8 @@ export default function RadarPage() {
 
         {/* Kanban */}
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-            {[...Array(4)].map((_, i) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {[...Array(3)].map((_, i) => (
               <div key={i} className="flex flex-col gap-2 rounded-lg border border-border p-3">
                 <Skeleton className="h-5 w-32" />
                 {[...Array(3)].map((_, j) => (

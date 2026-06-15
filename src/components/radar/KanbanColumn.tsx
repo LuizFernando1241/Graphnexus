@@ -31,17 +31,17 @@ export function KanbanColumn({
     <div
       ref={setNodeRef}
       className={cn(
-        "flex flex-col rounded-lg border bg-card/40 overflow-hidden min-h-[300px] transition-colors",
+        "flex flex-col rounded-lg border bg-card/40 overflow-hidden min-h-[320px] md:h-[calc(100vh-220px)] transition-colors",
         isOver
           ? "border-primary/60 bg-primary/5 ring-2 ring-primary/30"
           : "border-border",
       )}
     >
       {/* Topo colorido */}
-      <div className={cn("h-1 w-full", accentColor)} />
+      <div className={cn("h-1 w-full shrink-0", accentColor)} />
 
       {/* Header da coluna */}
-      <div className="px-3 py-2.5 border-b border-border/60">
+      <div className="sticky top-0 z-10 px-3 py-2.5 border-b border-border/60 bg-card/80 backdrop-blur shrink-0">
         <div className="flex items-center justify-between gap-2">
           <span className="text-sm font-semibold text-foreground">{label}</span>
           <span className="text-xs text-muted-foreground tabular-nums">{produtos.length}</span>

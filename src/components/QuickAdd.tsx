@@ -78,7 +78,7 @@ export function QuickAdd({ externalOpen, onExternalOpenChange }: { externalOpen?
   };
 
   return (
-    <div className="fixed bottom-6 right-6 z-[60] flex flex-col items-end gap-3">
+    <div className="flex flex-col items-end gap-3">
       {/* Quick Task Dialog - stable, won't close on accidental taps */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent

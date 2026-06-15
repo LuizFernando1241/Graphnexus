@@ -67,7 +67,7 @@ export function ProdutoCard({ produto, onEdit, onHistorico }: ProdutoCardProps) 
         className="cursor-pointer hover:border-primary/40 hover:shadow-sm transition-all"
         onClick={() => onEdit(produto)}
       >
-        <CardContent className="p-3 flex flex-col gap-2.5">
+        <CardContent className="p-2.5 flex flex-col gap-2">
           {/* Nome + Badge */}
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
