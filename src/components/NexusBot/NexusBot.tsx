@@ -159,7 +159,7 @@ export function NexusBot() {
         aria-label="Abrir NexusBot"
         onClick={() => setOpen(true)}
         className={cn(
-          "fixed z-40 bottom-5 right-5 h-14 w-14 rounded-full",
+          "relative h-14 w-14 rounded-full",
           "bg-primary text-primary-foreground shadow-lg",
           "flex items-center justify-center",
           "transition-transform hover:scale-105 active:scale-95",
