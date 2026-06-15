@@ -64,94 +64,101 @@ export function ProdutoCard({ produto, onEdit, onHistorico }: ProdutoCardProps) 
     >
 
       <Card
-        className="cursor-pointer hover:border-primary/40 hover:shadow-sm transition-all"
+        className="cursor-pointer hover:border-primary/40 hover:shadow-sm transition-all overflow-hidden"
         onClick={() => onEdit(produto)}
+        title={produto.nome}
       >
-        <CardContent className="p-2.5 flex flex-col gap-2">
-          {/* Nome + Badge */}
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0 flex-1">
-              <h3 className="text-sm font-semibold text-foreground line-clamp-2 leading-tight">
-                {produto.nome}
-              </h3>
-              <div className="flex items-center gap-1 mt-0.5 text-xs text-muted-foreground">
-                <Building2 className="h-3 w-3 shrink-0" />
-                <span className="truncate">{produto.fornecedor}</span>
+        <CardContent className="p-0">
+          <div className="flex items-stretch gap-2">
+            {/* Faixa vertical de decisão */}
+            <div
+              className={cn(
+                "w-1 shrink-0",
+                produto.decision === "excelente" && "bg-emerald-500",
+                produto.decision === "viavel" && "bg-blue-500",
+                produto.decision === "cautela" && "bg-amber-500",
+                produto.decision === "descarte" && "bg-rose-500",
+              )}
+            />
+            <div className="flex flex-col gap-1 py-1.5 pr-2 min-w-0 flex-1">
+              {/* Linha 1: título + score */}
+              <div className="flex items-center gap-2 min-w-0">
+                <h3 className="text-[13px] font-semibold text-foreground truncate flex-1 leading-tight">
+                  {produto.nome}
+                </h3>
+                <span className="text-xs font-bold tabular-nums text-foreground shrink-0">
+                  {produto.scoreTotal}
+                </span>
+                <ScoreBadge decision={produto.decision} size="sm" />
               </div>
-            </div>
-            <ScoreBadge decision={produto.decision} size="sm" />
-          </div>
 
-          {/* Barra de score */}
-          <ScoreBar score={produto.scoreTotal} decision={produto.decision} />
+              {/* Linha 2: fornecedor · preço · faturamento · pilares · ações */}
+              <div className="flex items-center gap-2 text-[11px] text-muted-foreground min-w-0">
+                <div className="flex items-center gap-1 min-w-0 flex-1">
+                  <Building2 className="h-3 w-3 shrink-0" />
+                  <span className="truncate">{produto.fornecedor}</span>
+                  {produto.precoVenda != null && (
+                    <>
+                      <span className="opacity-50">·</span>
+                      <span className="font-semibold text-foreground shrink-0">
+                        {formatCurrency(produto.precoVenda)}
+                      </span>
+                    </>
+                  )}
+                  {faturamentoEstimado != null && (
+                    <>
+                      <span className="opacity-50">·</span>
+                      <span className="shrink-0 truncate">{formatCurrency(faturamentoEstimado)}/mês</span>
+                    </>
+                  )}
+                </div>
+                <PilarDots produto={produto} />
+                {produto.linkML && (
+                  <a
+                    href={produto.linkML}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="text-muted-foreground hover:text-primary transition-colors shrink-0"
+                    title="Abrir no Mercado Livre"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onHistorico(produto);
+                  }}
+                  className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                  title={`Há ${dataRelativa} · Ver histórico`}
+                >
+                  <History className="h-3 w-3" />
+                </button>
+              </div>
 
-          {/* Preço + faturamento */}
-          <div className="flex items-center justify-between text-xs">
-            <div className="flex flex-col gap-0.5 min-w-0">
-              {produto.precoVenda != null && (
-                <span className="font-semibold text-foreground">
-                  {formatCurrency(produto.precoVenda)}
-                </span>
-              )}
-              {faturamentoEstimado != null && (
-                <span className="text-muted-foreground">
-                  {formatCurrency(faturamentoEstimado)}/mês
-                </span>
-              )}
-            </div>
-            {produto.linkML && (
-              <a
-                href={produto.linkML}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="text-muted-foreground hover:text-primary transition-colors shrink-0"
-                title="Abrir no Mercado Livre"
-              >
-                <ExternalLink className="h-3.5 w-3.5" />
-              </a>
-            )}
-          </div>
-
-          {/* Pilares + data + histórico */}
-          <div className="flex items-center justify-between gap-2">
-            <PilarDots produto={produto} />
-            <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-              <Clock className="h-3 w-3" />
-              <span className="truncate">{dataRelativa}</span>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onHistorico(produto);
+              {/* Ações no hover */}
+              <motion.div
+                initial={false}
+                animate={{
+                  opacity: acoesVisiveis ? 1 : 0,
+                  height: acoesVisiveis ? "auto" : 0,
                 }}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-                title="Ver histórico"
+                transition={{ duration: 0.15 }}
+                className="overflow-hidden"
+                onClick={(e) => e.stopPropagation()}
               >
-                <History className="h-3 w-3" />
-              </button>
+                <div className="pt-1 mt-0.5 border-t border-border/50">
+                  <AcoesPorEtapa
+                    produto={produto}
+                    onMover={handleMover}
+                    onEdit={() => onEdit(produto)}
+                    isLoading={isMovendo}
+                  />
+                </div>
+              </motion.div>
             </div>
           </div>
-
-          {/* Ações no hover */}
-          <motion.div
-            initial={false}
-            animate={{
-              opacity: acoesVisiveis ? 1 : 0,
-              height: acoesVisiveis ? "auto" : 0,
-            }}
-            transition={{ duration: 0.15 }}
-            className="overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="pt-1.5 border-t border-border/50">
-              <AcoesPorEtapa
-                produto={produto}
-                onMover={handleMover}
-                onEdit={() => onEdit(produto)}
-                isLoading={isMovendo}
-              />
-            </div>
-          </motion.div>
         </CardContent>
       </Card>
     </motion.div>
