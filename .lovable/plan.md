@@ -1,57 +1,49 @@
-# Assistente IA Global (NexusBot)
+## Problemas identificados
 
-Botão flutuante fixo no canto inferior direito → abre um painel de chat que responde sobre notas, tarefas, projetos e produtos usando embeddings + tool calling.
+1. **FABs sobrepostos** (`QuickAdd` + `NexusBot`): ambos `fixed` no canto inferior direito (bottom-5/6, right-5/6, ambos 56px). Em qualquer tela o "+" cobre o botão da IA.
+2. **Pipeline com coluna vazia** (`KanbanBoard`): grid declarada como `xl:grid-cols-4` mas só existem 3 estágios (Prospecção, Aguardando Custo, Decisão). Em telas ≥1280px sobra um slot vazio à direita. O skeleton de loading tem o mesmo bug.
+3. **Densidade baixa para alto volume**: usuário processa dezenas de produtos/dia. Hoje cada coluna mostra poucos cards porque a página rola junto com a coluna; não há altura própria nem rolagem interna eficaz, e o card tem padding generoso.
+4. **Contador do header** (RadarPage) só destaca "decisão" como badge urgente, mas o usuário também precisa ver Prospecção e Aguardando Custo com a mesma proeminência visual quando o volume é alto.
+5. **AprovadosPage**: header simples sem contadores/atalhos; tela inteira é uma tabela única sem ações em massa visíveis (verificar rapidamente no fix).
 
-## UX
+## Mudanças
 
-- **Botão flutuante** (FAB) presente em todas as páginas autenticadas, canto inferior direito, com ícone customizado (não Sparkles genérico) e badge sutil.
-- **Painel deslizante** (Sheet à direita, ~420px) com:
-  - Header: nome "NexusBot" + botão fechar + botão "nova conversa"
-  - Transcript com AI Elements (`Conversation`, `Message`, `MessageResponse`, `Tool`)
-  - Composer (`PromptInput`) com placeholder "Pergunte sobre suas notas, tarefas, projetos..."
-  - Resultados de ferramentas (entidades encontradas) clicáveis → navegam para a entidade
-- **Persistência**: localStorage, uma conversa única (botão limpa). Sem threads — mais simples e suficiente para o caso de uso "perguntar qualquer coisa".
+### Fix 1 — FAB stack (sem sobreposição)
+Em `src/components/AppLayout.tsx`, criar um único contêiner `fixed bottom-6 right-6 z-[60] flex flex-col items-end gap-3` que empilha NexusBot **acima** do QuickAdd. Remover o posicionamento `fixed` interno de `QuickAdd` e `NexusBot` (passar a serem `relative` dentro do stack), mantendo botões 56×56. Resultado: IA fica em cima, "+" embaixo, ambos clicáveis, mesma coluna.
 
-## Arquitetura
+### Fix 2 — Kanban com 3 colunas reais
+Em `src/components/radar/KanbanBoard.tsx` e no skeleton de `RadarPage.tsx`, trocar:
+- `grid-cols-1 md:grid-cols-2 xl:grid-cols-4` → `grid-cols-1 md:grid-cols-2 xl:grid-cols-3`.
+Cada coluna passa a ocupar ~1/3 da largura no desktop; sem espaço fantasma.
 
-### Edge function `nexus-chat` (nova)
-- Streaming via AI SDK (`streamText` + `toUIMessageStreamResponse`)
-- Modelo: `google/gemini-3-flash-preview`
-- System prompt: explica que é assistente do NexusGraph, deve usar ferramentas para buscar contexto antes de responder, citar entidades por título, sugerir links quando fizer sentido.
-- **Tools expostas ao modelo**:
-  1. `semantic_search({ query, limit })` — embed query → `match_entities` RPC → retorna top-N (entity_type, id, preview, similarity)
-  2. `get_entity({ type, id })` — busca conteúdo completo (note body, task details, project, produto)
-  3. `list_recent({ type, limit })` — últimas N entidades de um tipo (para "o que fiz essa semana?")
-  4. `list_overdue_tasks()` — tarefas atrasadas do usuário
-  5. `suggest_links({ type, id })` — top sugestões semânticas para uma entidade (reutiliza `match_entities` excluindo self)
-- `stopWhen: stepCountIs(8)` para permitir múltiplas chamadas de tool em sequência.
-- Auth: valida JWT do usuário em código, todas queries scoped por `auth.uid()` (via RLS no token).
+### Fix 3 — Densidade para dezenas de produtos/dia
+- `KanbanColumn`: dar altura própria com rolagem interna — `h-[calc(100vh-220px)]` no desktop, mantendo `min-h-[300px]` no mobile, e a área de cards `overflow-y-auto` (já existe) passa a rolar de fato.
+- `ProdutoCard`: reduzir padding (`p-3` → `p-2.5`), apertar gaps internos, opção compacta com fonte do título `text-sm` e linha única (truncate) — sem remover informação crítica (score, fornecedor, preço).
+- Header da coluna sticky no topo da rolagem (`sticky top-0 bg-card/80 backdrop-blur`).
 
-### Frontend
-- `src/components/NexusBot/FloatingButton.tsx` — FAB
-- `src/components/NexusBot/ChatPanel.tsx` — Sheet + AI Elements
-- `src/components/NexusBot/EntityChip.tsx` — chip clicável para resultados de tool (navega para `/notes/:id`, `/tasks`, `/projects/:id`, `/radar/produtos/:id`)
-- `useChat` da AI SDK apontando para `${SUPABASE_URL}/functions/v1/nexus-chat`
-- Mensagens persistidas em `localStorage` (`nexus-bot-messages`)
-- Montar `<NexusBot />` no `AppLayout` (dentro do `ProtectedRoute`)
+### Fix 4 — Header do Radar mais informativo
+Substituir a linha "Prospecção (X) · Aguardando (Y) · Decisão (Z)" por 3 chips coloridos clicáveis (azul/âmbar/violeta combinando com a coluna) que funcionam como atalho/filtro rápido por estágio. O badge "aguardando decisão" continua no título.
 
-### AI Elements a instalar
-`conversation`, `message`, `prompt-input`, `tool`, `shimmer`
+### Fix 5 — AprovadosPage (toque rápido)
+Adicionar contador no header ("X produtos aprovados") e atalho para voltar ao Radar. Sem mudar a tabela em si nesta passagem.
 
-## Pré-requisitos já existentes
-- ✅ `entity_embeddings` + `match_entities` RPC (Parte anterior)
-- ✅ `embed-entity` function para indexar
-- ✅ `LOVABLE_API_KEY` configurado
+## Fora de escopo
+- Não mexer em lógica de Kanban DnD, mutations, ou regras de negócio.
+- Não redesenhar `ProdutoDrawer`, `HistoricoModal`, ou tabelas internas.
+- Sem mudanças no backend.
 
-## Não inclui (escopo futuro)
-- Ações de escrita (criar/editar notas/tarefas via chat) — apenas leitura/sugestão nesta fase
-- Threads múltiplas
-- Voice input
+## Arquivos
+- `src/components/AppLayout.tsx` — montar stack único de FABs
+- `src/components/QuickAdd.tsx` — remover `fixed`, virar item do stack
+- `src/components/NexusBot/NexusBot.tsx` — remover `fixed` do botão flutuante
+- `src/components/radar/KanbanBoard.tsx` — grid 3 colunas
+- `src/components/radar/KanbanColumn.tsx` — altura/scroll/header sticky
+- `src/components/radar/ProdutoCard.tsx` — densidade compacta
+- `src/pages/RadarPage.tsx` — skeleton 3 colunas + chips de stage
+- `src/pages/AprovadosPage.tsx` — contador no header
 
-## Critérios de aceite
-- Botão visível em toda página autenticada
-- Pergunta "quais tarefas atrasadas?" → IA chama `list_overdue_tasks` e responde com lista
-- Pergunta "tem alguma nota sobre X?" → IA chama `semantic_search`, lista entidades como chips clicáveis
-- Pergunta "esse projeto se conecta com o que?" → IA usa `suggest_links`
-- Conversa persiste ao recarregar; botão "nova conversa" limpa
-- Tool calls renderizam fechados por default (accordion)
+## Critério de aceite
+- IA e "+" totalmente visíveis e clicáveis em desktop e mobile.
+- Pipeline ocupa 100% da largura no desktop, sem coluna vazia.
+- Colunas rolam internamente; é possível ver 8+ cards por coluna sem rolar a página.
+- Chips de estágio no header do Radar filtram por clique.
