@@ -40,7 +40,7 @@ const COLUNAS: Array<{
 
 export function KanbanBoard({ produtos, onEdit, onHistorico }: KanbanBoardProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
       {COLUNAS.map((col) => {
         const produtosDaColuna = produtos
           .filter((p) => p.stage === col.stage)
