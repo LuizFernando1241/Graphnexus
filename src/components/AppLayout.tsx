@@ -67,7 +67,7 @@ export function AppLayout() {
       <CommandPalette />
       <div className="fixed bottom-6 right-6 z-[60] flex flex-col items-end gap-3 pointer-events-none [&>*]:pointer-events-auto">
         <NexusBot />
-        <QuickAdd externalOpen={quickAddOpen} onExternalOpenChange={setQuickAddOpen} />
+        <Caixa externalOpen={quickAddOpen} onExternalOpenChange={setQuickAddOpen} />
       </div>
     </div>
   );
