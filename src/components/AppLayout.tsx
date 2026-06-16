@@ -24,6 +24,11 @@ export function AppLayout() {
     openQuickAdd();
   }, { enableOnFormTags: false });
 
+  useHotkeys("shift+space", (e) => {
+    e.preventDefault();
+    openQuickAdd();
+  }, { enableOnFormTags: false });
+
   return (
     <div className="flex bg-background h-screen w-full overflow-hidden">
       {/* Desktop sidebar */}
