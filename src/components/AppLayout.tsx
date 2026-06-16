@@ -4,7 +4,7 @@ import { Menu, Network } from "lucide-react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { AppSidebar } from "./AppSidebar";
 import { CommandPalette } from "./CommandPalette";
-import { QuickAdd } from "./QuickAdd";
+import { Caixa } from "./Caixa";
 import { useTaskDueNotifications } from "@/hooks/useTaskDueNotifications";
 import { useAutoTriage } from "@/hooks/useAutoTriage";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
