@@ -4,7 +4,7 @@ import { Menu, Network } from "lucide-react";
 import { useHotkeys } from "react-hotkeys-hook";
 import { AppSidebar } from "./AppSidebar";
 import { CommandPalette } from "./CommandPalette";
-import { QuickAdd } from "./QuickAdd";
+import { Caixa } from "./Caixa";
 import { useTaskDueNotifications } from "@/hooks/useTaskDueNotifications";
 import { useAutoTriage } from "@/hooks/useAutoTriage";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
@@ -20,6 +20,11 @@ export function AppLayout() {
   const openQuickAdd = useCallback(() => setQuickAddOpen(true), []);
 
   useHotkeys("shift+n", (e) => {
+    e.preventDefault();
+    openQuickAdd();
+  }, { enableOnFormTags: false });
+
+  useHotkeys("shift+space", (e) => {
     e.preventDefault();
     openQuickAdd();
   }, { enableOnFormTags: false });
@@ -62,7 +67,7 @@ export function AppLayout() {
       <CommandPalette />
       <div className="fixed bottom-6 right-6 z-[60] flex flex-col items-end gap-3 pointer-events-none [&>*]:pointer-events-auto">
         <NexusBot />
-        <QuickAdd externalOpen={quickAddOpen} onExternalOpenChange={setQuickAddOpen} />
+        <Caixa externalOpen={quickAddOpen} onExternalOpenChange={setQuickAddOpen} />
       </div>
     </div>
   );
