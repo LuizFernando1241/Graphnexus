@@ -790,6 +790,10 @@ export function ParametrosRadar() {
                   );
                 },
               )}
+            </Accordion>
+          </AccordionContent>
+        </AccordionItem>
+
 
         {/* ── PILARES PERSONALIZADOS ── */}
         <AccordionItem value="pilares-extras">
