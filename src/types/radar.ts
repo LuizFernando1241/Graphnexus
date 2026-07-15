@@ -138,7 +138,16 @@ export interface RadarParametros {
 
 export interface PilarResult {
   nome: string
-  key: keyof RadarWeights
+  key: string
+  preenchido: boolean
+  pontos: number
+  pontosBrutos: number
+  peso: number
+  pesoNormalizado: number
+  contribuicao: number
+  isCustom?: boolean
+  valor?: number | null
+}
   preenchido: boolean
   pontos: number
   pontosBrutos: number
