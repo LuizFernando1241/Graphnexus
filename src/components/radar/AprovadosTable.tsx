@@ -123,6 +123,11 @@ export function AprovadosTable({ onVerProduto }: AprovadosTableProps) {
               <TableHead className="text-right">Custo</TableHead>
               <TableHead className="text-right">Margem</TableHead>
               <TableHead>Score</TableHead>
+              {colunasExtras.map((pilar) => (
+                <TableHead key={pilar.id} className="text-right">
+                  {pilar.label}
+                </TableHead>
+              ))}
               <TableHead>Status</TableHead>
               <TableHead className="text-center">Qtd</TableHead>
               <TableHead>Aprovado em</TableHead>
