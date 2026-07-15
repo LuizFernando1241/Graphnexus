@@ -133,7 +133,10 @@ export function useRadarProdutos() {
           observacoes: formData.observacoes,
           score_total: scoreResult.scoreTotal,
           decision: scoreResult.decision,
-        })
+          ...(formData.valoresCustom !== undefined
+            ? { valores_custom: formData.valoresCustom as any }
+            : {}),
+        } as any)
         .eq('id', id)
         .eq('user_id', user.id)
         .select()
