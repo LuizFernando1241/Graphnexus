@@ -74,7 +74,37 @@ export const DEFAULT_PARAMETROS: RadarParametros = {
     faturamentoMinimo: 100,
   },
   faixas: DEFAULT_FAIXAS,
+  pilaresExtras: [],
+  descartesExtras: [],
+  pilaresVisibilidade: {},
 }
+
+export const PESO_BASE = 20
+
+// Mapa canônico de variáveis disponíveis em fórmulas.
+export function buildVarMap(
+  produto: Partial<RadarProduto>,
+): Record<string, number> {
+  const faturamento =
+    produto.vendasMes != null && produto.precoVenda != null
+      ? produto.vendasMes * produto.precoVenda
+      : 0
+  const vc = produto.valoresCustom ?? {}
+  return {
+    precoVenda: produto.precoVenda ?? 0,
+    custo: produto.custo ?? 0,
+    margem: produto.margem ?? 0,
+    visitasMes: produto.visitasMes ?? 0,
+    vendasMes: produto.vendasMes ?? 0,
+    concorrentesFull: produto.concorrentesFull ?? 0,
+    faturamento,
+    ticket: produto.precoVenda ?? 0,
+    ...Object.fromEntries(
+      Object.entries(vc).map(([k, v]) => [k, typeof v === 'number' ? v : 0]),
+    ),
+  }
+}
+
 
 // ─── Avaliador genérico de faixas ────────────────────────────────────────────
 
