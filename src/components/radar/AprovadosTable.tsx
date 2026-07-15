@@ -28,8 +28,13 @@ interface AprovadosTableProps {
 
 export function AprovadosTable({ onVerProduto }: AprovadosTableProps) {
   const { produtos, isLoading, atualizarStatusCompra, moverEtapa } = useRadarProdutos();
+  const { parametros } = useRadarParametros();
   const [editandoQtd, setEditandoQtd] = useState<string | null>(null);
   const [qtdTemp, setQtdTemp] = useState("");
+
+  const colunasExtras = (parametros.pilaresExtras ?? []).filter(
+    (p) => p.ativo && p.exibirEmAprovados,
+  );
 
   const aprovados = produtos
     .filter((p) => p.stage === "aprovado")
