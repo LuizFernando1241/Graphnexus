@@ -76,6 +76,31 @@ export function ParametrosRadar() {
   const somaWeights = Object.values(local.weights).reduce((a, b) => a + b, 0);
   const pesoValido = Math.abs(somaWeights - 100) < 0.5;
 
+  // Validação de chaves de pilares customizados: não podem colidir com variáveis
+  // canônicas (precoVenda, faturamento, etc.) nem duplicar entre si.
+  const RESERVED_SET = new Set<string>(RESERVED_VAR_KEYS as readonly string[]);
+  const pilarKeyErrors: Record<string, string> = {};
+  {
+    const seen = new Map<string, string>(); // key -> first pilar id
+    for (const p of local.pilaresExtras ?? []) {
+      const k = (p.key ?? "").trim();
+      if (!k) {
+        pilarKeyErrors[p.id] = "Chave obrigatória.";
+        continue;
+      }
+      if (RESERVED_SET.has(k)) {
+        pilarKeyErrors[p.id] = `"${k}" é uma variável reservada do sistema.`;
+        continue;
+      }
+      if (seen.has(k)) {
+        pilarKeyErrors[p.id] = `Chave "${k}" duplicada.`;
+        continue;
+      }
+      seen.set(k, p.id);
+    }
+  }
+  const chavesValidas = Object.keys(pilarKeyErrors).length === 0;
+
   function setWeight(key: keyof RadarWeights, value: number) {
     setLocal((prev) => ({
       ...prev,
