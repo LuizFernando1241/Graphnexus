@@ -872,8 +872,17 @@ export function ParametrosRadar() {
                             key: e.target.value.replace(/[^a-zA-Z0-9_]/g, "_"),
                           })
                         }
-                        className="h-8 text-sm font-mono"
+                        aria-invalid={!!pilarKeyErrors[pilar.id]}
+                        className={cn(
+                          "h-8 text-sm font-mono",
+                          pilarKeyErrors[pilar.id] && "border-destructive focus-visible:ring-destructive",
+                        )}
                       />
+                      {pilarKeyErrors[pilar.id] && (
+                        <p className="text-[11px] text-destructive">
+                          {pilarKeyErrors[pilar.id]} Reservadas: {RESERVED_VAR_KEYS.join(", ")}.
+                        </p>
+                      )}
                     </div>
                   </div>
                   <Button
