@@ -280,42 +280,108 @@ export function calcularScore(
     },
   ]
 
+  const visibilidade = params.pilaresVisibilidade ?? {}
   const isAtivo = (p: PilarInput) => {
+    if (visibilidade[p.key] === false) return false
     if (p.key === 'margem' && !margemPreenchida) return false
     if (p.key === 'demanda' && produto.isLancamento) return false
     return true
   }
 
-  // Peso base de referência (padrão = 20). Pesos atuam como multiplicador
-  // relativo: peso 20 → 1x, peso 40 → 2x, peso 10 → 0.5x. Assim, com pesos
-  // no padrão, o score é simplesmente a soma dos pontos dos pilares.
-  const PESO_BASE = 20
-
   let descarteByFaixa: { motivo: string } | null = null
 
-  const pilares: PilarResult[] = inputs.map((p) => {
-    const peso = params.weights[p.key] ?? 0
-    const ativo = isAtivo(p)
-    const aval = p.valor != null ? avaliarFaixa(p.valor, faixas[p.key]) : { pontos: 0, descarte: false }
+  const pilares: PilarResult[] = inputs
+    .filter((p) => visibilidade[p.key] !== false)
+    .map((p) => {
+      const peso = params.weights[p.key] ?? 0
+      const ativo = isAtivo(p)
+      const aval = p.valor != null ? avaliarFaixa(p.valor, faixas[p.key]) : { pontos: 0, descarte: false }
 
-    if (ativo && aval.descarte && !descarteByFaixa) {
-      descarteByFaixa = { motivo: `${p.nome}: valor em faixa de descarte` }
+      if (ativo && aval.descarte && !descarteByFaixa) {
+        descarteByFaixa = { motivo: `${p.nome}: valor em faixa de descarte` }
+      }
+
+      const multiplicador = peso / PESO_BASE
+      const contribuicao = ativo ? aval.pontos * multiplicador : 0
+
+      return {
+        nome: p.nome,
+        key: p.key,
+        preenchido: p.preenchido,
+        pontos: aval.pontos,
+        pontosBrutos: aval.pontos,
+        peso,
+        pesoNormalizado: peso,
+        contribuicao,
+        valor: p.valor,
+      }
+    })
+
+  // ── Pilares personalizados ──
+  const extras = (params.pilaresExtras ?? []).filter((e) => e.ativo)
+  const varMap = buildVarMap(produto)
+
+  for (const extra of extras) {
+    let valor: number | null = null
+    let preenchido = false
+    if (extra.tipo === 'formula') {
+      valor = evalFormula(extra.formula ?? '', varMap)
+      preenchido = valor != null
+    } else {
+      const raw = produto.valoresCustom?.[extra.key]
+      if (typeof raw === 'number' && isFinite(raw)) {
+        valor = raw
+        preenchido = true
+      }
     }
 
-    const multiplicador = peso / PESO_BASE
-    const contribuicao = ativo ? aval.pontos * multiplicador : 0
+    const aval =
+      valor != null
+        ? avaliarFaixa(valor, extra.faixas ?? [], extra.direcao)
+        : { pontos: 0, descarte: false }
 
-    return {
-      nome: p.nome,
-      key: p.key,
-      preenchido: p.preenchido,
+    if (aval.descarte && !descarteByFaixa) {
+      descarteByFaixa = { motivo: `${extra.label}: valor em faixa de descarte` }
+    }
+
+    const multiplicador = (extra.peso ?? 0) / PESO_BASE
+    const contribuicao = preenchido ? aval.pontos * multiplicador : 0
+
+    pilares.push({
+      nome: extra.label,
+      key: extra.key,
+      preenchido,
       pontos: aval.pontos,
       pontosBrutos: aval.pontos,
-      peso,
-      pesoNormalizado: peso,
+      peso: extra.peso ?? 0,
+      pesoNormalizado: extra.peso ?? 0,
       contribuicao,
+      isCustom: true,
+      valor,
+    })
+  }
+
+  // ── Descartes customizados ──
+  const descartesExtras: RegraDescarteCustom[] = params.descartesExtras ?? []
+  for (const regra of descartesExtras) {
+    if (regra.ignorarLancamento && produto.isLancamento) continue
+    const valor = varMap[regra.pilarKey]
+    if (typeof valor !== 'number') continue
+    const match =
+      (regra.operador === '<' && valor < regra.valor) ||
+      (regra.operador === '<=' && valor <= regra.valor) ||
+      (regra.operador === '>' && valor > regra.valor) ||
+      (regra.operador === '>=' && valor >= regra.valor) ||
+      (regra.operador === '==' && valor === regra.valor)
+    if (match && !descarteByFaixa) {
+      descarteByFaixa = {
+        motivo:
+          regra.motivo ??
+          `${regra.pilarKey} ${regra.operador} ${regra.valor}: descarte automático`,
+      }
+      break
     }
-  })
+  }
 
   if (descarteByFaixa) {
     return {
