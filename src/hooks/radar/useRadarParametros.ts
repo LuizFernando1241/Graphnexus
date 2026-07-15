@@ -28,6 +28,9 @@ export function useRadarParametros() {
         decisaoThresholds: data.decisao_thresholds as RadarParametros['decisaoThresholds'],
         autoDescarte: data.auto_descarte as RadarParametros['autoDescarte'],
         faixas: (data.faixas ?? {}) as RadarParametros['faixas'],
+        pilaresExtras: ((data as any).pilares_extras ?? []) as RadarParametros['pilaresExtras'],
+        descartesExtras: ((data as any).descartes_extras ?? []) as RadarParametros['descartesExtras'],
+        pilaresVisibilidade: ((data as any).pilares_visibilidade ?? {}) as RadarParametros['pilaresVisibilidade'],
       } as RadarParametros
     },
     enabled: !!user,
@@ -45,8 +48,11 @@ export function useRadarParametros() {
           decisao_thresholds: params.decisaoThresholds as any,
           auto_descarte: params.autoDescarte as any,
           faixas: params.faixas as any,
+          pilares_extras: (params.pilaresExtras ?? []) as any,
+          descartes_extras: (params.descartesExtras ?? []) as any,
+          pilares_visibilidade: (params.pilaresVisibilidade ?? {}) as any,
           updated_at: new Date().toISOString(),
-        },
+        } as any,
         { onConflict: 'user_id' }
       )
 

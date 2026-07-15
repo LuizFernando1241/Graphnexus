@@ -31,6 +31,7 @@ function mapRow(row: any): RadarProduto {
     stageEnteredAt: row.stage_entered_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    valoresCustom: (row.valores_custom ?? {}) as Record<string, number>,
   }
 }
 
@@ -79,7 +80,8 @@ export function useRadarProdutos() {
           score_total: scoreResult.scoreTotal,
           decision: scoreResult.decision,
           stage_entered_at: new Date().toISOString(),
-        })
+          valores_custom: (formData.valoresCustom ?? {}) as any,
+        } as any)
         .select()
         .single()
 
@@ -131,7 +133,10 @@ export function useRadarProdutos() {
           observacoes: formData.observacoes,
           score_total: scoreResult.scoreTotal,
           decision: scoreResult.decision,
-        })
+          ...(formData.valoresCustom !== undefined
+            ? { valores_custom: formData.valoresCustom as any }
+            : {}),
+        } as any)
         .eq('id', id)
         .eq('user_id', user.id)
         .select()

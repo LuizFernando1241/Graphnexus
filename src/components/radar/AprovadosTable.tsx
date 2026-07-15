@@ -16,6 +16,7 @@ import { ScoreBadge } from "./ScoreBadge";
 import { formatCurrency } from "@/lib/radar/radarScore";
 import { exportarAprovadosCSV } from "@/lib/radar/radarCSV";
 import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
+import { useRadarParametros } from "@/hooks/radar/useRadarParametros";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -27,8 +28,13 @@ interface AprovadosTableProps {
 
 export function AprovadosTable({ onVerProduto }: AprovadosTableProps) {
   const { produtos, isLoading, atualizarStatusCompra, moverEtapa } = useRadarProdutos();
+  const { parametros } = useRadarParametros();
   const [editandoQtd, setEditandoQtd] = useState<string | null>(null);
   const [qtdTemp, setQtdTemp] = useState("");
+
+  const colunasExtras = (parametros.pilaresExtras ?? []).filter(
+    (p) => p.ativo && p.exibirEmAprovados,
+  );
 
   const aprovados = produtos
     .filter((p) => p.stage === "aprovado")
@@ -117,6 +123,11 @@ export function AprovadosTable({ onVerProduto }: AprovadosTableProps) {
               <TableHead className="text-right">Custo</TableHead>
               <TableHead className="text-right">Margem</TableHead>
               <TableHead>Score</TableHead>
+              {colunasExtras.map((pilar) => (
+                <TableHead key={pilar.id} className="text-right">
+                  {pilar.label}
+                </TableHead>
+              ))}
               <TableHead>Status</TableHead>
               <TableHead className="text-center">Qtd</TableHead>
               <TableHead>Aprovado em</TableHead>
@@ -166,6 +177,16 @@ export function AprovadosTable({ onVerProduto }: AprovadosTableProps) {
                 <TableCell>
                   <ScoreBadge decision={produto.decision} size="sm" />
                 </TableCell>
+                {colunasExtras.map((pilar) => {
+                  const v = produto.valoresCustom?.[pilar.key];
+                  return (
+                    <TableCell key={pilar.id} className="text-right tabular-nums">
+                      {typeof v === "number"
+                        ? `${v}${pilar.unidade?.suffix ?? ""}`
+                        : "—"}
+                    </TableCell>
+                  );
+                })}
                 <TableCell>
                   <button
                     type="button"

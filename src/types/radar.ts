@@ -38,6 +38,7 @@ export interface RadarProduto {
   stageEnteredAt: string
   createdAt: string
   updatedAt: string
+  valoresCustom?: Record<string, number>
 }
 
 // ─── Histórico ────────────────────────────────────────────────────────────────
@@ -92,6 +93,37 @@ export interface RadarFaixas {
   concorrentes: FaixaItem[]
 }
 
+export type PilarBuiltInKey = keyof RadarWeights
+
+export interface PilarExtra {
+  id: string
+  key: string
+  label: string
+  ativo: boolean
+  peso: number
+  direcao: 'min' | 'max'
+  tipo: 'numero' | 'formula'
+  formula?: string
+  unidade?: { prefix?: string; suffix?: string }
+  faixas: FaixaItem[]
+  exibirEmAprovados?: boolean
+  descricao?: string
+}
+
+export type OperadorDescarte = '<' | '<=' | '>' | '>=' | '=='
+
+export interface RegraDescarteCustom {
+  id: string
+  campo: string
+  operador: OperadorDescarte
+  valor: number
+  motivo?: string
+  ativo?: boolean
+  ignorarLancamento?: boolean
+}
+
+export type PilarVisibilidade = Partial<Record<PilarBuiltInKey, boolean>>
+
 export interface RadarParametros {
   id?: string
   userId?: string
@@ -99,19 +131,24 @@ export interface RadarParametros {
   decisaoThresholds: RadarDecisaoThresholds
   autoDescarte: RadarAutoDescarte
   faixas: Partial<RadarFaixas>
+  pilaresExtras?: PilarExtra[]
+  descartesExtras?: RegraDescarteCustom[]
+  pilaresVisibilidade?: PilarVisibilidade
 }
 
 // ─── Score ────────────────────────────────────────────────────────────────────
 
 export interface PilarResult {
   nome: string
-  key: keyof RadarWeights
+  key: string
   preenchido: boolean
   pontos: number
   pontosBrutos: number
   peso: number
   pesoNormalizado: number
   contribuicao: number
+  isCustom?: boolean
+  valor?: number | null
 }
 
 export interface ScoreResult {
@@ -163,4 +200,5 @@ export interface RadarProdutoFormData {
   concorrentesFull?: number
   isLancamento: boolean
   observacoes?: string
+  valoresCustom?: Record<string, number>
 }

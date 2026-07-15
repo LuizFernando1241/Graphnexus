@@ -303,8 +303,11 @@ export type Database = {
         Row: {
           auto_descarte: Json
           decisao_thresholds: Json
+          descartes_extras: Json
           faixas: Json
           id: string
+          pilares_extras: Json
+          pilares_visibilidade: Json
           updated_at: string
           user_id: string
           weights: Json
@@ -312,8 +315,11 @@ export type Database = {
         Insert: {
           auto_descarte?: Json
           decisao_thresholds?: Json
+          descartes_extras?: Json
           faixas?: Json
           id?: string
+          pilares_extras?: Json
+          pilares_visibilidade?: Json
           updated_at?: string
           user_id: string
           weights?: Json
@@ -321,8 +327,11 @@ export type Database = {
         Update: {
           auto_descarte?: Json
           decisao_thresholds?: Json
+          descartes_extras?: Json
           faixas?: Json
           id?: string
+          pilares_extras?: Json
+          pilares_visibilidade?: Json
           updated_at?: string
           user_id?: string
           weights?: Json
@@ -351,6 +360,7 @@ export type Database = {
           status_compra: string
           updated_at: string
           user_id: string
+          valores_custom: Json
           vendas_mes: number | null
           visitas_mes: number | null
         }
@@ -375,6 +385,7 @@ export type Database = {
           status_compra?: string
           updated_at?: string
           user_id: string
+          valores_custom?: Json
           vendas_mes?: number | null
           visitas_mes?: number | null
         }
@@ -399,6 +410,7 @@ export type Database = {
           status_compra?: string
           updated_at?: string
           user_id?: string
+          valores_custom?: Json
           vendas_mes?: number | null
           visitas_mes?: number | null
         }

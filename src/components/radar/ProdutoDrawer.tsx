@@ -45,6 +45,7 @@ import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
 import { useRadarParametros } from "@/hooks/radar/useRadarParametros";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 import type { RadarProduto, RadarProdutoFormData } from "@/types/radar";
 
 interface ProdutoDrawerProps {
@@ -66,6 +67,7 @@ const EMPTY_FORM: RadarProdutoFormData = {
   concorrentesFull: undefined,
   isLancamento: false,
   observacoes: "",
+  valoresCustom: {},
 };
 
 function parseNum(value: string): number | undefined {
@@ -125,6 +127,7 @@ export function ProdutoDrawer({ produto, open, onClose, prefill }: ProdutoDrawer
         concorrentesFull: produto.concorrentesFull,
         isLancamento: produto.isLancamento,
         observacoes: produto.observacoes ?? "",
+        valoresCustom: produto.valoresCustom ?? {},
       });
     } else {
       setForm({ ...EMPTY_FORM, ...(prefill ?? {}) });
@@ -532,6 +535,52 @@ export function ProdutoDrawer({ produto, open, onClose, prefill }: ProdutoDrawer
                     onCheckedChange={(v) => setField("isLancamento", v)}
                   />
                 </div>
+
+                {/* ── Pilares personalizados (numéricos) ── */}
+                {(parametros.pilaresExtras ?? [])
+                  .filter((p) => p.ativo && p.tipo === "numero")
+                  .map((pilar) => (
+                    <div key={pilar.id} className="flex flex-col gap-1.5">
+                      <Label htmlFor={`rd-custom-${pilar.key}`}>
+                        {pilar.label}
+                        {pilar.descricao && (
+                          <span className="ml-1 text-[11px] text-muted-foreground font-normal">
+                            — {pilar.descricao}
+                          </span>
+                        )}
+                      </Label>
+                      <div className="relative">
+                        {pilar.unidade?.prefix && (
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                            {pilar.unidade.prefix}
+                          </span>
+                        )}
+                        <Input
+                          id={`rd-custom-${pilar.key}`}
+                          inputMode="decimal"
+                          value={form.valoresCustom?.[pilar.key] ?? ""}
+                          onChange={(e) => {
+                            const v = parseNum(e.target.value);
+                            setField("valoresCustom", {
+                              ...(form.valoresCustom ?? {}),
+                              ...(v === undefined
+                                ? { [pilar.key]: undefined as unknown as number }
+                                : { [pilar.key]: v }),
+                            } as Record<string, number>);
+                          }}
+                          className={cn(
+                            pilar.unidade?.prefix && "pl-9",
+                            pilar.unidade?.suffix && "pr-12",
+                          )}
+                        />
+                        {pilar.unidade?.suffix && (
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                            {pilar.unidade.suffix}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
               </TabsContent>
 
               {/* ── Aba Notas ── */}
