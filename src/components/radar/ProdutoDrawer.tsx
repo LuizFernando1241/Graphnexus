@@ -126,6 +126,7 @@ export function ProdutoDrawer({ produto, open, onClose, prefill }: ProdutoDrawer
         concorrentesFull: produto.concorrentesFull,
         isLancamento: produto.isLancamento,
         observacoes: produto.observacoes ?? "",
+        valoresCustom: produto.valoresCustom ?? {},
       });
     } else {
       setForm({ ...EMPTY_FORM, ...(prefill ?? {}) });
