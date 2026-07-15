@@ -408,7 +408,7 @@ export function ParametrosRadar() {
           <Button
             size="sm"
             onClick={handleSalvar}
-            disabled={!pesoValido || !isDirty || isSaving}
+            disabled={!pesoValido || !chavesValidas || !isDirty || isSaving}
           >
             {isSaving ? (
               "Salvando..."
