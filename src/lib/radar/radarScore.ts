@@ -8,7 +8,10 @@ import type {
   RadarFaixas,
   FaixaItem,
   PipelineStage,
+  PilarExtra,
+  RegraDescarteCustom,
 } from '@/types/radar'
+import { evalFormula } from './radarFormula'
 
 // ─── Faixas padrão (editáveis em Parâmetros) ─────────────────────────────────
 
