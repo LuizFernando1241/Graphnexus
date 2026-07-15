@@ -28,6 +28,9 @@ export function useRadarParametros() {
         decisaoThresholds: data.decisao_thresholds as RadarParametros['decisaoThresholds'],
         autoDescarte: data.auto_descarte as RadarParametros['autoDescarte'],
         faixas: (data.faixas ?? {}) as RadarParametros['faixas'],
+        pilaresExtras: ((data as any).pilares_extras ?? []) as RadarParametros['pilaresExtras'],
+        descartesExtras: ((data as any).descartes_extras ?? []) as RadarParametros['descartesExtras'],
+        pilaresVisibilidade: ((data as any).pilares_visibilidade ?? {}) as RadarParametros['pilaresVisibilidade'],
       } as RadarParametros
     },
     enabled: !!user,
