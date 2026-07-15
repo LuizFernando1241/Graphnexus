@@ -16,6 +16,7 @@ import { ScoreBadge } from "./ScoreBadge";
 import { formatCurrency } from "@/lib/radar/radarScore";
 import { exportarAprovadosCSV } from "@/lib/radar/radarCSV";
 import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
+import { useRadarParametros } from "@/hooks/radar/useRadarParametros";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
