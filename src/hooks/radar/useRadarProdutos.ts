@@ -31,6 +31,7 @@ function mapRow(row: any): RadarProduto {
     stageEnteredAt: row.stage_entered_at,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    valoresCustom: (row.valores_custom ?? {}) as Record<string, number>,
   }
 }
 
