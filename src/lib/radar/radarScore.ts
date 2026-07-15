@@ -81,7 +81,23 @@ export const DEFAULT_PARAMETROS: RadarParametros = {
 
 export const PESO_BASE = 20
 
+// Chaves reservadas do sistema — não podem ser usadas como key de pilar customizado
+// pois colidem com variáveis canônicas do produto e quebrariam regras de descarte/fórmulas.
+export const RESERVED_VAR_KEYS = [
+  'precoVenda',
+  'custo',
+  'margem',
+  'visitasMes',
+  'vendasMes',
+  'concorrentesFull',
+  'faturamento',
+  'ticket',
+] as const
+
 // Mapa canônico de variáveis disponíveis em fórmulas.
+// IMPORTANTE: o spread de valoresCustom vem PRIMEIRO para que campos canônicos
+// sempre vençam sobre chaves customizadas homônimas (defesa em profundidade
+// contra colisão de chaves — a validação no UI já bloqueia isso na criação).
 export function buildVarMap(
   produto: Partial<RadarProduto>,
 ): Record<string, number> {
@@ -91,6 +107,9 @@ export function buildVarMap(
       : 0
   const vc = produto.valoresCustom ?? {}
   return {
+    ...Object.fromEntries(
+      Object.entries(vc).map(([k, v]) => [k, typeof v === 'number' ? v : 0]),
+    ),
     precoVenda: produto.precoVenda ?? 0,
     custo: produto.custo ?? 0,
     margem: produto.margem ?? 0,
@@ -99,9 +118,6 @@ export function buildVarMap(
     concorrentesFull: produto.concorrentesFull ?? 0,
     faturamento,
     ticket: produto.precoVenda ?? 0,
-    ...Object.fromEntries(
-      Object.entries(vc).map(([k, v]) => [k, typeof v === 'number' ? v : 0]),
-    ),
   }
 }
 
