@@ -16,7 +16,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useRadarParametros } from "@/hooks/radar/useRadarParametros";
 import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
-import { DEFAULT_PARAMETROS, DEFAULT_FAIXAS } from "@/lib/radar/radarScore";
+import { DEFAULT_PARAMETROS, DEFAULT_FAIXAS, RESERVED_VAR_KEYS } from "@/lib/radar/radarScore";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import type {
@@ -75,6 +75,31 @@ export function ParametrosRadar() {
 
   const somaWeights = Object.values(local.weights).reduce((a, b) => a + b, 0);
   const pesoValido = Math.abs(somaWeights - 100) < 0.5;
+
+  // Validação de chaves de pilares customizados: não podem colidir com variáveis
+  // canônicas (precoVenda, faturamento, etc.) nem duplicar entre si.
+  const RESERVED_SET = new Set<string>(RESERVED_VAR_KEYS as readonly string[]);
+  const pilarKeyErrors: Record<string, string> = {};
+  {
+    const seen = new Map<string, string>(); // key -> first pilar id
+    for (const p of local.pilaresExtras ?? []) {
+      const k = (p.key ?? "").trim();
+      if (!k) {
+        pilarKeyErrors[p.id] = "Chave obrigatória.";
+        continue;
+      }
+      if (RESERVED_SET.has(k)) {
+        pilarKeyErrors[p.id] = `"${k}" é uma variável reservada do sistema.`;
+        continue;
+      }
+      if (seen.has(k)) {
+        pilarKeyErrors[p.id] = `Chave "${k}" duplicada.`;
+        continue;
+      }
+      seen.set(k, p.id);
+    }
+  }
+  const chavesValidas = Object.keys(pilarKeyErrors).length === 0;
 
   function setWeight(key: keyof RadarWeights, value: number) {
     setLocal((prev) => ({
@@ -314,6 +339,14 @@ export function ParametrosRadar() {
 
   async function handleSalvar() {
     if (!pesoValido) return;
+    if (!chavesValidas) {
+      toast({
+        title: "Chaves de pilar inválidas",
+        description: "Corrija as chaves conflitantes antes de salvar.",
+        variant: "destructive",
+      });
+      return;
+    }
     await saveParametros(local);
     setIsDirty(false);
     setSalvoOk(true);
@@ -375,7 +408,7 @@ export function ParametrosRadar() {
           <Button
             size="sm"
             onClick={handleSalvar}
-            disabled={!pesoValido || !isDirty || isSaving}
+            disabled={!pesoValido || !chavesValidas || !isDirty || isSaving}
           >
             {isSaving ? (
               "Salvando..."
@@ -839,8 +872,17 @@ export function ParametrosRadar() {
                             key: e.target.value.replace(/[^a-zA-Z0-9_]/g, "_"),
                           })
                         }
-                        className="h-8 text-sm font-mono"
+                        aria-invalid={!!pilarKeyErrors[pilar.id]}
+                        className={cn(
+                          "h-8 text-sm font-mono",
+                          pilarKeyErrors[pilar.id] && "border-destructive focus-visible:ring-destructive",
+                        )}
                       />
+                      {pilarKeyErrors[pilar.id] && (
+                        <p className="text-[11px] text-destructive">
+                          {pilarKeyErrors[pilar.id]} Reservadas: {RESERVED_VAR_KEYS.join(", ")}.
+                        </p>
+                      )}
                     </div>
                   </div>
                   <Button
