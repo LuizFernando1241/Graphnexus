@@ -200,10 +200,3 @@ export interface RadarProdutoFormData {
   observacoes?: string
   valoresCustom?: Record<string, number>
 }
-  margem?: number
-  visitasMes?: number
-  vendasMes?: number
-  concorrentesFull?: number
-  isLancamento: boolean
-  observacoes?: string
-}
