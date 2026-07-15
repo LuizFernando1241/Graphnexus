@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
-import { Save, RotateCcw, AlertCircle, CheckCircle2, RefreshCw, Trash2, Plus } from "lucide-react";
+import { Save, RotateCcw, AlertCircle, CheckCircle2, RefreshCw, Trash2, Plus, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Accordion,
   AccordionContent,
@@ -17,7 +19,15 @@ import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
 import { DEFAULT_PARAMETROS, DEFAULT_FAIXAS } from "@/lib/radar/radarScore";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-import type { RadarParametros, RadarWeights, RadarFaixas, FaixaItem } from "@/types/radar";
+import type {
+  RadarParametros,
+  RadarWeights,
+  RadarFaixas,
+  FaixaItem,
+  PilarExtra,
+  RegraDescarteCustom,
+  OperadorDescarte,
+} from "@/types/radar";
 
 const PILAR_UNIT: Record<keyof RadarFaixas, { prefix?: string; suffix?: string; direcao: "min" | "max" }> = {
   margem: { suffix: "%", direcao: "min" },
