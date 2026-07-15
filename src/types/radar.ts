@@ -38,6 +38,7 @@ export interface RadarProduto {
   stageEnteredAt: string
   createdAt: string
   updatedAt: string
+  valoresCustom?: Record<string, number>
 }
 
 // ─── Histórico ────────────────────────────────────────────────────────────────
