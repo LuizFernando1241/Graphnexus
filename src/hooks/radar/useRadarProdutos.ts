@@ -80,7 +80,8 @@ export function useRadarProdutos() {
           score_total: scoreResult.scoreTotal,
           decision: scoreResult.decision,
           stage_entered_at: new Date().toISOString(),
-        })
+          valores_custom: (formData.valoresCustom ?? {}) as any,
+        } as any)
         .select()
         .single()
 
