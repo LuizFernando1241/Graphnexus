@@ -120,11 +120,18 @@ interface AvaliacaoFaixa {
  * - Faixas com `limiteMax` (menor é melhor) → ordenadas asc, casa a primeira em que valor <= limiteMax.
  * - Se a faixa casada tem `escalaAberta`, pontos = pontos * (valor / limiteMin).
  */
-function avaliarFaixa(valor: number, faixas: FaixaItem[]): AvaliacaoFaixa {
+function avaliarFaixa(
+  valor: number,
+  faixas: FaixaItem[],
+  direcaoExplicita?: 'min' | 'max',
+): AvaliacaoFaixa {
   if (!faixas || faixas.length === 0) return { pontos: 0, descarte: false }
 
-  // Direção: se a primeira faixa tem limiteMax definido sem limiteMin, assume "menor é melhor".
-  const usaLimiteMax = faixas.some((f) => f.limiteMax != null) && !faixas.every((f) => f.limiteMin != null && f.limiteMin > 0)
+  const usaLimiteMax =
+    direcaoExplicita === 'max' ||
+    (direcaoExplicita === undefined &&
+      faixas.some((f) => f.limiteMax != null) &&
+      !faixas.every((f) => f.limiteMin != null && f.limiteMin > 0))
 
   if (usaLimiteMax) {
     const ordenadas = [...faixas].sort((a, b) => {
@@ -137,13 +144,11 @@ function avaliarFaixa(valor: number, faixas: FaixaItem[]): AvaliacaoFaixa {
         return { pontos: f.pontos, descarte: !!f.descarte, faixaCasada: f }
       }
     }
-    // catch-all (faixa sem limiteMax)
     const fallback = ordenadas.find((f) => f.limiteMax == null)
     if (fallback) return { pontos: fallback.pontos, descarte: !!fallback.descarte, faixaCasada: fallback }
     return { pontos: 0, descarte: false }
   }
 
-  // Direção padrão: maior é melhor
   const ordenadas = [...faixas].sort((a, b) => (b.limiteMin ?? 0) - (a.limiteMin ?? 0))
   for (const f of ordenadas) {
     const limite = f.limiteMin ?? 0
@@ -157,6 +162,8 @@ function avaliarFaixa(valor: number, faixas: FaixaItem[]): AvaliacaoFaixa {
   }
   return { pontos: 0, descarte: false }
 }
+
+export { avaliarFaixa }
 
 // ─── Merge das faixas configuradas com os defaults ──────────────────────────
 
