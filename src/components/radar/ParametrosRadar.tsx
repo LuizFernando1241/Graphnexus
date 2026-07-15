@@ -339,6 +339,14 @@ export function ParametrosRadar() {
 
   async function handleSalvar() {
     if (!pesoValido) return;
+    if (!chavesValidas) {
+      toast({
+        title: "Chaves de pilar inválidas",
+        description: "Corrija as chaves conflitantes antes de salvar.",
+        variant: "destructive",
+      });
+      return;
+    }
     await saveParametros(local);
     setIsDirty(false);
     setSalvoOk(true);
