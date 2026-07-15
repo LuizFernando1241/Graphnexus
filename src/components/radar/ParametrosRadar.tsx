@@ -790,7 +790,269 @@ export function ParametrosRadar() {
                   );
                 },
               )}
-            </Accordion>
+
+        {/* ── PILARES PERSONALIZADOS ── */}
+        <AccordionItem value="pilares-extras">
+          <AccordionTrigger>
+            <div className="flex items-center gap-2">
+              <span>Pilares Personalizados</span>
+              <span className="text-xs font-mono tabular-nums px-2 py-0.5 rounded-full border border-border text-muted-foreground">
+                {(local.pilaresExtras ?? []).length}
+              </span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="flex flex-col gap-3 pt-2">
+            <p className="text-xs text-muted-foreground">
+              Adicione seus próprios pilares (ex: reviews, ROI, sazonalidade). Cada pilar
+              soma pontos diretos ao score total (peso 20 = 1x).
+            </p>
+            <Button variant="outline" size="sm" className="self-start h-8" onClick={addPilarExtra}>
+              <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar pilar
+            </Button>
+
+            {(local.pilaresExtras ?? []).map((pilar) => (
+              <div key={pilar.id} className="rounded-lg border border-border p-3 flex flex-col gap-3">
+                <div className="flex items-start gap-2">
+                  <Switch
+                    checked={pilar.ativo}
+                    onCheckedChange={(v) => updatePilarExtra(pilar.id, { ativo: v })}
+                  />
+                  <div className="flex-1 grid grid-cols-2 gap-2">
+                    <div className="flex flex-col gap-1">
+                      <Label className="text-[11px] text-muted-foreground">Nome</Label>
+                      <Input
+                        value={pilar.label}
+                        onChange={(e) => updatePilarExtra(pilar.id, { label: e.target.value })}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <Label className="text-[11px] text-muted-foreground">Chave (var)</Label>
+                      <Input
+                        value={pilar.key}
+                        onChange={(e) =>
+                          updatePilarExtra(pilar.id, {
+                            key: e.target.value.replace(/[^a-zA-Z0-9_]/g, "_"),
+                          })
+                        }
+                        className="h-8 text-sm font-mono"
+                      />
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => removePilarExtra(pilar.id)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="flex flex-col gap-1">
+                    <Label className="text-[11px] text-muted-foreground">Direção</Label>
+                    <Select
+                      value={pilar.direcao}
+                      onValueChange={(v: "min" | "max") =>
+                        updatePilarExtra(pilar.id, { direcao: v })
+                      }
+                    >
+                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="max">Maior é melhor</SelectItem>
+                        <SelectItem value="min">Menor é melhor</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <Label className="text-[11px] text-muted-foreground">Peso (mult.)</Label>
+                    <Input
+                      type="number"
+                      value={pilar.peso}
+                      onChange={(e) => {
+                        const v = parseFloat(e.target.value);
+                        if (!isNaN(v)) updatePilarExtra(pilar.id, { peso: v });
+                      }}
+                      className="h-8 text-xs tabular-nums"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <Label className="text-[11px] text-muted-foreground">Sufixo (ex: %)</Label>
+                    <Input
+                      value={pilar.unidade?.suffix ?? ""}
+                      onChange={(e) =>
+                        updatePilarExtra(pilar.id, {
+                          unidade: { ...(pilar.unidade ?? {}), suffix: e.target.value },
+                        })
+                      }
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-[11px] text-muted-foreground">
+                      Faixas ({pilar.direcao === "max" ? "limite mínimo ≥" : "limite máximo ≤"})
+                    </Label>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 text-[11px]"
+                      onClick={() => addFaixaExtra(pilar.id)}
+                    >
+                      <Plus className="h-3 w-3 mr-1" /> Faixa
+                    </Button>
+                  </div>
+                  {pilar.faixas.map((f, i) => {
+                    const usaMin = pilar.direcao === "max";
+                    return (
+                      <div key={i} className="grid grid-cols-[1fr_80px_60px_auto] gap-2 items-center">
+                        <Input
+                          type="number"
+                          step="any"
+                          value={usaMin ? (f.limiteMin ?? 0) : (f.limiteMax ?? 0)}
+                          onChange={(e) => {
+                            const v = parseFloat(e.target.value);
+                            if (!isNaN(v))
+                              setFaixaExtra(pilar.id, i, usaMin ? { limiteMin: v } : { limiteMax: v });
+                          }}
+                          className="h-7 text-xs tabular-nums"
+                        />
+                        <Input
+                          type="number"
+                          step="any"
+                          value={f.pontos}
+                          onChange={(e) => {
+                            const v = parseFloat(e.target.value);
+                            if (!isNaN(v)) setFaixaExtra(pilar.id, i, { pontos: v });
+                          }}
+                          className="h-7 text-xs text-center tabular-nums"
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setFaixaExtra(pilar.id, i, { escalaAberta: !f.escalaAberta })
+                          }
+                          className={cn(
+                            "h-7 rounded border text-[10px] font-medium",
+                            f.escalaAberta
+                              ? "bg-violet-500/15 border-violet-500/40 text-violet-600"
+                              : "border-border text-muted-foreground hover:bg-muted",
+                          )}
+                          title="Escala aberta"
+                        >
+                          ∞
+                        </button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7"
+                          onClick={() => removeFaixaExtra(pilar.id, i)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                        </Button>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs text-muted-foreground cursor-pointer flex items-center gap-2">
+                    <Switch
+                      checked={!!pilar.exibirEmAprovados}
+                      onCheckedChange={(v) =>
+                        updatePilarExtra(pilar.id, { exibirEmAprovados: v })
+                      }
+                    />
+                    Exibir na tabela de aprovados
+                  </Label>
+                </div>
+              </div>
+            ))}
+          </AccordionContent>
+        </AccordionItem>
+
+        {/* ── DESCARTES PERSONALIZADOS ── */}
+        <AccordionItem value="descartes-extras">
+          <AccordionTrigger>
+            <div className="flex items-center gap-2">
+              <span>Regras de Descarte Personalizadas</span>
+              <span className="text-xs font-mono tabular-nums px-2 py-0.5 rounded-full border border-border text-muted-foreground">
+                {(local.descartesExtras ?? []).length}
+              </span>
+            </div>
+          </AccordionTrigger>
+          <AccordionContent className="flex flex-col gap-3 pt-2">
+            <p className="text-xs text-muted-foreground">
+              Descarta automaticamente qualquer produto que atenda à condição. Campos
+              válidos: <code className="text-[10px]">precoVenda</code>,{" "}
+              <code className="text-[10px]">custo</code>,{" "}
+              <code className="text-[10px]">margem</code>,{" "}
+              <code className="text-[10px]">visitasMes</code>,{" "}
+              <code className="text-[10px]">vendasMes</code>,{" "}
+              <code className="text-[10px]">concorrentesFull</code>,{" "}
+              <code className="text-[10px]">faturamento</code> ou a chave de um pilar
+              personalizado.
+            </p>
+            <Button variant="outline" size="sm" className="self-start h-8" onClick={addDescarteExtra}>
+              <Plus className="h-3.5 w-3.5 mr-1" /> Adicionar regra
+            </Button>
+            {(local.descartesExtras ?? []).map((regra) => (
+              <div
+                key={regra.id}
+                className="grid grid-cols-[auto_1fr_80px_1fr_2fr_auto] gap-2 items-center rounded-lg border border-border p-2"
+              >
+                <Switch
+                  checked={regra.ativo !== false}
+                  onCheckedChange={(v) => updateDescarteExtra(regra.id, { ativo: v })}
+                />
+                <Input
+                  value={regra.campo}
+                  onChange={(e) => updateDescarteExtra(regra.id, { campo: e.target.value })}
+                  className="h-8 text-xs font-mono"
+                  placeholder="campo"
+                />
+                <Select
+                  value={regra.operador}
+                  onValueChange={(v: OperadorDescarte) =>
+                    updateDescarteExtra(regra.id, { operador: v })
+                  }
+                >
+                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {(["<", "<=", ">", ">=", "=="] as OperadorDescarte[]).map((o) => (
+                      <SelectItem key={o} value={o}>{o}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Input
+                  type="number"
+                  step="any"
+                  value={regra.valor}
+                  onChange={(e) => {
+                    const v = parseFloat(e.target.value);
+                    if (!isNaN(v)) updateDescarteExtra(regra.id, { valor: v });
+                  }}
+                  className="h-8 text-xs tabular-nums"
+                />
+                <Input
+                  value={regra.motivo ?? ""}
+                  onChange={(e) => updateDescarteExtra(regra.id, { motivo: e.target.value })}
+                  className="h-8 text-xs"
+                  placeholder="Motivo (opcional)"
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => removeDescarteExtra(regra.id)}
+                >
+                  <Trash2 className="h-3.5 w-3.5 text-muted-foreground" />
+                </Button>
+              </div>
+            ))}
           </AccordionContent>
         </AccordionItem>
       </Accordion>
