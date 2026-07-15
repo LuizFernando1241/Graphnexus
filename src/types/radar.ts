@@ -148,13 +148,6 @@ export interface PilarResult {
   isCustom?: boolean
   valor?: number | null
 }
-  preenchido: boolean
-  pontos: number
-  pontosBrutos: number
-  peso: number
-  pesoNormalizado: number
-  contribuicao: number
-}
 
 export interface ScoreResult {
   scoreTotal: number
