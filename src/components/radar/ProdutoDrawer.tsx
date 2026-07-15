@@ -66,6 +66,7 @@ const EMPTY_FORM: RadarProdutoFormData = {
   concorrentesFull: undefined,
   isLancamento: false,
   observacoes: "",
+  valoresCustom: {},
 };
 
 function parseNum(value: string): number | undefined {
