@@ -177,6 +177,16 @@ export function AprovadosTable({ onVerProduto }: AprovadosTableProps) {
                 <TableCell>
                   <ScoreBadge decision={produto.decision} size="sm" />
                 </TableCell>
+                {colunasExtras.map((pilar) => {
+                  const v = produto.valoresCustom?.[pilar.key];
+                  return (
+                    <TableCell key={pilar.id} className="text-right tabular-nums">
+                      {typeof v === "number"
+                        ? `${v}${pilar.unidade?.suffix ?? ""}`
+                        : "—"}
+                    </TableCell>
+                  );
+                })}
                 <TableCell>
                   <button
                     type="button"
