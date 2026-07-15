@@ -92,6 +92,36 @@ export interface RadarFaixas {
   concorrentes: FaixaItem[]
 }
 
+export type PilarBuiltInKey = keyof RadarWeights
+
+export interface PilarExtra {
+  id: string
+  key: string
+  label: string
+  ativo: boolean
+  peso: number
+  direcao: 'min' | 'max'
+  tipo: 'numero' | 'formula'
+  formula?: string
+  unidade?: { prefix?: string; suffix?: string }
+  faixas: FaixaItem[]
+  exibirEmAprovados?: boolean
+  descricao?: string
+}
+
+export type OperadorDescarte = '<' | '<=' | '>' | '>=' | '=='
+
+export interface RegraDescarteCustom {
+  id: string
+  pilarKey: string
+  operador: OperadorDescarte
+  valor: number
+  motivo?: string
+  ignorarLancamento?: boolean
+}
+
+export type PilarVisibilidade = Partial<Record<PilarBuiltInKey, boolean>>
+
 export interface RadarParametros {
   id?: string
   userId?: string
@@ -99,6 +129,9 @@ export interface RadarParametros {
   decisaoThresholds: RadarDecisaoThresholds
   autoDescarte: RadarAutoDescarte
   faixas: Partial<RadarFaixas>
+  pilaresExtras?: PilarExtra[]
+  descartesExtras?: RegraDescarteCustom[]
+  pilaresVisibilidade?: PilarVisibilidade
 }
 
 // ─── Score ────────────────────────────────────────────────────────────────────
