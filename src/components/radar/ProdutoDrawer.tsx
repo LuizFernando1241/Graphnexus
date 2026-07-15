@@ -45,6 +45,7 @@ import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
 import { useRadarParametros } from "@/hooks/radar/useRadarParametros";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { cn } from "@/lib/utils";
 import type { RadarProduto, RadarProdutoFormData } from "@/types/radar";
 
 interface ProdutoDrawerProps {
