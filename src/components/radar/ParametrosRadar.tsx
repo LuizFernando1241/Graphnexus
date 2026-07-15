@@ -434,34 +434,53 @@ export function ParametrosRadar() {
             )}
 
             {(Object.keys(PILAR_LABELS) as Array<keyof RadarWeights>).map(
-              (key) => (
-                <div key={key} className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between gap-3">
-                    <Label className="text-sm">{PILAR_LABELS[key]}</Label>
-                    <div className="flex items-center gap-1">
-                      <Input
-                        type="number"
-                        min={0}
-                        max={100}
-                        value={local.weights[key]}
-                        onChange={(e) => {
-                          const v = parseInt(e.target.value, 10);
-                          if (!isNaN(v)) setWeight(key, v);
-                        }}
-                        className="w-16 h-7 text-xs text-center tabular-nums"
-                      />
-                      <span className="text-xs text-muted-foreground">%</span>
+              (key) => {
+                const visivel = local.pilaresVisibilidade?.[key] !== false;
+                return (
+                  <div key={key} className={cn("flex flex-col gap-2", !visivel && "opacity-50")}>
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => togglePilarVisivel(key)}
+                          className="h-6 w-6 rounded hover:bg-muted flex items-center justify-center"
+                          title={visivel ? "Ocultar pilar" : "Ativar pilar"}
+                        >
+                          {visivel ? (
+                            <Eye className="h-3.5 w-3.5 text-emerald-600" />
+                          ) : (
+                            <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
+                          )}
+                        </button>
+                        <Label className="text-sm">{PILAR_LABELS[key]}</Label>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Input
+                          type="number"
+                          min={0}
+                          max={100}
+                          value={local.weights[key]}
+                          onChange={(e) => {
+                            const v = parseInt(e.target.value, 10);
+                            if (!isNaN(v)) setWeight(key, v);
+                          }}
+                          className="w-16 h-7 text-xs text-center tabular-nums"
+                          disabled={!visivel}
+                        />
+                        <span className="text-xs text-muted-foreground">%</span>
+                      </div>
                     </div>
+                    <Slider
+                      value={[local.weights[key]]}
+                      min={0}
+                      max={100}
+                      step={1}
+                      disabled={!visivel}
+                      onValueChange={([v]) => setWeight(key, v)}
+                    />
                   </div>
-                  <Slider
-                    value={[local.weights[key]]}
-                    min={0}
-                    max={100}
-                    step={1}
-                    onValueChange={([v]) => setWeight(key, v)}
-                  />
-                </div>
-              ),
+                );
+              },
             )}
 
             <Separator />
