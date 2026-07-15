@@ -114,10 +114,11 @@ export type OperadorDescarte = '<' | '<=' | '>' | '>=' | '=='
 
 export interface RegraDescarteCustom {
   id: string
-  pilarKey: string
+  campo: string
   operador: OperadorDescarte
   valor: number
   motivo?: string
+  ativo?: boolean
   ignorarLancamento?: boolean
 }
 
