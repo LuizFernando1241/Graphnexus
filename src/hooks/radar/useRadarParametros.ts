@@ -48,8 +48,11 @@ export function useRadarParametros() {
           decisao_thresholds: params.decisaoThresholds as any,
           auto_descarte: params.autoDescarte as any,
           faixas: params.faixas as any,
+          pilares_extras: (params.pilaresExtras ?? []) as any,
+          descartes_extras: (params.descartesExtras ?? []) as any,
+          pilares_visibilidade: (params.pilaresVisibilidade ?? {}) as any,
           updated_at: new Date().toISOString(),
-        },
+        } as any,
         { onConflict: 'user_id' }
       )
 
