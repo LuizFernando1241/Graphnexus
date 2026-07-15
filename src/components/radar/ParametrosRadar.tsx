@@ -176,6 +176,142 @@ export function ParametrosRadar() {
     setSalvoOk(false);
   }
 
+  // ── Visibilidade de pilares built-in ──
+  function togglePilarVisivel(key: keyof RadarWeights) {
+    setLocal((prev) => {
+      const vis = { ...(prev.pilaresVisibilidade ?? {}) };
+      const atual = vis[key] !== false; // default visível
+      vis[key] = !atual;
+      return { ...prev, pilaresVisibilidade: vis };
+    });
+    setIsDirty(true);
+    setSalvoOk(false);
+  }
+
+  // ── Pilares personalizados ──
+  function addPilarExtra() {
+    setLocal((prev) => {
+      const extras = [...(prev.pilaresExtras ?? [])];
+      const idx = extras.length + 1;
+      const novo: PilarExtra = {
+        id: crypto.randomUUID(),
+        key: `custom_${idx}`,
+        label: `Pilar personalizado ${idx}`,
+        tipo: "numero",
+        peso: 10,
+        direcao: "max",
+        ativo: true,
+        exibirEmAprovados: false,
+        faixas: [
+          { limiteMin: 0, pontos: 0 },
+          { limiteMin: 10, pontos: 5 },
+          { limiteMin: 50, pontos: 10, escalaAberta: true },
+        ],
+      };
+      extras.push(novo);
+      return { ...prev, pilaresExtras: extras };
+    });
+    setIsDirty(true);
+    setSalvoOk(false);
+  }
+
+  function updatePilarExtra(id: string, patch: Partial<PilarExtra>) {
+    setLocal((prev) => ({
+      ...prev,
+      pilaresExtras: (prev.pilaresExtras ?? []).map((p) =>
+        p.id === id ? { ...p, ...patch } : p,
+      ),
+    }));
+    setIsDirty(true);
+    setSalvoOk(false);
+  }
+
+  function removePilarExtra(id: string) {
+    setLocal((prev) => ({
+      ...prev,
+      pilaresExtras: (prev.pilaresExtras ?? []).filter((p) => p.id !== id),
+    }));
+    setIsDirty(true);
+    setSalvoOk(false);
+  }
+
+  function setFaixaExtra(pilarId: string, index: number, patch: Partial<FaixaItem>) {
+    setLocal((prev) => ({
+      ...prev,
+      pilaresExtras: (prev.pilaresExtras ?? []).map((p) =>
+        p.id === pilarId
+          ? { ...p, faixas: p.faixas.map((f, i) => (i === index ? { ...f, ...patch } : f)) }
+          : p,
+      ),
+    }));
+    setIsDirty(true);
+    setSalvoOk(false);
+  }
+
+  function addFaixaExtra(pilarId: string) {
+    setLocal((prev) => ({
+      ...prev,
+      pilaresExtras: (prev.pilaresExtras ?? []).map((p) =>
+        p.id === pilarId
+          ? { ...p, faixas: [...p.faixas, { limiteMin: 0, pontos: 0 }] }
+          : p,
+      ),
+    }));
+    setIsDirty(true);
+    setSalvoOk(false);
+  }
+
+  function removeFaixaExtra(pilarId: string, index: number) {
+    setLocal((prev) => ({
+      ...prev,
+      pilaresExtras: (prev.pilaresExtras ?? []).map((p) =>
+        p.id === pilarId
+          ? { ...p, faixas: p.faixas.filter((_, i) => i !== index) }
+          : p,
+      ),
+    }));
+    setIsDirty(true);
+    setSalvoOk(false);
+  }
+
+  // ── Descartes personalizados ──
+  function addDescarteExtra() {
+    setLocal((prev) => {
+      const novo: RegraDescarteCustom = {
+        id: crypto.randomUUID(),
+        campo: "precoVenda",
+        operador: "<",
+        valor: 0,
+        motivo: "Nova regra de descarte",
+        ativo: true,
+      };
+      return { ...prev, descartesExtras: [...(prev.descartesExtras ?? []), novo] };
+    });
+    setIsDirty(true);
+    setSalvoOk(false);
+  }
+
+  function updateDescarteExtra(id: string, patch: Partial<RegraDescarteCustom>) {
+    setLocal((prev) => ({
+      ...prev,
+      descartesExtras: (prev.descartesExtras ?? []).map((r) =>
+        r.id === id ? { ...r, ...patch } : r,
+      ),
+    }));
+    setIsDirty(true);
+    setSalvoOk(false);
+  }
+
+  function removeDescarteExtra(id: string) {
+    setLocal((prev) => ({
+      ...prev,
+      descartesExtras: (prev.descartesExtras ?? []).filter((r) => r.id !== id),
+    }));
+    setIsDirty(true);
+    setSalvoOk(false);
+  }
+
+
   async function handleSalvar() {
     if (!pesoValido) return;
     await saveParametros(local);
