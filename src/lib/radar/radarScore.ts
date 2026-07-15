@@ -364,8 +364,9 @@ export function calcularScore(
   // ── Descartes customizados ──
   const descartesExtras: RegraDescarteCustom[] = params.descartesExtras ?? []
   for (const regra of descartesExtras) {
+    if (regra.ativo === false) continue
     if (regra.ignorarLancamento && produto.isLancamento) continue
-    const valor = varMap[regra.pilarKey]
+    const valor = varMap[regra.campo]
     if (typeof valor !== 'number') continue
     const match =
       (regra.operador === '<' && valor < regra.valor) ||
@@ -377,7 +378,7 @@ export function calcularScore(
       descarteByFaixa = {
         motivo:
           regra.motivo ??
-          `${regra.pilarKey} ${regra.operador} ${regra.valor}: descarte automático`,
+          `${regra.campo} ${regra.operador} ${regra.valor}: descarte automático`,
       }
       break
     }
