@@ -126,18 +126,38 @@ export default function RadarPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setFilters((f) => ({ ...f, stage: f.stage === "decisao" ? "all" : "decisao" }))}
+                  onClick={() => setFilters((f) => ({ ...f, stage: f.stage === "aguardando_decisao" ? "all" : "aguardando_decisao" }))}
                   className={cn(
                     "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs transition-colors",
-                    filters.stage === "decisao" ? "border-violet-400/60 bg-violet-400/10 text-foreground" : "border-border hover:bg-accent",
+                    filters.stage === "aguardando_decisao" ? "border-violet-400/60 bg-violet-400/10 text-foreground" : "border-border hover:bg-accent",
                   )}
                 >
                   <span className="h-2 w-2 rounded-full bg-violet-400" />
-                  Decisão <span className="tabular-nums font-semibold">{emDecisao}</span>
+                  Aguardando Decisão <span className="tabular-nums font-semibold">{emDecisao}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFilters((f) => ({ ...f, stage: f.stage === "decisao" ? "all" : "decisao" }))}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs transition-colors",
+                    filters.stage === "decisao" ? "border-emerald-400/60 bg-emerald-400/10 text-foreground" : "border-border hover:bg-accent",
+                  )}
+                >
+                  <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                  Decisão <span className="tabular-nums font-semibold">{produtos.filter((p) => p.stage === "decisao").length}</span>
                 </button>
               </div>
             )}
           </div>
+
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={toggleExpandAll} disabled={visibleIds.length === 0}>
+              {allExpanded ? (
+                <><Minimize2 className="h-4 w-4 mr-2" />Recolher todos</>
+              ) : (
+                <><Maximize2 className="h-4 w-4 mr-2" />Expandir todos</>
+              )}
+            </Button>
 
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => setFiltrosAbertos((v) => !v)}>
