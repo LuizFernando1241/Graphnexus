@@ -8,8 +8,9 @@ import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ScoreBadge } from "./ScoreBadge";
 import { PilarDots } from "./PilarDots";
-import { formatCurrency } from "@/lib/radar/radarScore";
+import { formatCurrency, calcularScore } from "@/lib/radar/radarScore";
 import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
+import { useRadarParametros } from "@/hooks/radar/useRadarParametros";
 import { cn } from "@/lib/utils";
 import type { RadarProduto, PipelineStage, DecisaoFinal } from "@/types/radar";
 
@@ -29,6 +30,8 @@ export function ProdutoCard({
   onToggleExpand,
 }: ProdutoCardProps) {
   const { moverEtapa, isMovendo } = useRadarProdutos();
+  const { parametros } = useRadarParametros();
+  const scoreResult = calcularScore(produto, parametros);
 
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({ id: produto.id });
@@ -210,6 +213,32 @@ export function ProdutoCard({
                     onPointerDown={(e) => e.stopPropagation()}
                   >
                     <div className="pt-1.5 mt-1 border-t border-border/50 space-y-1.5">
+                      {/* Pontuação por pilar */}
+                      <div className="space-y-1">
+                        <p className="text-[11px] font-medium text-foreground">Pontuação por Pilar</p>
+                        <div className="grid grid-cols-1 gap-0.5 text-[11px]">
+                          {scoreResult.pilares.map((pilar) => (
+                            <div
+                              key={pilar.key}
+                              className="flex items-center justify-between text-muted-foreground"
+                            >
+                              <span className={cn(!pilar.preenchido && "italic")}>
+                                {pilar.nome}
+                                {!pilar.preenchido && " (não preenchido)"}
+                              </span>
+                              <span className={cn(
+                                "font-medium tabular-nums",
+                                pilar.preenchido ? "text-foreground" : "text-muted-foreground/50"
+                              )}>
+                                {pilar.pontos.toFixed(1)} pts
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="border-t border-border/30 pt-1.5" />
+
                       <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px]">
                         <Metric
                           label="Margem"
