@@ -32,14 +32,14 @@ export function RadarFilters({ produtos, filters, onChange }: RadarFiltersProps)
     filters.busca.trim().length > 0;
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-3">
       <div className="relative">
-        <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Buscar por nome ou fornecedor"
           value={filters.busca}
           onChange={(e) => onChange({ ...filters, busca: e.target.value })}
-          className="pl-8 h-9 w-64"
+          className="pl-9 h-10 w-72"
         />
       </div>
 
@@ -48,7 +48,7 @@ export function RadarFilters({ produtos, filters, onChange }: RadarFiltersProps)
         value={filters.fornecedor}
         onValueChange={(v) => onChange({ ...filters, fornecedor: v })}
       >
-        <SelectTrigger className="h-9 w-[200px]">
+        <SelectTrigger className="h-10 w-[220px]">
           <SelectValue placeholder="Fornecedor" />
         </SelectTrigger>
         <SelectContent>
@@ -65,7 +65,7 @@ export function RadarFilters({ produtos, filters, onChange }: RadarFiltersProps)
         value={filters.decision}
         onValueChange={(v) => onChange({ ...filters, decision: v as RadarFiltersState["decision"] })}
       >
-        <SelectTrigger className="h-9 w-[180px]">
+        <SelectTrigger className="h-10 w-[200px]">
           <SelectValue placeholder="Decisão" />
         </SelectTrigger>
         <SelectContent>
@@ -81,7 +81,7 @@ export function RadarFilters({ produtos, filters, onChange }: RadarFiltersProps)
         value={filters.stage}
         onValueChange={(v) => onChange({ ...filters, stage: v as RadarFiltersState["stage"] })}
       >
-        <SelectTrigger className="h-9 w-[180px]">
+        <SelectTrigger className="h-10 w-[200px]">
           <SelectValue placeholder="Etapa" />
         </SelectTrigger>
         <SelectContent>
@@ -98,6 +98,7 @@ export function RadarFilters({ produtos, filters, onChange }: RadarFiltersProps)
           variant="ghost"
           size="sm"
           onClick={() => onChange({ fornecedor: "all", decision: "all", stage: "all", busca: "" })}
+          className="h-10"
         >
           <X className="h-4 w-4 mr-1" />
           Limpar

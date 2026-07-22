@@ -95,9 +95,9 @@ export function ProdutoCard({
         <CardContent className="p-0">
           <div className="flex items-stretch gap-2">
             <div className={cn("w-1 shrink-0", stripeColor)} />
-            <div className="flex flex-col gap-1 py-1.5 pr-2 min-w-0 flex-1">
+            <div className="flex flex-col gap-2 py-2 pr-3 min-w-0 flex-1">
               {/* Linha 1 */}
-              <div className="flex items-center gap-1.5 min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
                 <button
                   type="button"
                   onClick={(e) => {
@@ -110,13 +110,13 @@ export function ProdutoCard({
                 >
                   <ChevronDown
                     className={cn(
-                      "h-3.5 w-3.5 transition-transform",
+                      "h-4 w-4 transition-transform",
                       expanded && "rotate-180",
                     )}
                   />
                 </button>
                 <h3
-                  className="text-[13px] font-semibold text-foreground truncate flex-1 leading-tight cursor-pointer"
+                  className="text-sm font-semibold text-foreground truncate flex-1 leading-tight cursor-pointer"
                   onClick={(e) => {
                     e.stopPropagation();
                     onEdit(produto);
@@ -144,53 +144,57 @@ export function ProdutoCard({
                 )}
               </div>
 
-              {/* Linha 2 */}
-              <div className="flex items-center gap-2 text-[11px] text-muted-foreground min-w-0">
-                <div className="flex items-center gap-1 min-w-0 flex-1">
-                  <Building2 className="h-3 w-3 shrink-0" />
-                  <span className="truncate">{produto.fornecedor}</span>
-                  {produto.precoVenda != null && (
-                    <>
-                      <span className="opacity-50">·</span>
-                      <span className="font-semibold text-foreground shrink-0">
-                        {formatCurrency(produto.precoVenda)}
-                      </span>
-                    </>
-                  )}
-                  {faturamentoEstimado != null && (
-                    <>
-                      <span className="opacity-50">·</span>
-                      <span className="shrink-0 truncate">
-                        {formatCurrency(faturamentoEstimado)}/mês
-                      </span>
-                    </>
-                  )}
-                </div>
-                <PilarDots produto={produto} />
-                {produto.linkML && (
-                  <a
-                    href={produto.linkML}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    onPointerDown={(e) => e.stopPropagation()}
-                    className="text-muted-foreground hover:text-primary transition-colors shrink-0"
-                    title="Abrir no Mercado Livre"
-                  >
-                    <ExternalLink className="h-3 w-3" />
-                  </a>
+              {/* Linha 2 - Fornecedor e preço */}
+              <div className="flex items-center gap-2 text-xs text-muted-foreground min-w-0">
+                <Building2 className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">{produto.fornecedor}</span>
+                {produto.precoVenda != null && (
+                  <>
+                    <span className="opacity-40 mx-1">·</span>
+                    <span className="font-semibold text-foreground shrink-0">
+                      {formatCurrency(produto.precoVenda)}
+                    </span>
+                  </>
                 )}
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onHistorico(produto);
-                  }}
-                  onPointerDown={(e) => e.stopPropagation()}
-                  className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
-                  title={`Há ${dataRelativa} · Ver histórico`}
-                >
-                  <History className="h-3 w-3" />
-                </button>
+                {faturamentoEstimado != null && (
+                  <>
+                    <span className="opacity-40 mx-1">·</span>
+                    <span className="shrink-0 truncate">
+                      {formatCurrency(faturamentoEstimado)}/mês
+                    </span>
+                  </>
+                )}
+              </div>
+
+              {/* Linha 3 - Ações e metadados */}
+              <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
+                <PilarDots produto={produto} />
+                <div className="flex items-center gap-2 ml-auto">
+                  {produto.linkML && (
+                    <a
+                      href={produto.linkML}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      onPointerDown={(e) => e.stopPropagation()}
+                      className="text-muted-foreground hover:text-primary transition-colors shrink-0"
+                      title="Abrir no Mercado Livre"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
+                  )}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onHistorico(produto);
+                    }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                    title={`Há ${dataRelativa} · Ver histórico`}
+                  >
+                    <History className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
 
               {/* Expansão: métricas + ações */}

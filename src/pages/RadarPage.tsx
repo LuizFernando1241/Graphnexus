@@ -101,12 +101,12 @@ export default function RadarPage() {
               )}
             </div>
             {!isLoading && (
-              <div className="flex flex-wrap items-center gap-1.5 mt-1">
+              <div className="flex flex-wrap items-center gap-2 mt-2">
                 <button
                   type="button"
                   onClick={() => setFilters((f) => ({ ...f, stage: f.stage === "prospeccao" ? "all" : "prospeccao" }))}
                   className={cn(
-                    "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs transition-colors",
+                    "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs transition-colors",
                     filters.stage === "prospeccao" ? "border-blue-400/60 bg-blue-400/10 text-foreground" : "border-border hover:bg-accent",
                   )}
                 >
@@ -117,7 +117,7 @@ export default function RadarPage() {
                   type="button"
                   onClick={() => setFilters((f) => ({ ...f, stage: f.stage === "aguardando_custo" ? "all" : "aguardando_custo" }))}
                   className={cn(
-                    "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs transition-colors",
+                    "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs transition-colors",
                     filters.stage === "aguardando_custo" ? "border-amber-400/60 bg-amber-400/10 text-foreground" : "border-border hover:bg-accent",
                   )}
                 >
@@ -128,7 +128,7 @@ export default function RadarPage() {
                   type="button"
                   onClick={() => setFilters((f) => ({ ...f, stage: f.stage === "aguardando_decisao" ? "all" : "aguardando_decisao" }))}
                   className={cn(
-                    "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs transition-colors",
+                    "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs transition-colors",
                     filters.stage === "aguardando_decisao" ? "border-violet-400/60 bg-violet-400/10 text-foreground" : "border-border hover:bg-accent",
                   )}
                 >
@@ -139,7 +139,7 @@ export default function RadarPage() {
                   type="button"
                   onClick={() => setFilters((f) => ({ ...f, stage: f.stage === "decisao" ? "all" : "decisao" }))}
                   className={cn(
-                    "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs transition-colors",
+                    "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs transition-colors",
                     filters.stage === "decisao" ? "border-emerald-400/60 bg-emerald-400/10 text-foreground" : "border-border hover:bg-accent",
                   )}
                 >
@@ -177,7 +177,7 @@ export default function RadarPage() {
 
         {/* Filtros colapsáveis */}
         {filtrosAbertos && (
-          <div className="rounded-lg border border-border bg-card/40 p-3">
+          <div className="rounded-lg border border-border bg-card/40 p-4">
             <RadarFilters produtos={produtos} filters={filters} onChange={setFilters} />
           </div>
         )}

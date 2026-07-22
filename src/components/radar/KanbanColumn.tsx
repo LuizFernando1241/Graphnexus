@@ -85,7 +85,7 @@ export function KanbanColumn({
         )}
       </div>
 
-      <div className="flex flex-col gap-2 p-2 flex-1 overflow-y-auto">
+      <div className="flex flex-col gap-3 p-3 flex-1 overflow-y-auto">
         <AnimatePresence mode="popLayout">
           {produtos.length === 0 ? (
             <div className="flex flex-col items-center justify-center text-center gap-2 py-10 px-3">
