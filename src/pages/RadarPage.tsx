@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { Crosshair, Plus, SlidersHorizontal, ChevronDown } from "lucide-react";
+import { Crosshair, Plus, SlidersHorizontal, ChevronDown, Maximize2, Minimize2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -27,6 +27,8 @@ export default function RadarPage() {
   const [produtoSelecionado, setProdutoSelecionado] = useState<RadarProduto | Record<string, never> | null>(null);
   const [historicoTarget, setHistoricoTarget] = useState<RadarProduto | null>(null);
   const [filters, setFilters] = useState<RadarFiltersState>(FILTROS_INICIAIS);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [decisionFilter, setDecisionFilter] = useState<"todos" | "aprovado" | "reprovado">("todos");
 
   const location = useLocation();
   useEffect(() => {
@@ -46,8 +48,10 @@ export default function RadarPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.state, produtos]);
 
+  const STAGES_KANBAN = ["prospeccao", "aguardando_custo", "aguardando_decisao", "decisao"] as const;
+
   const produtosFiltrados = produtos.filter((p) => {
-    if (p.stage === "aprovado" || p.stage === "arquivado") return false;
+    if (!(STAGES_KANBAN as readonly string[]).includes(p.stage)) return false;
     if (filters.fornecedor !== "all" && p.fornecedor !== filters.fornecedor) return false;
     if (filters.decision !== "all" && p.decision !== filters.decision) return false;
     if (filters.stage !== "all" && p.stage !== filters.stage) return false;
@@ -58,10 +62,28 @@ export default function RadarPage() {
       if (!nomeBate && !fornecedorBate) return false;
     }
     return true;
-
   });
 
-  const emDecisao = produtos.filter((p) => p.stage === "decisao").length;
+  const visibleIds = useMemo(
+    () => produtosFiltrados.map((p) => p.id),
+    [produtosFiltrados],
+  );
+  const allExpanded =
+    visibleIds.length > 0 && visibleIds.every((id) => expandedIds.has(id));
+
+  function toggleExpand(id: string) {
+    setExpandedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+  function toggleExpandAll() {
+    setExpandedIds(allExpanded ? new Set() : new Set(visibleIds));
+  }
+
+  const emDecisao = produtos.filter((p) => p.stage === "aguardando_decisao").length;
 
   return (
     <PageTransition>
