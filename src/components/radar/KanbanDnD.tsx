@@ -32,7 +32,15 @@ interface KanbanDnDProps {
   onChangeDecisionFilter: (v: "todos" | "aprovado" | "reprovado") => void;
 }
 
-export function KanbanDnD({ produtos, onEdit, onHistorico }: KanbanDnDProps) {
+export function KanbanDnD({
+  produtos,
+  onEdit,
+  onHistorico,
+  expandedIds,
+  onToggleExpand,
+  decisionFilter,
+  onChangeDecisionFilter,
+}: KanbanDnDProps) {
   const { moverEtapa } = useRadarProdutos();
   const [activeProduto, setActiveProduto] = useState<RadarProduto | null>(null);
 
@@ -71,7 +79,15 @@ export function KanbanDnD({ produtos, onEdit, onHistorico }: KanbanDnDProps) {
       onDragEnd={handleDragEnd}
       onDragCancel={() => setActiveProduto(null)}
     >
-      <KanbanBoard produtos={produtos} onEdit={onEdit} onHistorico={onHistorico} />
+      <KanbanBoard
+        produtos={produtos}
+        onEdit={onEdit}
+        onHistorico={onHistorico}
+        expandedIds={expandedIds}
+        onToggleExpand={onToggleExpand}
+        decisionFilter={decisionFilter}
+        onChangeDecisionFilter={onChangeDecisionFilter}
+      />
       <DragOverlay>
         {activeProduto && (
           <div className="rotate-2 opacity-95">
