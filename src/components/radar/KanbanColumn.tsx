@@ -1,8 +1,9 @@
 import { AnimatePresence } from "framer-motion";
 import { useDroppable } from "@dnd-kit/core";
 import { ProdutoCard } from "./ProdutoCard";
+import { ColumnSortControl } from "./ColumnSortControl";
 import { cn } from "@/lib/utils";
-import type { RadarProduto, PipelineStage } from "@/types/radar";
+import type { RadarProduto, PipelineStage, ColumnSortConfig, SortField, SortDirection } from "@/types/radar";
 
 interface KanbanColumnProps {
   stage: PipelineStage;
@@ -17,6 +18,9 @@ interface KanbanColumnProps {
   onToggleExpand: (id: string) => void;
   decisionFilter?: "todos" | "aprovado" | "reprovado";
   onChangeDecisionFilter?: (v: "todos" | "aprovado" | "reprovado") => void;
+  sortConfig?: ColumnSortConfig | null;
+  onSortChange?: (field: SortField, direction: SortDirection) => void;
+  onSortClear?: () => void;
 }
 
 export function KanbanColumn({
@@ -32,6 +36,9 @@ export function KanbanColumn({
   onToggleExpand,
   decisionFilter,
   onChangeDecisionFilter,
+  sortConfig,
+  onSortChange,
+  onSortClear,
 }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: stage });
 
@@ -52,9 +59,18 @@ export function KanbanColumn({
       <div className="sticky top-0 z-10 px-3 py-2 border-b border-border/60 bg-card/80 backdrop-blur shrink-0">
         <div className="flex items-center justify-between gap-2">
           <span className="text-sm font-semibold text-foreground truncate">{label}</span>
-          <span className="text-xs text-muted-foreground tabular-nums shrink-0">
-            {produtos.length}
-          </span>
+          <div className="flex items-center gap-1">
+            {onSortChange && onSortClear && (
+              <ColumnSortControl
+                sortConfig={sortConfig ?? null}
+                onSortChange={onSortChange}
+                onClear={onSortClear}
+              />
+            )}
+            <span className="text-xs text-muted-foreground tabular-nums shrink-0">
+              {produtos.length}
+            </span>
+          </div>
         </div>
         {showDecisionFilter && (
           <div className="mt-2 flex gap-1 rounded-md bg-muted/50 p-0.5 text-[11px]">

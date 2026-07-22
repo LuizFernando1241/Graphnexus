@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { Crosshair, Plus, SlidersHorizontal, ChevronDown, Maximize2, Minimize2 } from "lucide-react";
+import { Crosshair, Plus, SlidersHorizontal, ChevronDown, Maximize2, Minimize2, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageTransition } from "@/components/PageTransition";
 import { KanbanDnD } from "@/components/radar/KanbanDnD";
 import { RadarFilters, type RadarFiltersState } from "@/components/radar/RadarFilters";
+import { AdvancedFilters } from "@/components/radar/AdvancedFilters";
 import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
+import { useRadarPreferences } from "@/hooks/radar/useRadarPreferences";
 import { ProdutoDrawer } from "@/components/radar/ProdutoDrawer";
 import { HistoricoModal } from "@/components/radar/HistoricoModal";
 import { cn } from "@/lib/utils";
@@ -23,7 +25,9 @@ const FILTROS_INICIAIS: RadarFiltersState = {
 
 export default function RadarPage() {
   const { produtos, isLoading } = useRadarProdutos();
+  const { preferences, setColumnSort, removeColumnSort, setAdvancedFilters, clearAdvancedFilters } = useRadarPreferences();
   const [filtrosAbertos, setFiltrosAbertos] = useState(false);
+  const [filtrosAvancadosAbertos, setFiltrosAvancadosAbertos] = useState(false);
   const [produtoSelecionado, setProdutoSelecionado] = useState<RadarProduto | Record<string, never> | null>(null);
   const [historicoTarget, setHistoricoTarget] = useState<RadarProduto | null>(null);
   const [filters, setFilters] = useState<RadarFiltersState>(FILTROS_INICIAIS);
@@ -50,19 +54,34 @@ export default function RadarPage() {
 
   const STAGES_KANBAN = ["prospeccao", "aguardando_custo", "aguardando_decisao", "decisao"] as const;
 
-  const produtosFiltrados = produtos.filter((p) => {
-    if (!(STAGES_KANBAN as readonly string[]).includes(p.stage)) return false;
-    if (filters.fornecedor !== "all" && p.fornecedor !== filters.fornecedor) return false;
-    if (filters.decision !== "all" && p.decision !== filters.decision) return false;
-    if (filters.stage !== "all" && p.stage !== filters.stage) return false;
-    if (filters.busca.trim()) {
-      const termo = filters.busca.toLowerCase().trim();
-      const nomeBate = p.nome.toLowerCase().includes(termo);
-      const fornecedorBate = p.fornecedor.toLowerCase().includes(termo);
-      if (!nomeBate && !fornecedorBate) return false;
-    }
-    return true;
-  });
+  // Aplicar filtros básicos + filtros avançados
+  const produtosFiltrados = useMemo(() => {
+    return produtos.filter((p) => {
+      if (!(STAGES_KANBAN as readonly string[]).includes(p.stage)) return false;
+      if (filters.fornecedor !== "all" && p.fornecedor !== filters.fornecedor) return false;
+      if (filters.decision !== "all" && p.decision !== filters.decision) return false;
+      if (filters.stage !== "all" && p.stage !== filters.stage) return false;
+      if (filters.busca.trim()) {
+        const termo = filters.busca.toLowerCase().trim();
+        const nomeBate = p.nome.toLowerCase().includes(termo);
+        const fornecedorBate = p.fornecedor.toLowerCase().includes(termo);
+        if (!nomeBate && !fornecedorBate) return false;
+      }
+
+      // Filtros avançados
+      const adv = preferences.advancedFilters;
+      if (adv.scoreMin !== undefined && p.scoreTotal < adv.scoreMin) return false;
+      if (adv.scoreMax !== undefined && p.scoreTotal > adv.scoreMax) return false;
+      if (adv.decision !== undefined && adv.decision !== "all" && p.decision !== adv.decision) return false;
+      if (adv.fornecedor !== undefined && p.fornecedor !== adv.fornecedor) return false;
+      if (adv.margemMin !== undefined && (p.margem ?? 0) < adv.margemMin) return false;
+      if (adv.margemMax !== undefined && (p.margem ?? 0) > adv.margemMax) return false;
+      if (adv.ticketMin !== undefined && (p.precoVenda ?? 0) < adv.ticketMin) return false;
+      if (adv.ticketMax !== undefined && (p.precoVenda ?? 0) > adv.ticketMax) return false;
+
+      return true;
+    });
+  }, [produtos, filters, preferences.advancedFilters]);
 
   const visibleIds = useMemo(
     () => produtosFiltrados.map((p) => p.id),
@@ -168,6 +187,16 @@ export default function RadarPage() {
                 )}
               />
             </Button>
+            <Button variant="outline" size="sm" onClick={() => setFiltrosAvancadosAbertos((v) => !v)}>
+              <Filter className="h-4 w-4 mr-2" />
+              Avançados
+              <ChevronDown
+                className={cn(
+                  "h-3.5 w-3.5 ml-1 transition-transform",
+                  filtrosAvancadosAbertos && "rotate-180",
+                )}
+              />
+            </Button>
             <Button size="sm" onClick={() => setProdutoSelecionado({})}>
               <Plus className="h-4 w-4 mr-2" />
               Novo Produto
@@ -180,6 +209,18 @@ export default function RadarPage() {
           <div className="rounded-lg border border-border bg-card/40 p-4">
             <RadarFilters produtos={produtos} filters={filters} onChange={setFilters} />
           </div>
+        )}
+
+        {/* Filtros avançados colapsáveis */}
+        {filtrosAvancadosAbertos && (
+          <AdvancedFilters
+            filters={preferences.advancedFilters}
+            onChange={setAdvancedFilters}
+            onClear={clearAdvancedFilters}
+            produtos={produtos}
+            visibleCount={produtosFiltrados.length}
+            totalCount={produtos.length}
+          />
         )}
 
         {/* Kanban */}
@@ -203,6 +244,9 @@ export default function RadarPage() {
             onToggleExpand={toggleExpand}
             decisionFilter={decisionFilter}
             onChangeDecisionFilter={setDecisionFilter}
+            columnSorts={preferences.columnSorts}
+            onSortChange={setColumnSort}
+            onSortClear={removeColumnSort}
           />
         )}
       </div>

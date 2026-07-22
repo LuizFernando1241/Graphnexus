@@ -207,3 +207,38 @@ export interface RadarProdutoFormData {
   observacoes?: string
   valoresCustom?: Record<string, number>
 }
+
+// ─── Ordenação e Filtros Avançados ─────────────────────────────────────────────
+
+export type SortField =
+  | 'scoreTotal'
+  | 'margem'
+  | 'precoVenda'
+  | 'vendasMes'
+  | 'visitasMes'
+  | 'stageEnteredAt'
+
+export type SortDirection = 'asc' | 'desc'
+
+export interface ColumnSortConfig {
+  field: SortField
+  direction: SortDirection
+}
+
+export type ColumnSortConfigs = Partial<Record<PipelineStage, ColumnSortConfig>>
+
+export interface AdvancedFilters {
+  scoreMin?: number
+  scoreMax?: number
+  decision?: DecisionBadge | 'all'
+  fornecedor?: string
+  margemMin?: number
+  margemMax?: number
+  ticketMin?: number
+  ticketMax?: number
+}
+
+export interface RadarViewPreferences {
+  columnSorts: ColumnSortConfigs
+  advancedFilters: AdvancedFilters
+}

@@ -330,7 +330,7 @@ function AcoesPorEtapa({ produto, onMover, onEdit, isLoading }: AcoesPorEtapaPro
           <Button
             size="sm"
             variant="default"
-            className="h-7 text-xs flex-1"
+            className="h-7 text-xs px-3"
             disabled={isLoading}
             onClick={() => onMover("aguardando_custo")}
           >
@@ -340,7 +340,7 @@ function AcoesPorEtapa({ produto, onMover, onEdit, isLoading }: AcoesPorEtapaPro
           <Button
             size="sm"
             variant="outline"
-            className="h-7 text-xs flex-1"
+            className="h-7 text-xs px-3"
             onClick={onEdit}
           >
             Revisar dados
@@ -365,7 +365,7 @@ function AcoesPorEtapa({ produto, onMover, onEdit, isLoading }: AcoesPorEtapaPro
         <Button
           size="sm"
           variant="default"
-          className="h-7 text-xs flex-1"
+          className="h-7 text-xs px-3"
           disabled={isLoading}
           onClick={() => onMover("aguardando_decisao")}
         >

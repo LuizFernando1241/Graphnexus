@@ -1,6 +1,6 @@
 import { Crosshair, Clock, Hourglass, CheckCircle2 } from "lucide-react";
 import { KanbanColumn } from "./KanbanColumn";
-import type { RadarProduto, PipelineStage, DecisaoFinal } from "@/types/radar";
+import type { RadarProduto, PipelineStage, DecisaoFinal, ColumnSortConfigs, SortField, SortDirection } from "@/types/radar";
 
 interface KanbanBoardProps {
   produtos: RadarProduto[];
@@ -10,6 +10,9 @@ interface KanbanBoardProps {
   onToggleExpand: (id: string) => void;
   decisionFilter: "todos" | "aprovado" | "reprovado";
   onChangeDecisionFilter: (v: "todos" | "aprovado" | "reprovado") => void;
+  columnSorts: ColumnSortConfigs;
+  onSortChange: (stage: PipelineStage, field: SortField, direction: SortDirection) => void;
+  onSortClear: (stage: PipelineStage) => void;
 }
 
 type ColunaCfg = {
@@ -59,7 +62,42 @@ export function KanbanBoard({
   onToggleExpand,
   decisionFilter,
   onChangeDecisionFilter,
+  columnSorts,
+  onSortChange,
+  onSortClear,
 }: KanbanBoardProps) {
+  // Função de ordenação baseada no campo e direção
+  function sortProducts(products: RadarProduto[], field: SortField, direction: SortDirection) {
+    return [...products].sort((a, b) => {
+      let comparison = 0;
+
+      switch (field) {
+        case "scoreTotal":
+          comparison = a.scoreTotal - b.scoreTotal;
+          break;
+        case "margem":
+          comparison = (a.margem ?? 0) - (b.margem ?? 0);
+          break;
+        case "precoVenda":
+          comparison = (a.precoVenda ?? 0) - (b.precoVenda ?? 0);
+          break;
+        case "vendasMes":
+          comparison = (a.vendasMes ?? 0) - (b.vendasMes ?? 0);
+          break;
+        case "visitasMes":
+          comparison = (a.visitasMes ?? 0) - (b.visitasMes ?? 0);
+          break;
+        case "stageEnteredAt":
+          comparison = new Date(a.stageEnteredAt).getTime() - new Date(b.stageEnteredAt).getTime();
+          break;
+        default:
+          comparison = 0;
+      }
+
+      return direction === "asc" ? comparison : -comparison;
+    });
+  }
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
       {COLUNAS.map((col) => {
@@ -71,9 +109,13 @@ export function KanbanBoard({
           );
         }
 
-        produtosDaColuna = produtosDaColuna.sort(
-          (a, b) => b.scoreTotal - a.scoreTotal,
-        );
+        // Aplicar ordenação personalizada se existir, senão ordenar por score (padrão)
+        const sortConfig = columnSorts[col.stage];
+        if (sortConfig) {
+          produtosDaColuna = sortProducts(produtosDaColuna, sortConfig.field, sortConfig.direction);
+        } else {
+          produtosDaColuna = produtosDaColuna.sort((a, b) => b.scoreTotal - a.scoreTotal);
+        }
 
         return (
           <KanbanColumn
@@ -92,6 +134,9 @@ export function KanbanBoard({
             onChangeDecisionFilter={
               col.stage === "decisao" ? onChangeDecisionFilter : undefined
             }
+            sortConfig={sortConfig ?? null}
+            onSortChange={(field, direction) => onSortChange(col.stage, field, direction)}
+            onSortClear={() => onSortClear(col.stage)}
           />
         );
       })}

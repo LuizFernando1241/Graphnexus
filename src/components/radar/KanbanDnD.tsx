@@ -12,7 +12,7 @@ import { useState } from "react";
 import { KanbanBoard } from "./KanbanBoard";
 import { ProdutoCard } from "./ProdutoCard";
 import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
-import type { RadarProduto, PipelineStage } from "@/types/radar";
+import type { RadarProduto, PipelineStage, ColumnSortConfigs, SortField, SortDirection } from "@/types/radar";
 
 const STAGES_VALIDOS: PipelineStage[] = [
   "prospeccao",
@@ -30,6 +30,9 @@ interface KanbanDnDProps {
   onToggleExpand: (id: string) => void;
   decisionFilter: "todos" | "aprovado" | "reprovado";
   onChangeDecisionFilter: (v: "todos" | "aprovado" | "reprovado") => void;
+  columnSorts: ColumnSortConfigs;
+  onSortChange: (stage: PipelineStage, field: SortField, direction: SortDirection) => void;
+  onSortClear: (stage: PipelineStage) => void;
 }
 
 export function KanbanDnD({
@@ -40,6 +43,9 @@ export function KanbanDnD({
   onToggleExpand,
   decisionFilter,
   onChangeDecisionFilter,
+  columnSorts,
+  onSortChange,
+  onSortClear,
 }: KanbanDnDProps) {
   const { moverEtapa } = useRadarProdutos();
   const [activeProduto, setActiveProduto] = useState<RadarProduto | null>(null);
@@ -87,6 +93,9 @@ export function KanbanDnD({
         onToggleExpand={onToggleExpand}
         decisionFilter={decisionFilter}
         onChangeDecisionFilter={onChangeDecisionFilter}
+        columnSorts={columnSorts}
+        onSortChange={onSortChange}
+        onSortClear={onSortClear}
       />
       <DragOverlay>
         {activeProduto && (
