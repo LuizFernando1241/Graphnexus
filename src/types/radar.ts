@@ -3,11 +3,15 @@
 export type PipelineStage =
   | 'prospeccao'
   | 'aguardando_custo'
+  | 'aguardando_decisao'
   | 'decisao'
+  | 'comprado'
   | 'arquivado'
-  | 'aprovado'
+  | 'aprovado' // deprecated (mantido para leitura de dados legados)
 
 export type DecisionBadge = 'descarte' | 'cautela' | 'viavel' | 'excelente'
+
+export type DecisaoFinal = 'aprovado' | 'reprovado'
 
 export type EntityLinkType = 'note' | 'task' | 'project'
 
@@ -39,6 +43,7 @@ export interface RadarProduto {
   createdAt: string
   updatedAt: string
   valoresCustom?: Record<string, number>
+  decisaoFinal?: DecisaoFinal
 }
 
 // ─── Histórico ────────────────────────────────────────────────────────────────
