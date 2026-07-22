@@ -343,6 +343,7 @@ export type Database = {
           concorrentes_full: number | null
           created_at: string
           custo: number | null
+          decisao_final: string | null
           decisao_motivo: string | null
           decision: string
           fornecedor: string
@@ -368,6 +369,7 @@ export type Database = {
           concorrentes_full?: number | null
           created_at?: string
           custo?: number | null
+          decisao_final?: string | null
           decisao_motivo?: string | null
           decision?: string
           fornecedor: string
@@ -393,6 +395,7 @@ export type Database = {
           concorrentes_full?: number | null
           created_at?: string
           custo?: number | null
+          decisao_final?: string | null
           decisao_motivo?: string | null
           decision?: string
           fornecedor?: string
