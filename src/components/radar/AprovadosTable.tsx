@@ -37,7 +37,7 @@ export function AprovadosTable({ onVerProduto }: AprovadosTableProps) {
   );
 
   const aprovados = produtos
-    .filter((p) => p.stage === "aprovado")
+    .filter((p) => p.stage === "comprado" || p.stage === "aprovado")
     .sort(
       (a, b) =>
         new Date(b.stageEnteredAt).getTime() -

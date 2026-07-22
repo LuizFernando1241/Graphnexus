@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import { calcularScore } from '@/lib/radar/radarScore'
 import { useRadarParametros } from './useRadarParametros'
 import { triggerEmbed } from '@/lib/api/embedding'
-import type { RadarProduto, RadarProdutoFormData, PipelineStage, DecisionBadge, StatusCompra } from '@/types/radar'
+import type { RadarProduto, RadarProdutoFormData, PipelineStage, DecisionBadge, StatusCompra, DecisaoFinal } from '@/types/radar'
 
 // Mapper: Supabase row → RadarProduto
 function mapRow(row: any): RadarProduto {
@@ -32,6 +32,7 @@ function mapRow(row: any): RadarProduto {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     valoresCustom: (row.valores_custom ?? {}) as Record<string, number>,
+    decisaoFinal: (row.decisao_final ?? undefined) as DecisaoFinal | undefined,
   }
 }
 
@@ -185,23 +186,34 @@ export function useRadarProdutos() {
       novaEtapa,
       motivo,
       produtoAtual,
+      decisaoFinal,
     }: {
       id: string
       novaEtapa: PipelineStage
       motivo?: string
       produtoAtual: RadarProduto
+      decisaoFinal?: DecisaoFinal | null
     }) => {
       if (!user) throw new Error('Usuário não autenticado')
 
       const agora = new Date().toISOString()
 
+      const updates: Record<string, unknown> = {
+        stage: novaEtapa,
+        stage_entered_at: agora,
+        decisao_motivo: motivo,
+      }
+      // Setar decisao_final quando informado explicitamente (aprovar/reprovar).
+      // null limpa o campo (ao reabrir análise).
+      if (decisaoFinal !== undefined) {
+        updates.decisao_final = decisaoFinal
+      } else if (novaEtapa === 'aguardando_decisao' || novaEtapa === 'prospeccao' || novaEtapa === 'aguardando_custo') {
+        updates.decisao_final = null
+      }
+
       const { data, error } = await supabase
         .from('radar_produtos')
-        .update({
-          stage: novaEtapa,
-          stage_entered_at: agora,
-          decisao_motivo: motivo,
-        })
+        .update(updates as any)
         .eq('id', id)
         .eq('user_id', user.id)
         .select()
@@ -213,7 +225,7 @@ export function useRadarProdutos() {
         produto_id: id,
         user_id: user.id,
         stage: novaEtapa,
-        event: `Movido para ${novaEtapa}`,
+        event: `Movido para ${novaEtapa}${decisaoFinal ? ` (${decisaoFinal})` : ''}`,
         field: 'stage',
         old_value: produtoAtual.stage,
         new_value: novaEtapa,

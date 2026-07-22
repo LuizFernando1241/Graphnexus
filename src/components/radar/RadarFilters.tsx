@@ -88,6 +88,7 @@ export function RadarFilters({ produtos, filters, onChange }: RadarFiltersProps)
           <SelectItem value="all">Todas as etapas</SelectItem>
           <SelectItem value="prospeccao">Prospecção</SelectItem>
           <SelectItem value="aguardando_custo">Aguardando Custo</SelectItem>
+          <SelectItem value="aguardando_decisao">Aguardando Decisão</SelectItem>
           <SelectItem value="decisao">Decisão</SelectItem>
         </SelectContent>
       </Select>

@@ -17,6 +17,7 @@ import type { RadarProduto, PipelineStage } from "@/types/radar";
 const STAGES_VALIDOS: PipelineStage[] = [
   "prospeccao",
   "aguardando_custo",
+  "aguardando_decisao",
   "decisao",
   "arquivado",
 ];
@@ -25,9 +26,21 @@ interface KanbanDnDProps {
   produtos: RadarProduto[];
   onEdit: (produto: RadarProduto) => void;
   onHistorico: (produto: RadarProduto) => void;
+  expandedIds: Set<string>;
+  onToggleExpand: (id: string) => void;
+  decisionFilter: "todos" | "aprovado" | "reprovado";
+  onChangeDecisionFilter: (v: "todos" | "aprovado" | "reprovado") => void;
 }
 
-export function KanbanDnD({ produtos, onEdit, onHistorico }: KanbanDnDProps) {
+export function KanbanDnD({
+  produtos,
+  onEdit,
+  onHistorico,
+  expandedIds,
+  onToggleExpand,
+  decisionFilter,
+  onChangeDecisionFilter,
+}: KanbanDnDProps) {
   const { moverEtapa } = useRadarProdutos();
   const [activeProduto, setActiveProduto] = useState<RadarProduto | null>(null);
 
@@ -66,7 +79,15 @@ export function KanbanDnD({ produtos, onEdit, onHistorico }: KanbanDnDProps) {
       onDragEnd={handleDragEnd}
       onDragCancel={() => setActiveProduto(null)}
     >
-      <KanbanBoard produtos={produtos} onEdit={onEdit} onHistorico={onHistorico} />
+      <KanbanBoard
+        produtos={produtos}
+        onEdit={onEdit}
+        onHistorico={onHistorico}
+        expandedIds={expandedIds}
+        onToggleExpand={onToggleExpand}
+        decisionFilter={decisionFilter}
+        onChangeDecisionFilter={onChangeDecisionFilter}
+      />
       <DragOverlay>
         {activeProduto && (
           <div className="rotate-2 opacity-95">

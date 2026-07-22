@@ -13,7 +13,7 @@ export default function AprovadosPage() {
   const [produtoSelecionado, setProdutoSelecionado] =
     useState<RadarProduto | null>(null);
   const { produtos } = useRadarProdutos();
-  const totalAprovados = produtos.filter((p) => p.stage === "aprovado").length;
+  const totalAprovados = produtos.filter((p) => p.stage === "comprado" || p.stage === "aprovado").length;
 
   return (
     <PageTransition>
