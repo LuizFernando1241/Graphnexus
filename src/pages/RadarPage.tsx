@@ -199,6 +199,10 @@ export default function RadarPage() {
             produtos={produtosFiltrados}
             onEdit={(p) => setProdutoSelecionado(p)}
             onHistorico={(p) => setHistoricoTarget(p)}
+            expandedIds={expandedIds}
+            onToggleExpand={toggleExpand}
+            decisionFilter={decisionFilter}
+            onChangeDecisionFilter={setDecisionFilter}
           />
         )}
       </div>
