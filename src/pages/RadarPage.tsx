@@ -158,8 +158,6 @@ export default function RadarPage() {
                 <><Maximize2 className="h-4 w-4 mr-2" />Expandir todos</>
               )}
             </Button>
-
-          <div className="flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => setFiltrosAbertos((v) => !v)}>
               <SlidersHorizontal className="h-4 w-4 mr-2" />
               Filtros
