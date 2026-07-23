@@ -131,10 +131,25 @@ interface AvaliacaoFaixa {
 }
 
 /**
- * Avalia um valor contra uma lista de faixas.
- * - Faixas com `limiteMin` (maior é melhor) → ordenadas desc, casa a primeira em que valor >= limiteMin.
- * - Faixas com `limiteMax` (menor é melhor) → ordenadas asc, casa a primeira em que valor <= limiteMax.
- * - Se a faixa casada tem `escalaAberta`, pontos = pontos * (valor / limiteMin).
+ * Avalia um valor contra uma lista de faixas com INTERPOLAÇÃO LINEAR.
+ *
+ * Cada faixa define um ponto (limite, pontos). Valores entre faixas recebem
+ * pontuação proporcional linear entre as duas faixas vizinhas — permitindo
+ * pontuações contínuas com até duas casas decimais.
+ *
+ * Direção "min" (maior é melhor, `limiteMin`):
+ *  - valor abaixo da menor faixa → pontos da menor faixa
+ *  - valor acima da maior faixa → pontos da maior faixa (ou extrapolação se `escalaAberta`)
+ *  - entre duas faixas → interpolação linear pelos pontos vizinhos
+ *
+ * Direção "max" (menor é melhor, `limiteMax`):
+ *  - valor menor que a menor faixa → pontos dessa faixa
+ *  - valor entre duas faixas → interpolação linear
+ *  - valor acima da maior faixa → interpola até um fallback (faixa com `limiteMin`
+ *    e sem `limiteMax`) ou usa os pontos da última faixa
+ *
+ * `descarte` é sinalizado quando o valor cai na faixa marcada com `descarte:true`
+ * (usando a lógica de "faixa contendo o valor", não o valor interpolado).
  */
 function avaliarFaixa(
   valor: number,
@@ -149,34 +164,130 @@ function avaliarFaixa(
       faixas.some((f) => f.limiteMax != null) &&
       !faixas.every((f) => f.limiteMin != null && f.limiteMin > 0))
 
+  // ── Direção "max": menor é melhor ──
   if (usaLimiteMax) {
-    const ordenadas = [...faixas].sort((a, b) => {
-      const aMax = a.limiteMax ?? Infinity
-      const bMax = b.limiteMax ?? Infinity
-      return aMax - bMax
-    })
-    for (const f of ordenadas) {
-      if (f.limiteMax != null && valor <= f.limiteMax) {
-        return { pontos: f.pontos, descarte: !!f.descarte, faixaCasada: f }
+    const withMax = faixas
+      .filter((f) => f.limiteMax != null)
+      .sort((a, b) => (a.limiteMax! - b.limiteMax!))
+    const fallback = faixas.find((f) => f.limiteMax == null)
+
+    // Faixa "contendo" o valor (para flag de descarte)
+    let containing: FaixaItem | undefined
+    for (const f of withMax) {
+      if (valor <= f.limiteMax!) {
+        containing = f
+        break
       }
     }
-    const fallback = ordenadas.find((f) => f.limiteMax == null)
-    if (fallback) return { pontos: fallback.pontos, descarte: !!fallback.descarte, faixaCasada: fallback }
-    return { pontos: 0, descarte: false }
+    if (!containing) containing = fallback
+    const descarte = !!containing?.descarte
+
+    if (withMax.length === 0) {
+      return { pontos: fallback?.pontos ?? 0, descarte, faixaCasada: containing }
+    }
+
+    // Abaixo (ou igual) da menor faixa
+    if (valor <= withMax[0].limiteMax!) {
+      return { pontos: withMax[0].pontos, descarte, faixaCasada: containing }
+    }
+
+    // Interpolação entre pares consecutivos
+    for (let i = 0; i < withMax.length - 1; i++) {
+      const a = withMax[i]
+      const b = withMax[i + 1]
+      if (valor > a.limiteMax! && valor <= b.limiteMax!) {
+        const span = b.limiteMax! - a.limiteMax!
+        const t = span > 0 ? (valor - a.limiteMax!) / span : 0
+        return {
+          pontos: a.pontos + (b.pontos - a.pontos) * t,
+          descarte,
+          faixaCasada: containing,
+        }
+      }
+    }
+
+    // Acima da maior faixa com limiteMax
+    const last = withMax[withMax.length - 1]
+    if (fallback && fallback.limiteMin != null && fallback.limiteMin > last.limiteMax!) {
+      if (valor >= fallback.limiteMin) {
+        return { pontos: fallback.pontos, descarte, faixaCasada: fallback }
+      }
+      const span = fallback.limiteMin - last.limiteMax!
+      const t = span > 0 ? (valor - last.limiteMax!) / span : 0
+      return {
+        pontos: last.pontos + (fallback.pontos - last.pontos) * t,
+        descarte,
+        faixaCasada: containing ?? fallback,
+      }
+    }
+    return {
+      pontos: fallback?.pontos ?? last.pontos,
+      descarte,
+      faixaCasada: fallback ?? last,
+    }
   }
 
-  const ordenadas = [...faixas].sort((a, b) => (b.limiteMin ?? 0) - (a.limiteMin ?? 0))
-  for (const f of ordenadas) {
-    const limite = f.limiteMin ?? 0
-    if (valor >= limite) {
-      let pontos = f.pontos
-      if (f.escalaAberta && limite > 0) {
-        pontos = f.pontos * (valor / limite)
-      }
-      return { pontos, descarte: !!f.descarte, faixaCasada: f }
+  // ── Direção "min": maior é melhor ──
+  const sortedAsc = [...faixas].sort(
+    (a, b) => (a.limiteMin ?? 0) - (b.limiteMin ?? 0),
+  )
+
+  // Faixa "contendo" o valor (maior limiteMin <= valor) — usada para descarte
+  let containing: FaixaItem | undefined
+  for (let i = sortedAsc.length - 1; i >= 0; i--) {
+    const lim = sortedAsc[i].limiteMin ?? 0
+    if (valor >= lim) {
+      containing = sortedAsc[i]
+      break
     }
   }
-  return { pontos: 0, descarte: false }
+  const descarte = !!containing?.descarte
+
+  // Abaixo da menor faixa
+  const first = sortedAsc[0]
+  if (valor < (first.limiteMin ?? 0)) {
+    return { pontos: first.pontos, descarte, faixaCasada: first }
+  }
+
+  // No topo ou acima
+  const top = sortedAsc[sortedAsc.length - 1]
+  const topLim = top.limiteMin ?? 0
+  if (valor >= topLim) {
+    if (top.escalaAberta && topLim > 0) {
+      const prev = sortedAsc[sortedAsc.length - 2]
+      if (prev) {
+        const prevLim = prev.limiteMin ?? 0
+        const span = topLim - prevLim
+        const slope = span > 0 ? (top.pontos - prev.pontos) / span : 0
+        return {
+          pontos: top.pontos + slope * (valor - topLim),
+          descarte,
+          faixaCasada: top,
+        }
+      }
+      return { pontos: top.pontos * (valor / topLim), descarte, faixaCasada: top }
+    }
+    return { pontos: top.pontos, descarte, faixaCasada: top }
+  }
+
+  // Interpolação entre pares consecutivos
+  for (let i = 0; i < sortedAsc.length - 1; i++) {
+    const a = sortedAsc[i]
+    const b = sortedAsc[i + 1]
+    const la = a.limiteMin ?? 0
+    const lb = b.limiteMin ?? 0
+    if (valor >= la && valor < lb) {
+      const span = lb - la
+      const t = span > 0 ? (valor - la) / span : 0
+      return {
+        pontos: a.pontos + (b.pontos - a.pontos) * t,
+        descarte,
+        faixaCasada: containing ?? a,
+      }
+    }
+  }
+
+  return { pontos: 0, descarte }
 }
 
 export { avaliarFaixa }
