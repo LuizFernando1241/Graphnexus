@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { toast } from "sonner";
 import type { RadarProduto } from "@/types/radar";
 
@@ -19,17 +20,32 @@ interface Props {
   produtos: RadarProduto[];
 }
 
+interface DadosSolicitante {
+  empresa: string;
+  cnpj: string;
+  responsavel: string;
+  email: string;
+  telefone: string;
+}
+
+const DADOS_INICIAIS: DadosSolicitante = {
+  empresa: "",
+  cnpj: "",
+  responsavel: "",
+  email: "",
+  telefone: "",
+};
+
 export function OrcamentoDialog({ open, onOpenChange, produtos }: Props) {
   const [fornecedor, setFornecedor] = useState<string>("");
   const [selecionados, setSelecionados] = useState<Record<string, number>>({});
-  const [empresa, setEmpresa] = useState("");
-  const [cnpj, setCnpj] = useState("");
-  const [responsavel, setResponsavel] = useState("");
-  const [email, setEmail] = useState("");
-  const [telefone, setTelefone] = useState("");
+  const [dados, setDados] = useLocalStorage<DadosSolicitante>("radar-orcamento-solicitante", DADOS_INICIAIS);
+  const { empresa, cnpj, responsavel, email, telefone } = dados;
+  const setCampo = (campo: keyof DadosSolicitante, valor: string) => setDados({ ...dados, [campo]: valor });
   const [prazo, setPrazo] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [gerando, setGerando] = useState(false);
+
 
   const fornecedores = useMemo(
     () => Array.from(new Set(produtos.map((p) => p.fornecedor).filter(Boolean))).sort(),
