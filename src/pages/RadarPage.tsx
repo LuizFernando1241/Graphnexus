@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { Crosshair, Plus, SlidersHorizontal, ChevronDown, Maximize2, Minimize2, Filter } from "lucide-react";
+import { Crosshair, Plus, SlidersHorizontal, ChevronDown, Maximize2, Minimize2, Filter, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
