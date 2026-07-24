@@ -12,6 +12,7 @@ import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
 import { useRadarPreferences } from "@/hooks/radar/useRadarPreferences";
 import { ProdutoDrawer } from "@/components/radar/ProdutoDrawer";
 import { HistoricoModal } from "@/components/radar/HistoricoModal";
+import { OrcamentoDialog } from "@/components/radar/OrcamentoDialog";
 import { cn } from "@/lib/utils";
 import type { RadarProduto } from "@/types/radar";
 
@@ -33,6 +34,7 @@ export default function RadarPage() {
   const [filters, setFilters] = useState<RadarFiltersState>(FILTROS_INICIAIS);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [decisionFilter, setDecisionFilter] = useState<"todos" | "aprovado" | "reprovado">("todos");
+  const [orcamentoAberto, setOrcamentoAberto] = useState(false);
 
   const location = useLocation();
   useEffect(() => {
