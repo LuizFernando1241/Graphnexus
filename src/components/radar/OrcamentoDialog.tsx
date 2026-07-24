@@ -138,18 +138,26 @@ export function OrcamentoDialog({ open, onOpenChange, produtos }: Props) {
 
       autoTable(doc, {
         startY: y,
-        head: [["#", "Produto", "Qtd. solicitada", "Referência"]],
-        body: itens.map((p, i) => [
-          String(i + 1),
-          p.nome,
-          String(selecionados[p.id] ?? 1),
-          p.linkML ? p.linkML : "—",
-        ]),
+        head: [["#", "Produto", "Qtd. solicitada"]],
+        body: itens.map((p, i) => [String(i + 1), p.nome, String(selecionados[p.id] ?? 1)]),
         styles: { fontSize: 9, cellPadding: 5, overflow: "linebreak" },
         headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: "bold" },
-        columnStyles: { 0: { cellWidth: 26 }, 2: { cellWidth: 90, halign: "center" }, 3: { cellWidth: 170 } },
+        columnStyles: { 0: { cellWidth: 26 }, 2: { cellWidth: 90, halign: "center" } },
         margin: { left: margin, right: margin },
+        // Nome do produto vira hyperlink para o anúncio (sem exibir a URL longa)
+        didDrawCell: (data) => {
+          if (data.section !== "body" || data.column.index !== 1) return;
+          const link = itens[data.row.index]?.linkML;
+          if (!link) return;
+          doc.link(data.cell.x, data.cell.y, data.cell.width, data.cell.height, { url: link });
+        },
+        didParseCell: (data) => {
+          if (data.section !== "body" || data.column.index !== 1) return;
+          if (!itens[data.row.index]?.linkML) return;
+          data.cell.styles.textColor = [29, 78, 216];
+        },
       });
+
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       y = (doc as any).lastAutoTable.finalY + 24;
