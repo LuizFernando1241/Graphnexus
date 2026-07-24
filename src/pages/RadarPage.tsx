@@ -171,7 +171,11 @@ export default function RadarPage() {
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button variant="outline" size="sm" onClick={() => setOrcamentoAberto(true)}>
+              <FileText className="h-4 w-4 mr-2" />
+              Solicitar orçamento
+            </Button>
             <Button variant="outline" size="sm" onClick={toggleExpandAll} disabled={visibleIds.length === 0}>
               {allExpanded ? (
                 <><Minimize2 className="h-4 w-4 mr-2" />Recolher todos</>
