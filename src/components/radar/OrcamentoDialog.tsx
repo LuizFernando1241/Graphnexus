@@ -276,29 +276,30 @@ export function OrcamentoDialog({ open, onOpenChange, produtos }: Props) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="orc-empresa">Nome da empresa *</Label>
-              <Input id="orc-empresa" value={empresa} onChange={(e) => setEmpresa(e.target.value)} maxLength={120} />
+              <Input id="orc-empresa" value={empresa} onChange={(e) => setCampo("empresa", e.target.value)} maxLength={120} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="orc-cnpj">CNPJ *</Label>
               <Input
                 id="orc-cnpj"
                 value={cnpj}
-                onChange={(e) => setCnpj(e.target.value)}
+                onChange={(e) => setCampo("cnpj", e.target.value)}
                 placeholder="00.000.000/0001-00"
                 maxLength={20}
               />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="orc-resp">Responsável</Label>
-              <Input id="orc-resp" value={responsavel} onChange={(e) => setResponsavel(e.target.value)} maxLength={120} />
+              <Input id="orc-resp" value={responsavel} onChange={(e) => setCampo("responsavel", e.target.value)} maxLength={120} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="orc-email">E-mail</Label>
-              <Input id="orc-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={160} />
+              <Input id="orc-email" type="email" value={email} onChange={(e) => setCampo("email", e.target.value)} maxLength={160} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="orc-tel">Telefone</Label>
-              <Input id="orc-tel" value={telefone} onChange={(e) => setTelefone(e.target.value)} maxLength={30} />
+              <Input id="orc-tel" value={telefone} onChange={(e) => setCampo("telefone", e.target.value)} maxLength={30} />
+
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="orc-prazo">Prazo desejado para resposta</Label>
