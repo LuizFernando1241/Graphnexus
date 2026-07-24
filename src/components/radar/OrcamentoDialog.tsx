@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { toast } from "sonner";
 import type { RadarProduto } from "@/types/radar";
 
@@ -19,17 +20,32 @@ interface Props {
   produtos: RadarProduto[];
 }
 
+interface DadosSolicitante {
+  empresa: string;
+  cnpj: string;
+  responsavel: string;
+  email: string;
+  telefone: string;
+}
+
+const DADOS_INICIAIS: DadosSolicitante = {
+  empresa: "",
+  cnpj: "",
+  responsavel: "",
+  email: "",
+  telefone: "",
+};
+
 export function OrcamentoDialog({ open, onOpenChange, produtos }: Props) {
   const [fornecedor, setFornecedor] = useState<string>("");
   const [selecionados, setSelecionados] = useState<Record<string, number>>({});
-  const [empresa, setEmpresa] = useState("");
-  const [cnpj, setCnpj] = useState("");
-  const [responsavel, setResponsavel] = useState("");
-  const [email, setEmail] = useState("");
-  const [telefone, setTelefone] = useState("");
+  const [dados, setDados] = useLocalStorage<DadosSolicitante>("radar-orcamento-solicitante", DADOS_INICIAIS);
+  const { empresa, cnpj, responsavel, email, telefone } = dados;
+  const setCampo = (campo: keyof DadosSolicitante, valor: string) => setDados({ ...dados, [campo]: valor });
   const [prazo, setPrazo] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [gerando, setGerando] = useState(false);
+
 
   const fornecedores = useMemo(
     () => Array.from(new Set(produtos.map((p) => p.fornecedor).filter(Boolean))).sort(),
@@ -122,18 +138,26 @@ export function OrcamentoDialog({ open, onOpenChange, produtos }: Props) {
 
       autoTable(doc, {
         startY: y,
-        head: [["#", "Produto", "Qtd. solicitada", "Referência"]],
-        body: itens.map((p, i) => [
-          String(i + 1),
-          p.nome,
-          String(selecionados[p.id] ?? 1),
-          p.linkML ? p.linkML : "—",
-        ]),
+        head: [["#", "Produto", "Qtd. solicitada"]],
+        body: itens.map((p, i) => [String(i + 1), p.nome, String(selecionados[p.id] ?? 1)]),
         styles: { fontSize: 9, cellPadding: 5, overflow: "linebreak" },
         headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: "bold" },
-        columnStyles: { 0: { cellWidth: 26 }, 2: { cellWidth: 90, halign: "center" }, 3: { cellWidth: 170 } },
+        columnStyles: { 0: { cellWidth: 26 }, 2: { cellWidth: 90, halign: "center" } },
         margin: { left: margin, right: margin },
+        // Nome do produto vira hyperlink para o anúncio (sem exibir a URL longa)
+        didDrawCell: (data) => {
+          if (data.section !== "body" || data.column.index !== 1) return;
+          const link = itens[data.row.index]?.linkML;
+          if (!link) return;
+          doc.link(data.cell.x, data.cell.y, data.cell.width, data.cell.height, { url: link });
+        },
+        didParseCell: (data) => {
+          if (data.section !== "body" || data.column.index !== 1) return;
+          if (!itens[data.row.index]?.linkML) return;
+          data.cell.styles.textColor = [29, 78, 216];
+        },
       });
+
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       y = (doc as any).lastAutoTable.finalY + 24;
@@ -260,29 +284,30 @@ export function OrcamentoDialog({ open, onOpenChange, produtos }: Props) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="orc-empresa">Nome da empresa *</Label>
-              <Input id="orc-empresa" value={empresa} onChange={(e) => setEmpresa(e.target.value)} maxLength={120} />
+              <Input id="orc-empresa" value={empresa} onChange={(e) => setCampo("empresa", e.target.value)} maxLength={120} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="orc-cnpj">CNPJ *</Label>
               <Input
                 id="orc-cnpj"
                 value={cnpj}
-                onChange={(e) => setCnpj(e.target.value)}
+                onChange={(e) => setCampo("cnpj", e.target.value)}
                 placeholder="00.000.000/0001-00"
                 maxLength={20}
               />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="orc-resp">Responsável</Label>
-              <Input id="orc-resp" value={responsavel} onChange={(e) => setResponsavel(e.target.value)} maxLength={120} />
+              <Input id="orc-resp" value={responsavel} onChange={(e) => setCampo("responsavel", e.target.value)} maxLength={120} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="orc-email">E-mail</Label>
-              <Input id="orc-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} maxLength={160} />
+              <Input id="orc-email" type="email" value={email} onChange={(e) => setCampo("email", e.target.value)} maxLength={160} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="orc-tel">Telefone</Label>
-              <Input id="orc-tel" value={telefone} onChange={(e) => setTelefone(e.target.value)} maxLength={30} />
+              <Input id="orc-tel" value={telefone} onChange={(e) => setCampo("telefone", e.target.value)} maxLength={30} />
+
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="orc-prazo">Prazo desejado para resposta</Label>
