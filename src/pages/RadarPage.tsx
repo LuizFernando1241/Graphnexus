@@ -275,6 +275,8 @@ export default function RadarPage() {
           onClose={() => setHistoricoTarget(null)}
         />
       )}
+
+      <OrcamentoDialog open={orcamentoAberto} onOpenChange={setOrcamentoAberto} produtos={produtos} />
     </PageTransition>
   );
 }
