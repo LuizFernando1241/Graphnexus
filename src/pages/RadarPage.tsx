@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
-import { Crosshair, Plus, SlidersHorizontal, ChevronDown, Maximize2, Minimize2, Filter } from "lucide-react";
+import { Crosshair, Plus, SlidersHorizontal, ChevronDown, Maximize2, Minimize2, Filter, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,6 +12,7 @@ import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
 import { useRadarPreferences } from "@/hooks/radar/useRadarPreferences";
 import { ProdutoDrawer } from "@/components/radar/ProdutoDrawer";
 import { HistoricoModal } from "@/components/radar/HistoricoModal";
+import { OrcamentoDialog } from "@/components/radar/OrcamentoDialog";
 import { cn } from "@/lib/utils";
 import type { RadarProduto } from "@/types/radar";
 
@@ -33,6 +34,7 @@ export default function RadarPage() {
   const [filters, setFilters] = useState<RadarFiltersState>(FILTROS_INICIAIS);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [decisionFilter, setDecisionFilter] = useState<"todos" | "aprovado" | "reprovado">("todos");
+  const [orcamentoAberto, setOrcamentoAberto] = useState(false);
 
   const location = useLocation();
   useEffect(() => {
@@ -169,7 +171,11 @@ export default function RadarPage() {
             )}
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Button variant="outline" size="sm" onClick={() => setOrcamentoAberto(true)}>
+              <FileText className="h-4 w-4 mr-2" />
+              Solicitar orçamento
+            </Button>
             <Button variant="outline" size="sm" onClick={toggleExpandAll} disabled={visibleIds.length === 0}>
               {allExpanded ? (
                 <><Minimize2 className="h-4 w-4 mr-2" />Recolher todos</>
@@ -269,6 +275,8 @@ export default function RadarPage() {
           onClose={() => setHistoricoTarget(null)}
         />
       )}
+
+      <OrcamentoDialog open={orcamentoAberto} onOpenChange={setOrcamentoAberto} produtos={produtos} />
     </PageTransition>
   );
 }
