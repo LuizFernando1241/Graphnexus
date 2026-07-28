@@ -43,6 +43,21 @@ export default {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",
         },
+        info: {
+          DEFAULT: "hsl(var(--info))",
+          foreground: "hsl(var(--info-foreground))",
+        },
+        score: {
+          descarte: "hsl(var(--score-descarte))",
+          "descarte-foreground": "hsl(var(--score-descarte-foreground))",
+          cautela: "hsl(var(--score-cautela))",
+          "cautela-foreground": "hsl(var(--score-cautela-foreground))",
+          viavel: "hsl(var(--score-viavel))",
+          "viavel-foreground": "hsl(var(--score-viavel-foreground))",
+          excelente: "hsl(var(--score-excelente))",
+          "excelente-foreground": "hsl(var(--score-excelente-foreground))",
+        },
+
         muted: {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",
