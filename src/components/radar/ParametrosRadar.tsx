@@ -17,7 +17,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useRadarParametros } from "@/hooks/radar/useRadarParametros";
 import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
 import { DEFAULT_PARAMETROS, DEFAULT_FAIXAS, RESERVED_VAR_KEYS } from "@/lib/radar/radarScore";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type {
   RadarParametros,
@@ -340,10 +340,8 @@ export function ParametrosRadar() {
   async function handleSalvar() {
     if (!pesoValido) return;
     if (!chavesValidas) {
-      toast({
-        title: "Chaves de pilar inválidas",
+      toast.error("Chaves de pilar inválidas", {
         description: "Corrija as chaves conflitantes antes de salvar.",
-        variant: "destructive",
       });
       return;
     }
@@ -356,15 +354,12 @@ export function ParametrosRadar() {
   async function handleRecalcular() {
     try {
       const n = await recalcularTodos();
-      toast({
-        title: "Produtos recalculados",
+      toast.success("Produtos recalculados", {
         description: `${n} produto(s) tiveram score atualizado.`,
       });
     } catch (e: any) {
-      toast({
-        title: "Erro ao recalcular",
+      toast.error("Erro ao recalcular", {
         description: e?.message ?? "Tente novamente.",
-        variant: "destructive",
       });
     }
   }
