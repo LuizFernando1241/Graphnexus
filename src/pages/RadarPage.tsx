@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageTransition } from "@/components/PageTransition";
+import { PageHeader } from "@/components/PageHeader";
 import { KanbanDnD } from "@/components/radar/KanbanDnD";
 import { RadarFilters, type RadarFiltersState } from "@/components/radar/RadarFilters";
 import { AdvancedFilters } from "@/components/radar/AdvancedFilters";
@@ -13,8 +14,9 @@ import { useRadarPreferences } from "@/hooks/radar/useRadarPreferences";
 import { ProdutoDrawer } from "@/components/radar/ProdutoDrawer";
 import { HistoricoModal } from "@/components/radar/HistoricoModal";
 import { OrcamentoDialog } from "@/components/radar/OrcamentoDialog";
+import { STAGE_SOLID, STAGE_CHIP_ACTIVE } from "@/lib/radar/decisionColors";
 import { cn } from "@/lib/utils";
-import type { RadarProduto } from "@/types/radar";
+import type { RadarProduto, PipelineStage } from "@/types/radar";
 
 const FILTROS_INICIAIS: RadarFiltersState = {
   fornecedor: "all",
@@ -22,6 +24,14 @@ const FILTROS_INICIAIS: RadarFiltersState = {
   stage: "all",
   busca: "",
 };
+
+const STAGE_CHIPS: { stage: PipelineStage; label: string }[] = [
+  { stage: "prospeccao", label: "Prospecção" },
+  { stage: "aguardando_custo", label: "Aguardando" },
+  { stage: "aguardando_decisao", label: "Aguardando Decisão" },
+  { stage: "decisao", label: "Decisão" },
+];
+
 
 
 export default function RadarPage() {
