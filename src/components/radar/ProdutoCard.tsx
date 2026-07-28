@@ -12,6 +12,7 @@ import { formatCurrency, calcularScore } from "@/lib/radar/radarScore";
 import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
 import { useRadarParametros } from "@/hooks/radar/useRadarParametros";
 import { cn } from "@/lib/utils";
+import { DECISION_SOLID } from "@/lib/radar/decisionColors";
 import type { RadarProduto, PipelineStage, DecisaoFinal } from "@/types/radar";
 
 interface ProdutoCardProps {
@@ -68,15 +69,9 @@ export function ProdutoCard({
   const stripeColor =
     produto.stage === "decisao" && produto.decisaoFinal
       ? produto.decisaoFinal === "aprovado"
-        ? "bg-emerald-500"
-        : "bg-rose-500"
-      : produto.decision === "excelente"
-        ? "bg-emerald-500"
-        : produto.decision === "viavel"
-          ? "bg-blue-500"
-          : produto.decision === "cautela"
-            ? "bg-amber-500"
-            : "bg-rose-500";
+        ? DECISION_SOLID.viavel
+        : DECISION_SOLID.descarte
+      : DECISION_SOLID[produto.decision];
 
   return (
     <motion.div
@@ -136,8 +131,8 @@ export function ProdutoCard({
                     className={cn(
                       "text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0",
                       produto.decisaoFinal === "aprovado"
-                        ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
-                        : "bg-rose-500/15 text-rose-700 dark:text-rose-300",
+                        ? "bg-score-viavel/15 text-score-viavel"
+                        : "bg-score-descarte/15 text-score-descarte",
                     )}
                   >
                     {produto.decisaoFinal === "aprovado" ? "APROV" : "REPR"}
@@ -418,7 +413,7 @@ function AcoesPorEtapa({ produto, onMover, onEdit, isLoading }: AcoesPorEtapaPro
         <Button
           size="sm"
           variant="default"
-          className="h-7 text-xs flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
+          className="h-7 text-xs flex-1 bg-score-viavel text-score-viavel-foreground hover:bg-score-viavel/90"
           disabled={isLoading}
           onClick={() => onMover("decisao", undefined, "aprovado")}
         >
