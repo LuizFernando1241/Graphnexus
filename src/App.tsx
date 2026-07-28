@@ -92,7 +92,6 @@ const App = () => (
     <TooltipProvider>
       <AuthProvider>
         <Sonner />
-        <Sonner />
         <OfflineBanner />
         <RouterProvider router={router} />
       </AuthProvider>
