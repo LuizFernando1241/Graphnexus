@@ -23,13 +23,13 @@ function getEventConfig(entry: RadarHistorico) {
   if (entry.event === "Produto criado") {
     return {
       icon: <Plus className="h-3.5 w-3.5" />,
-      colorClass: "text-emerald-500 bg-emerald-500/10",
+      colorClass: "text-success bg-success/10",
     };
   }
   if (entry.field === "stage") {
     return {
       icon: <ArrowRight className="h-3.5 w-3.5" />,
-      colorClass: "text-blue-500 bg-blue-500/10",
+      colorClass: "text-info bg-info/10",
     };
   }
   return {

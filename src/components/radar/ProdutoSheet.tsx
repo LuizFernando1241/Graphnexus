@@ -492,7 +492,7 @@ export function ProdutoDrawer({ produto, open, onClose, prefill }: ProdutoDrawer
                     {zeroConcorrentes && (
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <span className="text-amber-500 cursor-help">⚠️</span>
+                          <span className="text-warning cursor-help">⚠️</span>
                         </TooltipTrigger>
                         <TooltipContent>
                           Nenhum concorrente no Full. Verifique se há demanda
@@ -510,7 +510,7 @@ export function ProdutoDrawer({ produto, open, onClose, prefill }: ProdutoDrawer
                     }
                   />
                   {zeroConcorrentes && (
-                    <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                    <p className="text-[11px] text-warning">
                       Oportunidade excepcional (15 pts) — confirme se há
                       demanda.
                     </p>

@@ -48,7 +48,7 @@ export function ScorePainel({ scoreResult, className }: ScorePainelProps) {
             <span
               className={cn(
                 "h-2 w-2 rounded-full",
-                pilar.preenchido ? "bg-emerald-400" : "bg-muted-foreground/30",
+                pilar.preenchido ? "bg-success" : "bg-muted-foreground/30",
               )}
             />
             <span className="text-[11px] text-muted-foreground">
@@ -63,7 +63,7 @@ export function ScorePainel({ scoreResult, className }: ScorePainelProps) {
           {scoreResult.alertas.map((alerta, i) => (
             <div
               key={i}
-              className="flex items-start gap-1.5 text-[11px] text-amber-600 dark:text-amber-400"
+              className="flex items-start gap-1.5 text-[11px] text-warning"
             >
               <span>⚠️</span>
               <span>{alerta}</span>
@@ -73,7 +73,7 @@ export function ScorePainel({ scoreResult, className }: ScorePainelProps) {
       )}
 
       {scoreResult.descarteAutomatico && scoreResult.motivoDescarte && (
-        <div className="flex items-start gap-1.5 text-[11px] text-red-600 dark:text-red-400">
+        <div className="flex items-start gap-1.5 text-[11px] text-destructive">
           <span>❌</span>
           <span>{scoreResult.motivoDescarte}</span>
         </div>
