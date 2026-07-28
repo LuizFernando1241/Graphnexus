@@ -44,18 +44,18 @@ export default {
           foreground: "hsl(var(--warning-foreground))",
         },
         info: {
-          DEFAULT: "hsl(var(--info))",
-          foreground: "hsl(var(--info-foreground))",
+          DEFAULT: "hsl(var(--info) / <alpha-value>)",
+          foreground: "hsl(var(--info-foreground) / <alpha-value>)",
         },
         score: {
-          descarte: "hsl(var(--score-descarte))",
-          "descarte-foreground": "hsl(var(--score-descarte-foreground))",
-          cautela: "hsl(var(--score-cautela))",
-          "cautela-foreground": "hsl(var(--score-cautela-foreground))",
-          viavel: "hsl(var(--score-viavel))",
-          "viavel-foreground": "hsl(var(--score-viavel-foreground))",
-          excelente: "hsl(var(--score-excelente))",
-          "excelente-foreground": "hsl(var(--score-excelente-foreground))",
+          descarte: "hsl(var(--score-descarte) / <alpha-value>)",
+          "descarte-foreground": "hsl(var(--score-descarte-foreground) / <alpha-value>)",
+          cautela: "hsl(var(--score-cautela) / <alpha-value>)",
+          "cautela-foreground": "hsl(var(--score-cautela-foreground) / <alpha-value>)",
+          viavel: "hsl(var(--score-viavel) / <alpha-value>)",
+          "viavel-foreground": "hsl(var(--score-viavel-foreground) / <alpha-value>)",
+          excelente: "hsl(var(--score-excelente) / <alpha-value>)",
+          "excelente-foreground": "hsl(var(--score-excelente-foreground) / <alpha-value>)",
         },
 
         muted: {
