@@ -43,6 +43,21 @@ export default {
           DEFAULT: "hsl(var(--warning))",
           foreground: "hsl(var(--warning-foreground))",
         },
+        info: {
+          DEFAULT: "hsl(var(--info) / <alpha-value>)",
+          foreground: "hsl(var(--info-foreground) / <alpha-value>)",
+        },
+        score: {
+          descarte: "hsl(var(--score-descarte) / <alpha-value>)",
+          "descarte-foreground": "hsl(var(--score-descarte-foreground) / <alpha-value>)",
+          cautela: "hsl(var(--score-cautela) / <alpha-value>)",
+          "cautela-foreground": "hsl(var(--score-cautela-foreground) / <alpha-value>)",
+          viavel: "hsl(var(--score-viavel) / <alpha-value>)",
+          "viavel-foreground": "hsl(var(--score-viavel-foreground) / <alpha-value>)",
+          excelente: "hsl(var(--score-excelente) / <alpha-value>)",
+          "excelente-foreground": "hsl(var(--score-excelente-foreground) / <alpha-value>)",
+        },
+
         muted: {
           DEFAULT: "hsl(var(--muted))",
           foreground: "hsl(var(--muted-foreground))",

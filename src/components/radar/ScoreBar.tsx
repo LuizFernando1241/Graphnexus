@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { DECISION_SOLID } from "@/lib/radar/decisionColors";
 import type { DecisionBadge } from "@/types/radar";
 
 interface ScoreBarProps {
@@ -8,14 +9,10 @@ interface ScoreBarProps {
   className?: string;
 }
 
-const BAR_COLOR: Record<DecisionBadge, string> = {
-  descarte: "bg-red-500",
-  cautela: "bg-amber-500",
-  viavel: "bg-emerald-500",
-  excelente: "bg-violet-500",
-};
+const BAR_COLOR = DECISION_SOLID;
 
 const MAX_SCORE_VISUAL = 50;
+
 
 export function ScoreBar({ score, decision, showValue = true, className }: ScoreBarProps) {
   const percent = Math.min((score / MAX_SCORE_VISUAL) * 100, 100);

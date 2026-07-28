@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageTransition } from "@/components/PageTransition";
+import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -248,7 +249,7 @@ export default function Archive() {
   return (
     <PageTransition>
       <div className="w-full">
-        <h1 className="text-2xl font-heading font-bold text-foreground mb-6">Arquivos</h1>
+        <PageHeader title="Arquivos" className="mb-6" />
 
         <Tabs defaultValue="notes">
           <TabsList>

@@ -1,5 +1,6 @@
 import { Crosshair, Clock, Hourglass, CheckCircle2 } from "lucide-react";
 import { KanbanColumn } from "./KanbanColumn";
+import { STAGE_SOLID } from "@/lib/radar/decisionColors";
 import type { RadarProduto, PipelineStage, DecisaoFinal, ColumnSortConfigs, SortField, SortDirection } from "@/types/radar";
 
 interface KanbanBoardProps {
@@ -27,28 +28,28 @@ const COLUNAS: ColunaCfg[] = [
   {
     stage: "prospeccao",
     label: "Prospecção",
-    accentColor: "bg-blue-400",
+    accentColor: STAGE_SOLID.prospeccao,
     emptyMessage: "Nenhum produto em avaliação. Clique em + Novo Produto.",
     icon: <Crosshair className="h-6 w-6" />,
   },
   {
     stage: "aguardando_custo",
     label: "Aguardando Custo",
-    accentColor: "bg-amber-400",
+    accentColor: STAGE_SOLID.aguardando_custo,
     emptyMessage: "Produtos Viáveis ou Excelentes aparecem aqui após enviar para negociação.",
     icon: <Clock className="h-6 w-6" />,
   },
   {
     stage: "aguardando_decisao",
     label: "Aguardando Decisão",
-    accentColor: "bg-violet-400",
+    accentColor: STAGE_SOLID.aguardando_decisao,
     emptyMessage: "Produtos com custo registrado aparecem aqui aguardando sua decisão.",
     icon: <Hourglass className="h-6 w-6" />,
   },
   {
     stage: "decisao",
     label: "Decisão",
-    accentColor: "bg-emerald-400",
+    accentColor: STAGE_SOLID.decisao,
     emptyMessage: "Aprove ou reprove produtos na coluna anterior.",
     icon: <CheckCircle2 className="h-6 w-6" />,
   },

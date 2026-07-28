@@ -36,6 +36,21 @@
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
+    --info: 217 91% 60%;
+    --info-foreground: 0 0% 100%;
+
+    /* Radar — escala de score / decisão (fonte única de verdade) */
+    --score-descarte: 0 84% 60%;
+    --score-descarte-foreground: 0 0% 100%;
+    --score-cautela: 38 92% 50%;
+    --score-cautela-foreground: 0 0% 100%;
+    --score-viavel: 142 71% 45%;
+    --score-viavel-foreground: 0 0% 100%;
+    --score-excelente: 263 70% 60%;
+    --score-excelente-foreground: 0 0% 100%;
+
+
+
     --border: 240 14% 18%;
     --input: 240 14% 18%;
     --ring: 263 70% 50%;

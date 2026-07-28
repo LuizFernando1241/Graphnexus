@@ -87,9 +87,9 @@ export function KanbanColumn({
                   "flex-1 rounded px-1.5 py-0.5 transition-colors font-medium",
                   decisionFilter === opt.v
                     ? opt.v === "aprovado"
-                      ? "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300"
+                      ? "bg-score-viavel/20 text-score-viavel"
                       : opt.v === "reprovado"
-                        ? "bg-rose-500/20 text-rose-700 dark:text-rose-300"
+                        ? "bg-score-descarte/20 text-score-descarte"
                         : "bg-background text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground",
                 )}

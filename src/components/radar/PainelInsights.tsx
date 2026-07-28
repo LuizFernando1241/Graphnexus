@@ -27,33 +27,33 @@ const SINAL_CONFIG: Record<
   atencao: {
     icon: <AlertCircle className="h-4 w-4 shrink-0" />,
     className:
-      "text-amber-700 bg-amber-50 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900",
+      "text-warning bg-warning/10 border-warning/30",
     badgeClass:
-      "bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-950 dark:text-amber-400",
+      "bg-warning/15 text-warning border-warning/30",
     label: "Atenção",
   },
   oportunidade: {
     icon: <Lightbulb className="h-4 w-4 shrink-0" />,
     className:
-      "text-emerald-700 bg-emerald-50 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-900",
+      "text-success bg-success/10 border-success/30",
     badgeClass:
-      "bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-400",
+      "bg-success/15 text-success border-success/30",
     label: "Oportunidade",
   },
   risco: {
     icon: <AlertTriangle className="h-4 w-4 shrink-0" />,
     className:
-      "text-red-700 bg-red-50 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-900",
+      "text-destructive bg-destructive/10 border-destructive/30",
     badgeClass:
-      "bg-red-100 text-red-700 border-red-200 dark:bg-red-950 dark:text-red-400",
+      "bg-destructive/15 text-destructive border-destructive/30",
     label: "Risco",
   },
   info: {
     icon: <Info className="h-4 w-4 shrink-0" />,
     className:
-      "text-blue-700 bg-blue-50 border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-900",
+      "text-info bg-info/10 border-info/30",
     badgeClass:
-      "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-400",
+      "bg-info/15 text-info border-info/30",
     label: "Info",
   },
 };

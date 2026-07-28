@@ -1,12 +1,13 @@
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import type { TaskStatus } from "@/types/entities";
 
-const COLUMNS: { id: TaskStatus; label: string; color: string }[] = [
-  { id: "backlog", label: "Backlog", color: "#6B7280" },
-  { id: "todo", label: "A Fazer", color: "#3B82F6" },
-  { id: "in_progress", label: "Em Progresso", color: "#F59E0B" },
-  { id: "done", label: "Concluído", color: "#10B981" },
+const COLUMNS: { id: TaskStatus; label: string; dot: string }[] = [
+  { id: "backlog", label: "Backlog", dot: "bg-muted-foreground" },
+  { id: "todo", label: "A Fazer", dot: "bg-info" },
+  { id: "in_progress", label: "Em Progresso", dot: "bg-warning" },
+  { id: "done", label: "Concluído", dot: "bg-success" },
 ];
 
 interface MoveTaskDrawerProps {
@@ -18,12 +19,12 @@ interface MoveTaskDrawerProps {
 
 export function MoveTaskDrawer({ open, onOpenChange, currentStatus, onMove }: MoveTaskDrawerProps) {
   return (
-    <Drawer open={open} onOpenChange={onOpenChange}>
-      <DrawerContent>
-        <DrawerHeader>
-          <DrawerTitle>Mover para...</DrawerTitle>
-        </DrawerHeader>
-        <div className="flex flex-col gap-2 p-4 pb-8">
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="bottom" className="rounded-t-xl">
+        <SheetHeader className="text-left">
+          <SheetTitle>Mover para...</SheetTitle>
+        </SheetHeader>
+        <div className="flex flex-col gap-2 pt-4 pb-8">
           {COLUMNS.filter((col) => col.id !== currentStatus).map((col) => (
             <Button
               key={col.id}
@@ -34,12 +35,12 @@ export function MoveTaskDrawer({ open, onOpenChange, currentStatus, onMove }: Mo
                 onOpenChange(false);
               }}
             >
-              <div className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: col.color }} />
+              <span className={cn("h-3 w-3 rounded-full shrink-0", col.dot)} />
               {col.label}
             </Button>
           ))}
         </div>
-      </DrawerContent>
-    </Drawer>
+      </SheetContent>
+    </Sheet>
   );
 }
