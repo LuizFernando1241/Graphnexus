@@ -69,13 +69,6 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
-        nexus: {
-          bg: "hsl(var(--bg-primary))",
-          surface: "hsl(var(--bg-surface))",
-          elevated: "hsl(var(--bg-elevated))",
-          text: "hsl(var(--text-primary))",
-          "text-muted": "hsl(var(--text-muted))",
-        },
       },
       borderRadius: {
         lg: "var(--radius)",
