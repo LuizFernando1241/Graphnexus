@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ShoppingCart, Crosshair } from "lucide-react";
 import { Link } from "react-router-dom";
 import { PageTransition } from "@/components/PageTransition";
+import { PageHeader } from "@/components/PageHeader";
 import { AprovadosTable } from "@/components/radar/AprovadosTable";
 import { ProdutoDrawer } from "@/components/radar/ProdutoDrawer";
 import { Button } from "@/components/ui/button";
@@ -18,23 +19,25 @@ export default function AprovadosPage() {
   return (
     <PageTransition>
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex items-center gap-2 flex-wrap">
-            <ShoppingCart className="h-5 w-5 text-primary" />
-            <h1 className="text-2xl font-bold">Produtos Aprovados</h1>
-            {totalAprovados > 0 && (
-              <Badge variant="secondary" className="ml-1">
+        <PageHeader
+          title="Produtos Aprovados"
+          icon={ShoppingCart}
+          badge={
+            totalAprovados > 0 ? (
+              <Badge variant="secondary">
                 {totalAprovados} {totalAprovados === 1 ? "produto" : "produtos"}
               </Badge>
-            )}
-          </div>
-          <Button asChild variant="outline" size="sm">
-            <Link to="/radar">
-              <Crosshair className="h-4 w-4 mr-2" />
-              Voltar ao Radar
-            </Link>
-          </Button>
-        </div>
+            ) : null
+          }
+          actions={
+            <Button asChild variant="outline" size="sm">
+              <Link to="/radar">
+                <Crosshair className="h-4 w-4 mr-2" />
+                Voltar ao Radar
+              </Link>
+            </Button>
+          }
+        />
 
         <AprovadosTable onVerProduto={setProdutoSelecionado} />
 

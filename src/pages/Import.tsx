@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PageTransition } from "@/components/PageTransition";
+import { PageHeader } from "@/components/PageHeader";
 import { parseFiles, importItems, type ParsedItem } from "@/lib/markdown/import";
 import type { EntityType } from "@/types/entities";
 
@@ -103,17 +104,15 @@ export default function Import() {
   return (
     <PageTransition>
       <main className="flex flex-col gap-6 pb-20">
-        <header className="flex items-center justify-between gap-3 flex-wrap">
-          <div>
-            <h1 className="text-2xl font-bold">Importar</h1>
-            <p className="text-sm text-muted-foreground">
-              Envie arquivos .md ou .zip exportados (próprios ou estilo Obsidian).
-            </p>
-          </div>
-          <Button variant="ghost" onClick={() => navigate(-1)} size="sm">
-            Voltar
-          </Button>
-        </header>
+        <PageHeader
+          title="Importar"
+          description="Envie arquivos .md ou .zip exportados (próprios ou estilo Obsidian)."
+          actions={
+            <Button variant="ghost" onClick={() => navigate(-1)} size="sm">
+              Voltar
+            </Button>
+          }
+        />
 
         <label
           onDragEnter={(e) => {
