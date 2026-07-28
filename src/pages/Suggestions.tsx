@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageTransition } from "@/components/PageTransition";
 import { Card } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import {
   acceptSuggestion,
@@ -75,16 +77,21 @@ function EntityChip({ type, id, title }: { type: EmbedEntityType; id: string; ti
   const navigate = useNavigate();
   const Icon = TYPE_ICON[type];
   return (
-    <button
-      onClick={() => navigate(TYPE_ROUTE[type](id))}
-      className="inline-flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 text-left hover:bg-accent transition-colors min-w-0 flex-1"
+    <Card
+      asChild
+      className="min-w-0 flex-1 p-0"
     >
+      <button
+        onClick={() => navigate(TYPE_ROUTE[type](id))}
+        className="inline-flex items-center gap-2 px-3 py-2 text-left hover:bg-accent transition-colors min-w-0 w-full"
+      >
       <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
       <div className="flex flex-col min-w-0">
         <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{TYPE_LABEL[type]}</span>
         <span className="truncate text-sm font-medium">{title}</span>
-      </div>
-    </button>
+        </div>
+      </button>
+    </Card>
   );
 }
 
@@ -134,30 +141,34 @@ export default function Suggestions() {
   return (
     <PageTransition>
       <div className="flex flex-col gap-6 max-w-4xl">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              <h1 className="text-2xl font-bold">Sugestões da IA</h1>
-            </div>
-            <p className="text-sm text-muted-foreground mt-1">
-              A IA encontrou possíveis vínculos entre seus itens. Aceite os que fizerem sentido.
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => scanMut.mutate()}
-            disabled={scanMut.isPending}
-          >
-            {scanMut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-            Procurar agora
-          </Button>
-        </div>
+        <PageHeader
+          title="Sugestões da IA"
+          icon={Sparkles}
+          description="A IA encontrou possíveis vínculos entre seus itens. Aceite os que fizerem sentido."
+          actions={
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => scanMut.mutate()}
+              disabled={scanMut.isPending}
+            >
+              {scanMut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+              Procurar agora
+            </Button>
+          }
+        />
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-16 text-muted-foreground">
-            <Loader2 className="h-5 w-5 animate-spin" />
+          <div className="flex flex-col gap-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Card key={i} className="p-4 flex flex-col gap-3">
+                <div className="flex gap-2">
+                  <Skeleton className="h-12 flex-1" />
+                  <Skeleton className="h-12 flex-1" />
+                </div>
+                <Skeleton className="h-4 w-2/3" />
+              </Card>
+            ))}
           </div>
         ) : suggestions.length === 0 ? (
           <Card className="p-10 text-center text-muted-foreground">
