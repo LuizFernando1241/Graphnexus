@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 import { PageTransition } from "@/components/PageTransition";
 import { PageHeader } from "@/components/PageHeader";
 import { AprovadosTable } from "@/components/radar/AprovadosTable";
-import { ProdutoDrawer } from "@/components/radar/ProdutoDrawer";
+import { ProdutoSheet } from "@/components/radar/ProdutoSheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
@@ -41,7 +41,7 @@ export default function AprovadosPage() {
 
         <AprovadosTable onVerProduto={setProdutoSelecionado} />
 
-        <ProdutoDrawer
+        <ProdutoSheet
           produto={produtoSelecionado}
           open={produtoSelecionado !== null}
           onClose={() => setProdutoSelecionado(null)}

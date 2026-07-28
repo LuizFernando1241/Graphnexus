@@ -48,7 +48,7 @@ import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import type { RadarProduto, RadarProdutoFormData } from "@/types/radar";
 
-interface ProdutoDrawerProps {
+interface ProdutoSheetProps {
   produto: RadarProduto | null;
   open: boolean;
   onClose: () => void;
@@ -92,7 +92,7 @@ function parseInteiro(value: string): number | undefined {
 }
 
 
-export function ProdutoDrawer({ produto, open, onClose, prefill }: ProdutoDrawerProps) {
+export function ProdutoSheet({ produto, open, onClose, prefill }: ProdutoSheetProps) {
   const isNovo = !produto?.id;
   const {
     produtos,

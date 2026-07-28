@@ -11,7 +11,7 @@ import { RadarFilters, type RadarFiltersState } from "@/components/radar/RadarFi
 import { AdvancedFilters } from "@/components/radar/AdvancedFilters";
 import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
 import { useRadarPreferences } from "@/hooks/radar/useRadarPreferences";
-import { ProdutoDrawer } from "@/components/radar/ProdutoDrawer";
+import { ProdutoSheet } from "@/components/radar/ProdutoSheet";
 import { HistoricoModal } from "@/components/radar/HistoricoModal";
 import { OrcamentoDialog } from "@/components/radar/OrcamentoDialog";
 import { STAGE_SOLID, STAGE_CHIP_ACTIVE } from "@/lib/radar/decisionColors";
@@ -242,7 +242,7 @@ export default function RadarPage() {
         )}
       </div>
 
-      <ProdutoDrawer
+      <ProdutoSheet
         produto={produtoSelecionado && "id" in produtoSelecionado ? (produtoSelecionado as RadarProduto) : null}
         open={produtoSelecionado !== null}
         onClose={() => setProdutoSelecionado(null)}
