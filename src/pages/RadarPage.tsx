@@ -110,105 +110,80 @@ export default function RadarPage() {
     <PageTransition>
       <div className="flex flex-col gap-6">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-2 flex-wrap">
-              <Crosshair className="h-5 w-5 text-primary" />
-              <h1 className="text-2xl font-bold">Radar de Produtos</h1>
-              {emDecisao > 0 && (
-                <Badge variant="destructive" className="ml-1">
-                  {emDecisao} aguardando decisão
-                </Badge>
-              )}
+        <PageHeader
+          title="Radar de Produtos"
+          icon={Crosshair}
+          badge={
+            emDecisao > 0 ? (
+              <Badge variant="destructive">{emDecisao} aguardando decisão</Badge>
+            ) : null
+          }
+          actions={
+            <>
+              <Button variant="outline" size="sm" onClick={() => setOrcamentoAberto(true)}>
+                <FileText className="h-4 w-4 mr-2" />
+                Solicitar orçamento
+              </Button>
+              <Button variant="outline" size="sm" onClick={toggleExpandAll} disabled={visibleIds.length === 0}>
+                {allExpanded ? (
+                  <><Minimize2 className="h-4 w-4 mr-2" />Recolher todos</>
+                ) : (
+                  <><Maximize2 className="h-4 w-4 mr-2" />Expandir todos</>
+                )}
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setFiltrosAbertos((v) => !v)}>
+                <SlidersHorizontal className="h-4 w-4 mr-2" />
+                Filtros
+                <ChevronDown
+                  className={cn(
+                    "h-3.5 w-3.5 ml-1 transition-transform",
+                    filtrosAbertos && "rotate-180",
+                  )}
+                />
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => setFiltrosAvancadosAbertos((v) => !v)}>
+                <Filter className="h-4 w-4 mr-2" />
+                Avançados
+                <ChevronDown
+                  className={cn(
+                    "h-3.5 w-3.5 ml-1 transition-transform",
+                    filtrosAvancadosAbertos && "rotate-180",
+                  )}
+                />
+              </Button>
+              <Button size="sm" onClick={() => setProdutoSelecionado({})}>
+                <Plus className="h-4 w-4 mr-2" />
+                Novo Produto
+              </Button>
+            </>
+          }
+        >
+          {!isLoading && (
+            <div className="flex flex-wrap items-center gap-2 mt-2">
+              {STAGE_CHIPS.map(({ stage, label }) => {
+                const count = produtos.filter((p) => p.stage === stage).length;
+                const active = filters.stage === stage;
+                return (
+                  <button
+                    key={stage}
+                    type="button"
+                    onClick={() =>
+                      setFilters((f) => ({ ...f, stage: f.stage === stage ? "all" : stage }))
+                    }
+                    className={cn(
+                      "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs transition-colors",
+                      active ? STAGE_CHIP_ACTIVE[stage] : "border-border hover:bg-accent",
+                    )}
+                  >
+                    <span className={cn("h-2 w-2 rounded-full", STAGE_SOLID[stage])} />
+                    {label} <span className="tabular-nums font-semibold">{count}</span>
+                  </button>
+                );
+              })}
             </div>
-            {!isLoading && (
-              <div className="flex flex-wrap items-center gap-2 mt-2">
-                <button
-                  type="button"
-                  onClick={() => setFilters((f) => ({ ...f, stage: f.stage === "prospeccao" ? "all" : "prospeccao" }))}
-                  className={cn(
-                    "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs transition-colors",
-                    filters.stage === "prospeccao" ? "border-blue-400/60 bg-blue-400/10 text-foreground" : "border-border hover:bg-accent",
-                  )}
-                >
-                  <span className="h-2 w-2 rounded-full bg-blue-400" />
-                  Prospecção <span className="tabular-nums font-semibold">{produtos.filter((p) => p.stage === "prospeccao").length}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFilters((f) => ({ ...f, stage: f.stage === "aguardando_custo" ? "all" : "aguardando_custo" }))}
-                  className={cn(
-                    "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs transition-colors",
-                    filters.stage === "aguardando_custo" ? "border-amber-400/60 bg-amber-400/10 text-foreground" : "border-border hover:bg-accent",
-                  )}
-                >
-                  <span className="h-2 w-2 rounded-full bg-amber-400" />
-                  Aguardando <span className="tabular-nums font-semibold">{produtos.filter((p) => p.stage === "aguardando_custo").length}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFilters((f) => ({ ...f, stage: f.stage === "aguardando_decisao" ? "all" : "aguardando_decisao" }))}
-                  className={cn(
-                    "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs transition-colors",
-                    filters.stage === "aguardando_decisao" ? "border-violet-400/60 bg-violet-400/10 text-foreground" : "border-border hover:bg-accent",
-                  )}
-                >
-                  <span className="h-2 w-2 rounded-full bg-violet-400" />
-                  Aguardando Decisão <span className="tabular-nums font-semibold">{emDecisao}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFilters((f) => ({ ...f, stage: f.stage === "decisao" ? "all" : "decisao" }))}
-                  className={cn(
-                    "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs transition-colors",
-                    filters.stage === "decisao" ? "border-emerald-400/60 bg-emerald-400/10 text-foreground" : "border-border hover:bg-accent",
-                  )}
-                >
-                  <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                  Decisão <span className="tabular-nums font-semibold">{produtos.filter((p) => p.stage === "decisao").length}</span>
-                </button>
-              </div>
-            )}
-          </div>
+          )}
+        </PageHeader>
 
-          <div className="flex items-center gap-2 flex-wrap">
-            <Button variant="outline" size="sm" onClick={() => setOrcamentoAberto(true)}>
-              <FileText className="h-4 w-4 mr-2" />
-              Solicitar orçamento
-            </Button>
-            <Button variant="outline" size="sm" onClick={toggleExpandAll} disabled={visibleIds.length === 0}>
-              {allExpanded ? (
-                <><Minimize2 className="h-4 w-4 mr-2" />Recolher todos</>
-              ) : (
-                <><Maximize2 className="h-4 w-4 mr-2" />Expandir todos</>
-              )}
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setFiltrosAbertos((v) => !v)}>
-              <SlidersHorizontal className="h-4 w-4 mr-2" />
-              Filtros
-              <ChevronDown
-                className={cn(
-                  "h-3.5 w-3.5 ml-1 transition-transform",
-                  filtrosAbertos && "rotate-180",
-                )}
-              />
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setFiltrosAvancadosAbertos((v) => !v)}>
-              <Filter className="h-4 w-4 mr-2" />
-              Avançados
-              <ChevronDown
-                className={cn(
-                  "h-3.5 w-3.5 ml-1 transition-transform",
-                  filtrosAvancadosAbertos && "rotate-180",
-                )}
-              />
-            </Button>
-            <Button size="sm" onClick={() => setProdutoSelecionado({})}>
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Produto
-            </Button>
-          </div>
-        </div>
 
         {/* Filtros colapsáveis */}
         {filtrosAbertos && (
