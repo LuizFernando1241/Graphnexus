@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import type { Project, ProjectStatus, ProjectTree } from "@/types/entities";
 import { PageTransition } from "@/components/PageTransition";
+import { PageHeader } from "@/components/PageHeader";
 import { ImportDropzone } from "@/components/import/ImportDropzone";
 import { ProjectsGridSkeleton } from "@/components/ui/page-skeleton";
 
@@ -241,7 +242,7 @@ export default function Projects() {
         <div className="flex flex-col gap-6">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <div>
-              <h1 className="text-2xl font-bold">Projetos</h1>
+              <h1 className="text-2xl font-heading font-bold text-foreground">Projetos</h1>
               <p className="text-sm text-muted-foreground mt-1">
                 {projects.length} projeto{projects.length !== 1 ? "s" : ""}
               </p>

@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { SwipeableItem } from "@/components/ui/SwipeableItem";
 import { PageTransition } from "@/components/PageTransition";
+import { PageHeader } from "@/components/PageHeader";
 import { ImportDropzone } from "@/components/import/ImportDropzone";
 import { NotesGridSkeleton } from "@/components/ui/page-skeleton";
 import {
@@ -252,10 +253,7 @@ export default function Notes() {
     <ImportDropzone defaultType="note">
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Notas</h1>
-        <NewNoteDialog onCreated={() => {}} />
-      </div>
+      <PageHeader title="Notas" actions={<NewNoteDialog onCreated={() => {}} />} />
 
       {/* Filters */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
