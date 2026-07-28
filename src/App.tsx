@@ -91,7 +91,7 @@ const App = () => (
   <PersistQueryClientProvider client={queryClient} persistOptions={{ persister, maxAge: 1000 * 60 * 60 * 24 * 7 }}>
     <TooltipProvider>
       <AuthProvider>
-        <Toaster />
+        <Sonner />
         <Sonner />
         <OfflineBanner />
         <RouterProvider router={router} />
