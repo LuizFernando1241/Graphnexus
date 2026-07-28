@@ -1,6 +1,7 @@
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import type { RadarProduto, DecisionBadge } from "@/types/radar";
+import { DECISION_SOLID } from "@/lib/radar/decisionColors";
+import type { RadarProduto } from "@/types/radar";
 
 interface PilarDotsProps {
   produto: RadarProduto;
@@ -14,12 +15,8 @@ const PILARES = [
   { key: "concorrentes", label: "Concorrentes no Full", check: (p: RadarProduto) => p.concorrentesFull != null },
 ];
 
-const DOT_COLOR: Record<DecisionBadge, string> = {
-  descarte: "bg-red-400",
-  cautela: "bg-amber-400",
-  viavel: "bg-emerald-400",
-  excelente: "bg-violet-400",
-};
+const DOT_COLOR = DECISION_SOLID;
+
 
 export function PilarDots({ produto }: PilarDotsProps) {
   return (
