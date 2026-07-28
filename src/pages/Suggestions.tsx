@@ -77,10 +77,7 @@ function EntityChip({ type, id, title }: { type: EmbedEntityType; id: string; ti
   const navigate = useNavigate();
   const Icon = TYPE_ICON[type];
   return (
-    <Card
-      asChild
-      className="min-w-0 flex-1 p-0"
-    >
+    <Card className="min-w-0 flex-1 overflow-hidden">
       <button
         onClick={() => navigate(TYPE_ROUTE[type](id))}
         className="inline-flex items-center gap-2 px-3 py-2 text-left hover:bg-accent transition-colors min-w-0 w-full"
