@@ -240,27 +240,26 @@ export default function Projects() {
     <PageTransition>
       <ImportDropzone defaultType="project">
         <div className="flex flex-col gap-6">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div>
-              <h1 className="text-2xl font-heading font-bold text-foreground">Projetos</h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                {projects.length} projeto{projects.length !== 1 ? "s" : ""}
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              {allCollapsibleIds.size > 0 && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setExpandedIds(allExpanded ? new Set() : new Set(allCollapsibleIds))}
-                >
-                  <FolderTree className="h-4 w-4 mr-1" />
-                  {allExpanded ? "Colapsar todos" : "Expandir todos"}
-                </Button>
-              )}
-              <NewProjectDialog projects={projects} />
-            </div>
-          </div>
+          <PageHeader
+            title="Projetos"
+            description={`${projects.length} projeto${projects.length !== 1 ? "s" : ""}`}
+            actions={
+              <>
+                {allCollapsibleIds.size > 0 && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setExpandedIds(allExpanded ? new Set() : new Set(allCollapsibleIds))}
+                  >
+                    <FolderTree className="h-4 w-4 mr-1" />
+                    {allExpanded ? "Colapsar todos" : "Expandir todos"}
+                  </Button>
+                )}
+                <NewProjectDialog projects={projects} />
+              </>
+            }
+          />
+
 
           {projectTree.length === 0 ? (
             <div className="flex flex-col items-center gap-3 py-12 text-muted-foreground">
