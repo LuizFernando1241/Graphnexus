@@ -54,9 +54,9 @@ const PILAR_LABELS: Record<keyof RadarWeights, string> = {
 };
 
 const DECISION_ROWS = [
-  { key: "cautela", label: "⚠️ Cautela", cor: "text-amber-600" },
-  { key: "viavel", label: "✅ Viável", cor: "text-emerald-600" },
-  { key: "excelente", label: "🚀 Excelente", cor: "text-violet-600" },
+  { key: "cautela", label: "⚠️ Cautela", cor: "text-warning" },
+  { key: "viavel", label: "✅ Viável", cor: "text-success" },
+  { key: "excelente", label: "🚀 Excelente", cor: "text-primary" },
 ] as const;
 
 export function ParametrosRadar() {
@@ -445,8 +445,8 @@ export function ParametrosRadar() {
                 className={cn(
                   "text-xs font-mono tabular-nums px-2 py-0.5 rounded-full border",
                   pesoValido
-                    ? "border-emerald-500/40 text-emerald-600"
-                    : "border-red-500/40 text-red-600",
+                    ? "border-success/40 text-success"
+                    : "border-destructive/40 text-destructive",
                 )}
               >
                 {somaWeights.toFixed(0)}%
@@ -455,7 +455,7 @@ export function ParametrosRadar() {
           </AccordionTrigger>
           <AccordionContent className="flex flex-col gap-5 pt-2">
             {!pesoValido && (
-              <div className="flex items-start gap-1.5 text-xs text-red-600">
+              <div className="flex items-start gap-1.5 text-xs text-destructive">
                 <AlertCircle className="h-3.5 w-3.5 mt-0.5" />
                 A soma deve ser exatamente 100%. Ajuste os valores abaixo.
               </div>
@@ -475,7 +475,7 @@ export function ParametrosRadar() {
                           title={visivel ? "Ocultar pilar" : "Ativar pilar"}
                         >
                           {visivel ? (
-                            <Eye className="h-3.5 w-3.5 text-emerald-600" />
+                            <Eye className="h-3.5 w-3.5 text-success" />
                           ) : (
                             <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
                           )}
@@ -517,7 +517,7 @@ export function ParametrosRadar() {
               <span
                 className={cn(
                   "text-sm font-mono tabular-nums",
-                  pesoValido ? "text-emerald-600" : "text-red-600",
+                  pesoValido ? "text-success" : "text-destructive",
                 )}
               >
                 {somaWeights.toFixed(0)}%
@@ -571,7 +571,7 @@ export function ParametrosRadar() {
               </p>
               <div className="flex h-6 rounded-md overflow-hidden border">
                 <div
-                  className="bg-red-500/70 flex items-center justify-center text-xs"
+                  className="bg-score-descarte/70 flex items-center justify-center text-xs"
                   style={{
                     flexBasis: `${(local.decisaoThresholds.cautela / maxThreshold) * 100}%`,
                   }}
@@ -579,7 +579,7 @@ export function ParametrosRadar() {
                   ❌
                 </div>
                 <div
-                  className="bg-amber-500/70 flex items-center justify-center text-xs"
+                  className="bg-score-cautela/70 flex items-center justify-center text-xs"
                   style={{
                     flexBasis: `${((local.decisaoThresholds.viavel - local.decisaoThresholds.cautela) / maxThreshold) * 100}%`,
                   }}
@@ -587,7 +587,7 @@ export function ParametrosRadar() {
                   ⚠️
                 </div>
                 <div
-                  className="bg-emerald-500/70 flex items-center justify-center text-xs"
+                  className="bg-score-viavel/70 flex items-center justify-center text-xs"
                   style={{
                     flexBasis: `${((local.decisaoThresholds.excelente - local.decisaoThresholds.viavel) / maxThreshold) * 100}%`,
                   }}
@@ -595,7 +595,7 @@ export function ParametrosRadar() {
                   ✅
                 </div>
                 <div
-                  className="bg-violet-500/70 flex-1 flex items-center justify-center text-xs"
+                  className="bg-score-excelente/70 flex-1 flex items-center justify-center text-xs"
                 >
                   🚀
                 </div>
@@ -778,7 +778,7 @@ export function ParametrosRadar() {
                                     className={cn(
                                       "h-6 px-1.5 rounded border text-[10px] font-medium",
                                       faixa.escalaAberta
-                                        ? "bg-violet-500/15 border-violet-500/40 text-violet-600"
+                                        ? "bg-primary/15 border-primary/40 text-primary"
                                         : "border-border text-muted-foreground hover:bg-muted",
                                     )}
                                     title="Escala aberta (faixa máxima)"
@@ -794,7 +794,7 @@ export function ParametrosRadar() {
                                   className={cn(
                                     "h-6 px-1.5 rounded border text-[10px] font-medium",
                                     faixa.descarte
-                                      ? "bg-red-500/15 border-red-500/40 text-red-600"
+                                      ? "bg-destructive/15 border-destructive/40 text-destructive"
                                       : "border-border text-muted-foreground hover:bg-muted",
                                   )}
                                   title="Descarte automático"
@@ -979,7 +979,7 @@ export function ParametrosRadar() {
                           className={cn(
                             "h-7 rounded border text-[10px] font-medium",
                             f.escalaAberta
-                              ? "bg-violet-500/15 border-violet-500/40 text-violet-600"
+                              ? "bg-primary/15 border-primary/40 text-primary"
                               : "border-border text-muted-foreground hover:bg-muted",
                           )}
                           title="Escala aberta"

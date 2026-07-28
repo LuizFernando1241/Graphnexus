@@ -11,10 +11,10 @@ import type { TaskDensity } from "@/hooks/useTasksView";
 
 const PRIORITY_META: Record<TaskPriority, { label: string; color: string; border: string }> = {
   none: { label: "", color: "text-muted-foreground", border: "border-l-transparent" },
-  low: { label: "Baixa", color: "text-blue-400", border: "border-l-blue-500" },
-  medium: { label: "Média", color: "text-amber-400", border: "border-l-amber-500" },
+  low: { label: "Baixa", color: "text-info", border: "border-l-info" },
+  medium: { label: "Média", color: "text-warning", border: "border-l-warning" },
   high: { label: "Alta", color: "text-orange-400", border: "border-l-orange-500" },
-  urgent: { label: "Urgente", color: "text-red-400", border: "border-l-red-500" },
+  urgent: { label: "Urgente", color: "text-destructive", border: "border-l-destructive" },
 };
 
 interface TaskRowProps {

@@ -23,19 +23,19 @@ import { ImportDropzone } from "@/components/import/ImportDropzone";
 import { ProjectsGridSkeleton } from "@/components/ui/page-skeleton";
 
 const STATUS_CONFIG: Record<ProjectStatus, { label: string; className: string }> = {
-  active:    { label: "Ativo",     className: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" },
-  paused:    { label: "Pausado",   className: "bg-amber-500/15 text-amber-400 border-amber-500/30" },
-  completed: { label: "Concluído", className: "bg-blue-500/15 text-blue-400 border-blue-500/30" },
+  active:    { label: "Ativo",     className: "bg-success/15 text-success border-success/30" },
+  paused:    { label: "Pausado",   className: "bg-warning/15 text-warning border-warning/30" },
+  completed: { label: "Concluído", className: "bg-info/15 text-info border-info/30" },
   archived:  { label: "Arquivado", className: "bg-muted text-muted-foreground border-border" },
 };
 
 const PROJECT_COLORS = ["#7C3AED", "#2563EB", "#059669", "#D97706", "#DC2626", "#DB2777", "#4F46E5", "#0EA5E9"];
 
 function progressBarColor(percent: number): string {
-  if (percent >= 80) return "bg-emerald-500";
-  if (percent >= 50) return "bg-blue-500";
-  if (percent >= 20) return "bg-amber-500";
-  return "bg-red-500";
+  if (percent >= 80) return "bg-success";
+  if (percent >= 50) return "bg-info";
+  if (percent >= 20) return "bg-warning";
+  return "bg-destructive";
 }
 
 function NewProjectDialog({ projects }: { projects: Project[] }) {
@@ -136,8 +136,8 @@ function ProjectNode({
         className={cn(
           "group flex items-center gap-3 p-3 rounded-lg border border-border bg-card hover:bg-accent transition-colors cursor-pointer",
           depth > 0 && "border-l-2",
-          depth === 1 && "border-l-violet-500/50",
-          depth === 2 && "border-l-blue-500/50",
+          depth === 1 && "border-l-primary/50",
+          depth === 2 && "border-l-info/50",
           depth >= 3 && "border-l-muted-foreground/40",
         )}
         style={{ marginLeft: depth * 20 }}

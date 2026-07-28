@@ -162,10 +162,10 @@ export function AprovadosTable({ onVerProduto }: AprovadosTableProps) {
                     <span
                       className={cn(
                         produto.margem >= 20
-                          ? "text-emerald-600 font-medium"
+                          ? "text-success font-medium"
                           : produto.margem >= 10
-                            ? "text-amber-600"
-                            : "text-red-500",
+                            ? "text-warning"
+                            : "text-destructive",
                       )}
                     >
                       {produto.margem.toFixed(1)}%
@@ -194,7 +194,7 @@ export function AprovadosTable({ onVerProduto }: AprovadosTableProps) {
                     className="hover:opacity-80 transition-opacity"
                   >
                     {produto.statusCompra === "comprado" ? (
-                      <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20">
+                      <Badge className="bg-success/15 text-success border-success/30 hover:bg-success/20">
                         ✓ Comprado
                       </Badge>
                     ) : (
