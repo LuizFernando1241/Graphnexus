@@ -40,6 +40,8 @@ export const STAGE_SOLID: Record<PipelineStage, string> = {
   aguardando_decisao: "bg-score-excelente",
   decisao: "bg-score-viavel",
   comprado: "bg-score-viavel",
+  aprovado: "bg-score-viavel",
+  arquivado: "bg-muted",
 };
 
 export const STAGE_CHIP_ACTIVE: Record<PipelineStage, string> = {
@@ -48,4 +50,6 @@ export const STAGE_CHIP_ACTIVE: Record<PipelineStage, string> = {
   aguardando_decisao: "border-score-excelente/60 bg-score-excelente/10 text-foreground",
   decisao: "border-score-viavel/60 bg-score-viavel/10 text-foreground",
   comprado: "border-score-viavel/60 bg-score-viavel/10 text-foreground",
+  aprovado: "border-score-viavel/60 bg-score-viavel/10 text-foreground",
+  arquivado: "border-border bg-muted text-foreground",
 };
