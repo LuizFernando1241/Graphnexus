@@ -1,17 +1,16 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Plus, Sparkles, Loader2, CheckSquare, StickyNote, FolderKanban, X, ArrowUp, Calendar, Flag, Folder } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { createNote } from "@/lib/api/notes";
-import { createTask } from "@/lib/api/tasks";
-import { createProject, fetchProjects } from "@/lib/api/projects";
+import { fetchProjects } from "@/lib/api/projects";
 import { deleteNote } from "@/lib/api/notes";
 import { deleteTask } from "@/lib/api/tasks";
 import { deleteProject } from "@/lib/api/projects";
 import { parseTaskInput } from "@/lib/parseTaskInput";
 import { getHintPhrases } from "@/lib/captureHints";
+import { useQuickCreate, type QuickCreateDraft, type QuickCreateOptions } from "@/hooks/useQuickCreate";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -97,13 +96,18 @@ export function Caixa({ externalOpen, onExternalOpenChange }: CaixaProps) {
   const [text, setText] = useState("");
   const [thinking, setThinking] = useState(false);
   const [drafts, setDrafts] = useState<Draft[] | null>(null);
-  const [creating, setCreating] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const { data: projects = [] } = useQuery({
     queryKey: ["projects"],
     queryFn: () => fetchProjects(),
   });
+
+  const opts: QuickCreateOptions = {
+    projects: projects.map((p) => ({ id: p.id, title: p.title })),
+  };
+
+  const { createAsync, isPending } = useQuickCreate(opts);
 
   useEffect(() => {
     if (open) {
@@ -178,44 +182,24 @@ export function Caixa({ externalOpen, onExternalOpenChange }: CaixaProps) {
   }
 
   // ---------------- Criação + Desfazer ----------------
-  async function createOne(d: Draft) {
-    if (d.kind === "task") {
-      const created = await createTask({
-        title: d.title,
-        status: d.status || undefined,
-        priority: d.priority || undefined,
-        due_date: d.due_date || null,
-        due_time: d.due_time || null,
-        recurrence_rule: d.recurrence_rule || null,
-        recurrence_days: d.recurrence_days || null,
-      });
-      return { kind: "task" as const, id: created.id };
-    }
-    if (d.kind === "note") {
-      const created = await createNote({
-        title: d.title,
-        content: d.content || undefined,
-        tags: d.tags || [],
-      });
-      return { kind: "note" as const, id: created.id };
-    }
-    const created = await createProject({
+  async function createOne(d: Draft): Promise<{ kind: Kind; id: string }> {
+    const draft: QuickCreateDraft = {
+      kind: d.kind,
       title: d.title,
-      description: d.description || undefined,
-    });
-    // tarefas iniciais
-    if (d.tasks_initial?.length) {
-      for (const ti of d.tasks_initial.slice(0, 5)) {
-        try {
-          await createTask({
-            title: ti.title,
-            priority: ti.priority || undefined,
-            due_date: ti.due_date || null,
-          });
-        } catch (e) { console.warn("Failed initial task", e); }
-      }
-    }
-    return { kind: "project" as const, id: created.id };
+      due_date: d.due_date,
+      due_time: d.due_time,
+      status: d.status,
+      priority: d.priority,
+      recurrence_rule: d.recurrence_rule,
+      recurrence_days: d.recurrence_days,
+      project_id: d.project_id,
+      tags: d.tags,
+      content: d.content,
+      description: d.description,
+      tasks_initial: d.tasks_initial,
+    };
+    const result = await createAsync(draft);
+    return { kind: result.kind, id: result.id };
   }
 
   async function deleteCreated(items: { kind: Kind; id: string }[]) {
@@ -233,16 +217,12 @@ export function Caixa({ externalOpen, onExternalOpenChange }: CaixaProps) {
 
   async function acceptAll() {
     if (!drafts?.length) return;
-    setCreating(true);
     const created: { kind: Kind; id: string }[] = [];
     try {
       for (const d of drafts) {
         const c = await createOne(d);
         created.push(c);
       }
-      qc.invalidateQueries({ queryKey: ["tasks"] });
-      qc.invalidateQueries({ queryKey: ["notes"] });
-      qc.invalidateQueries({ queryKey: ["projects"] });
 
       const label = created.length === 1
         ? `${kindLabel(created[0].kind)} criada`
@@ -267,8 +247,6 @@ export function Caixa({ externalOpen, onExternalOpenChange }: CaixaProps) {
     } catch (e) {
       console.error("create error", e);
       toast.error("Falha ao criar.");
-    } finally {
-      setCreating(false);
     }
   }
 
@@ -301,8 +279,8 @@ export function Caixa({ externalOpen, onExternalOpenChange }: CaixaProps) {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent
           className="sm:max-w-lg p-0 gap-0 overflow-hidden"
-          onPointerDownOutside={(e) => { if (creating || thinking) e.preventDefault(); }}
-          onInteractOutside={(e) => { if (creating || thinking) e.preventDefault(); }}
+          onPointerDownOutside={(e) => { if (isPending || thinking) e.preventDefault(); }}
+          onInteractOutside={(e) => { if (isPending || thinking) e.preventDefault(); }}
         >
           <DialogHeader className="px-5 pt-5 pb-3">
             <DialogTitle className="flex items-center gap-2 text-base font-medium">
@@ -320,7 +298,7 @@ export function Caixa({ externalOpen, onExternalOpenChange }: CaixaProps) {
               onKeyDown={onKeyDown}
               rows={3}
               className="resize-none text-base min-h-[88px] focus-visible:ring-1"
-              disabled={creating}
+              disabled={isPending}
             />
             <p className="mt-2 text-[11px] text-muted-foreground">
               Enter para analisar · ⌘/Ctrl+Enter para criar direto · Esc para fechar
@@ -360,11 +338,11 @@ export function Caixa({ externalOpen, onExternalOpenChange }: CaixaProps) {
             <div className="flex items-center gap-2">
               {drafts ? (
                 <>
-                  <Button size="sm" variant="ghost" onClick={() => setDrafts(null)} disabled={creating}>
+                  <Button size="sm" variant="ghost" onClick={() => setDrafts(null)} disabled={isPending}>
                     Voltar
                   </Button>
-                  <Button size="sm" onClick={acceptAll} disabled={creating || drafts.length === 0} className="gap-1.5">
-                    {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowUp className="h-3.5 w-3.5 rotate-90" />}
+                  <Button size="sm" onClick={acceptAll} disabled={isPending || drafts.length === 0} className="gap-1.5">
+                    {isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ArrowUp className="h-3.5 w-3.5 rotate-90" />}
                     {drafts.length === 1 ? "Criar" : "Criar tudo"}
                   </Button>
                 </>

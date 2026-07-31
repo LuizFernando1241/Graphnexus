@@ -8,8 +8,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
-import { createTask, updateTask } from "@/lib/api/tasks";
-import { createEntityLink } from "@/lib/api/links";
+import { updateTask } from "@/lib/api/tasks";
+import { useQuickCreateTask } from "@/hooks/useQuickCreate";
 import { invalidateAllEntities } from "@/lib/cache";
 import type { Task } from "@/types/entities";
 
@@ -31,21 +31,19 @@ export function ProjectTasksTab({ projectId, tasks, isLoading }: Props) {
   const qc = useQueryClient();
   const [newTitle, setNewTitle] = useState("");
 
-  const addMut = useMutation({
-    mutationFn: async () => {
-      const title = newTitle.trim();
-      if (!title) throw new Error("vazio");
-      const t = await createTask({ title, status: "todo" });
-      await createEntityLink({ source_type: "task", source_id: t.id, target_type: "project", target_id: projectId });
-      return t;
-    },
-    onSuccess: () => {
-      setNewTitle("");
-      invalidateAllEntities(qc);
-      toast.success("Tarefa adicionada");
-    },
-    onError: () => toast.error("Erro ao adicionar"),
+  const { createSimpleTask, isPending } = useQuickCreateTask({
+    defaultStatus: "todo",
+    projectId,
   });
+
+  const addTask = () => {
+    const title = newTitle.trim();
+    if (!title) return;
+    createSimpleTask(title);
+    setNewTitle("");
+    invalidateAllEntities(qc);
+    toast.success("Tarefa adicionada");
+  };
 
   const toggleMut = useMutation({
     mutationFn: async (t: Task) => {
@@ -67,7 +65,7 @@ export function ProjectTasksTab({ projectId, tasks, isLoading }: Props) {
   return (
     <div className="space-y-3">
       <form
-        onSubmit={(e) => { e.preventDefault(); addMut.mutate(); }}
+        onSubmit={(e) => { e.preventDefault(); addTask(); }}
         className="flex gap-2"
       >
         <Input
@@ -75,8 +73,8 @@ export function ProjectTasksTab({ projectId, tasks, isLoading }: Props) {
           onChange={(e) => setNewTitle(e.target.value)}
           placeholder="Nova tarefa neste projeto..."
         />
-        <Button type="submit" size="sm" disabled={!newTitle.trim() || addMut.isPending}>
-          {addMut.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+        <Button type="submit" size="sm" disabled={!newTitle.trim() || isPending}>
+          {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
         </Button>
       </form>
 

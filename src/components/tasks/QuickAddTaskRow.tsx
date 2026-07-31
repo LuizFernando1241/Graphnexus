@@ -1,13 +1,12 @@
 import { forwardRef, useImperativeHandle, useRef, useState, useEffect } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Sparkles, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { createTask } from "@/lib/api/tasks";
-import { createEntityLink } from "@/lib/api/links";
 import { fetchProjects } from "@/lib/api/projects";
 import { parseTaskInput, type ParsedTaskInput } from "@/lib/parseTaskInput";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { useQuickCreateWithParse, useQuickCreate, type QuickCreateOptions } from "@/hooks/useQuickCreate";
 
 export interface QuickAddTaskRowHandle {
   focus: () => void;
@@ -62,48 +61,27 @@ export const QuickAddTaskRow = forwardRef<QuickAddTaskRowHandle, Props>(function
     staleTime: 60_000,
   });
 
+  const opts: QuickCreateOptions = {
+    defaultStatus,
+    defaultDueDate,
+    projects,
+  };
+
+  const { createWithParse, isPending } = useQuickCreateWithParse(opts);
+  const { create: createWithDraft } = useQuickCreate(opts);
+
   useImperativeHandle(ref, () => ({
     focus: () => inputRef.current?.focus(),
   }));
 
-  const mutation = useMutation({
-    mutationFn: async (parsed: ParsedTaskInput) => {
-      const task = await createTask({
-        title: parsed.title || text.trim(),
-        status: defaultStatus || parsed.status,
-        priority: parsed.priority,
-        due_date: parsed.due_date ?? defaultDueDate ?? null,
-        due_time: parsed.due_time,
-        recurrence_rule: parsed.recurrence_rule,
-        recurrence_days: parsed.recurrence_days,
-      });
-      if (parsed.project_match) {
-        try {
-          await createEntityLink({
-            source_type: "task", source_id: task.id,
-            target_type: "project", target_id: parsed.project_match.id,
-          });
-        } catch (e) {
-          console.warn("Failed to link task to project", e);
-        }
-      }
-      return { task, parsed };
-    },
-    onSuccess: ({ parsed }) => {
-      queryClient.invalidateQueries({ queryKey: ["tasks"] });
-      queryClient.invalidateQueries({ queryKey: ["entity_links"] });
-      setText("");
-      toast.success(summarize(parsed));
-    },
-    onError: () => toast.error("Erro ao criar tarefa"),
-  });
-
-  const submit = (parsed: ParsedTaskInput) => mutation.mutate(parsed);
-
   const submitLocal = () => {
     const t = text.trim();
     if (!t) return;
-    submit(parseTaskInput(t, projects));
+    createWithParse(t);
+    setText("");
+    queryClient.invalidateQueries({ queryKey: ["tasks"] });
+    queryClient.invalidateQueries({ queryKey: ["entity_links"] });
+    toast.success("Tarefa criada");
   };
 
   const submitAI = async () => {
@@ -136,7 +114,23 @@ export const QuickAddTaskRow = forwardRef<QuickAddTaskRowHandle, Props>(function
         project_match: projectMatch,
         tags: Array.isArray(data.tags) ? data.tags : [],
       };
-      submit(parsed);
+      // Create with AI result using base hook
+      createWithDraft({
+        kind: "task",
+        title: parsed.title,
+        due_date: parsed.due_date,
+        due_time: parsed.due_time,
+        status: parsed.status,
+        priority: parsed.priority,
+        recurrence_rule: parsed.recurrence_rule,
+        recurrence_days: parsed.recurrence_days,
+        project_id: parsed.project_match?.id || null,
+        tags: parsed.tags,
+      });
+      setText("");
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["entity_links"] });
+      toast.success(summarize(parsed));
     } catch (e) {
       console.error(e);
       const msg = (e as Error)?.message || "";
@@ -185,6 +179,7 @@ export const QuickAddTaskRow = forwardRef<QuickAddTaskRowHandle, Props>(function
             inputRef.current?.blur();
           }
         }}
+        disabled={isPending}
         placeholder={placeholder}
         aria-label="Adicionar tarefa rápida"
         className="flex-1 bg-transparent border-0 outline-none py-2.5 text-sm placeholder:text-muted-foreground"
