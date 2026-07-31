@@ -92,6 +92,7 @@ export function useNoteDetail(id: string | undefined) {
     onSuccess: () => {
       if (!isMounted.current) return;
       setHasUnsavedChanges(false);
+      entityDetail.markSaved();
       queryClient.invalidateQueries({ queryKey: ["note", id] });
       queryClient.invalidateQueries({ queryKey: ["note-tags"] });
       invalidateAllEntities(queryClient);

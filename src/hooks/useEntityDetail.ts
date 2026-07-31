@@ -70,6 +70,9 @@ export function useEntityDetail<TEntity, TFormState>(id: string | undefined, con
   // Mark as changed
   const markChanged = useCallback(() => setHasUnsavedChanges(true), []);
 
+  // Mark as saved
+  const markSaved = useCallback(() => setHasUnsavedChanges(false), []);
+
   // Safe state setter
   const setFormField = useCallback(<K extends keyof TFormState>(field: K, value: TFormState[K]) => {
     if (isMounted.current) {
@@ -150,6 +153,7 @@ export function useEntityDetail<TEntity, TFormState>(id: string | undefined, con
     setFormField,
     hasUnsavedChanges,
     markChanged,
+    markSaved,
     saveMutation,
     deleteMutation,
     archiveMutation,
