@@ -1,11 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/integrations/supabase/client'
 import { useAuth } from '@/contexts/AuthContext'
+import { fetchEntityLinks, createEntityLink, deleteEntityLink } from '@/lib/api/links'
 import type { RadarEntityLink, EntityLinkType } from '@/types/radar'
+import type { EntityLink } from '@/types/entities'
 
 /**
  * Hook unificado: lê/grava na tabela global `entity_links` usando
  * source_type='product' (lado do produto). Compatível com LinkPanel/Graph.
+ * Agora consome o sistema compartilhado de links (lib/api/links.ts).
  */
 export function useRadarEntityLinks(produtoId: string | null) {
   const { user } = useAuth()
@@ -16,40 +19,27 @@ export function useRadarEntityLinks(produtoId: string | null) {
     queryFn: async () => {
       if (!produtoId || !user) return []
 
-      // Busca em ambos os lados (produto como source ou como target)
-      const [sourceRes, targetRes] = await Promise.all([
-        supabase
-          .from('entity_links')
-          .select('*')
-          .eq('source_type', 'product')
-          .eq('source_id', produtoId),
-        supabase
-          .from('entity_links')
-          .select('*')
-          .eq('target_type', 'product')
-          .eq('target_id', produtoId),
-      ])
+      // Usa o sistema compartilhado para buscar links
+      const entityLinks = await fetchEntityLinks(produtoId, 'product')
 
-      if (sourceRes.error) throw sourceRes.error
-      if (targetRes.error) throw targetRes.error
-
-      const rows = [...(sourceRes.data ?? []), ...(targetRes.data ?? [])]
-      const seen = new Set<string>()
+      // Transforma EntityLink[] → RadarEntityLink[]
       const out: RadarEntityLink[] = []
-      for (const row of rows) {
-        if (seen.has(row.id)) continue
-        seen.add(row.id)
-        const isSource = row.source_type === 'product' && row.source_id === produtoId
-        const entityType = (isSource ? row.target_type : row.source_type) as EntityLinkType
-        const entityId = isSource ? row.target_id : row.source_id
+      for (const link of entityLinks) {
+        const isSource = link.source_type === 'product' && link.source_id === produtoId
+        const entityType = (isSource ? link.target_type : link.source_type) as EntityLinkType
+        const entityId = isSource ? link.target_id : link.source_id
         if (!['note', 'task', 'project'].includes(entityType)) continue
+
+        // Extrai user_id do link (se disponível na tabela)
+        const userId = (link as any).user_id || user.id
+
         out.push({
-          id: row.id,
+          id: link.id,
           produtoId,
-          userId: row.user_id,
+          userId,
           entityType,
           entityId,
-          createdAt: row.created_at,
+          createdAt: link.created_at,
         })
       }
       return out
@@ -67,6 +57,7 @@ export function useRadarEntityLinks(produtoId: string | null) {
     }) => {
       if (!produtoId || !user) throw new Error('Dados inválidos')
 
+      // Insere user_id manualmente pois createEntityLink não injeta automaticamente
       const { error } = await supabase.from('entity_links').insert({
         user_id: user.id,
         source_type: 'product',
@@ -87,13 +78,8 @@ export function useRadarEntityLinks(produtoId: string | null) {
   const removerLink = useMutation({
     mutationFn: async (linkId: string) => {
       if (!user) throw new Error('Não autenticado')
-      const { error } = await supabase
-        .from('entity_links')
-        .delete()
-        .eq('id', linkId)
-        .eq('user_id', user.id)
-
-      if (error) throw error
+      // Usa deleteEntityLink do sistema compartilhado
+      await deleteEntityLink(linkId)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['entity-links'] })

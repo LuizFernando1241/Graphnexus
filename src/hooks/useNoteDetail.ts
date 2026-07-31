@@ -1,91 +1,23 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import { useNavigate, useBlocker } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useRef, useState, useEffect } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { fetchNote, updateNote, deleteNote } from "@/lib/api/notes";
 import { invalidateAllEntities } from "@/lib/cache";
+import { useEntityDetail } from "./useEntityDetail";
 import type { Note } from "@/types/entities";
 
+interface NoteFormState {
+  title: string;
+  emoji: string;
+  content: string;
+  color: string;
+  tags: string[];
+}
+
 export function useNoteDetail(id: string | undefined) {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isMounted = useRef(true);
-
-  useEffect(() => {
-    // Garante que isMounted volte a true em re-mount (StrictMode roda effects 2x).
-    isMounted.current = true;
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
-
-  // Fetch note
-  const { data: note, isLoading } = useQuery({
-    queryKey: ["note", id],
-    queryFn: () => fetchNote(id!),
-    enabled: !!id,
-  });
-
-  // Form state - specific to notes
-  const [title, setTitleState] = useState("");
-  const [emoji, setEmojiState] = useState("");
-  const [content, setContentState] = useState("");
-  const [color, setColorState] = useState<string>("#7C3AED");
-  const [tags, setTagsState] = useState<string[]>([]);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [loadedId, setLoadedId] = useState<string | null>(null);
-
-  // Sync with fetched data
-  useEffect(() => {
-    if (note && note.id === id && loadedId !== id) {
-      setTitleState(note.title);
-      setEmojiState(note.emoji || "");
-      setContentState(note.content || "");
-      setColorState(note.color || "#7C3AED");
-      setTagsState(note.tags || []);
-      setLoadedId(id!);
-      setHasUnsavedChanges(false);
-    }
-  }, [note, loadedId, id]);
-
-  // Mark as changed
-  const markChanged = useCallback(() => setHasUnsavedChanges(true), []);
-
-  // Safe state setters
-  const setTitle = useCallback((value: string) => {
-    if (isMounted.current) {
-      setTitleState(value);
-      markChanged();
-    }
-  }, [markChanged]);
-
-  const setEmoji = useCallback((value: string) => {
-    if (isMounted.current) {
-      setEmojiState(value);
-      markChanged();
-    }
-  }, [markChanged]);
-
-  const setContent = useCallback((value: string) => {
-    if (isMounted.current) {
-      setContentState(value);
-      markChanged();
-    }
-  }, [markChanged]);
-
-  const setColor = useCallback((value: string) => {
-    if (isMounted.current) {
-      setColorState(value);
-      markChanged();
-    }
-  }, [markChanged]);
-
-  const setTags = useCallback((value: string[]) => {
-    if (isMounted.current) {
-      setTagsState(value);
-      markChanged();
-    }
-  }, [markChanged]);
 
   // Auto-title helper
   const deriveTitle = useCallback((currentTitle: string, htmlContent: string): string => {
@@ -98,12 +30,64 @@ export function useNoteDetail(id: string | undefined) {
     return derived + (plain.length > derived.length ? "..." : "");
   }, []);
 
-  // Save mutation
+  // Generic entity detail hook
+  const entityDetail = useEntityDetail<Note, NoteFormState>(id, {
+    queryKey: "note",
+    fetchFn: fetchNote,
+    updateFn: updateNote,
+    deleteFn: deleteNote,
+    initialFormState: {
+      title: "",
+      emoji: "",
+      content: "",
+      color: "#7C3AED",
+      tags: [],
+    },
+    formToPayload: (formState, currentEntity) => {
+      const finalTitle = deriveTitle(formState.title, formState.content);
+      return {
+        title: finalTitle,
+        emoji: formState.emoji || null,
+        content: formState.content,
+        color: formState.color,
+        tags: formState.tags,
+      };
+    },
+    syncFn: (entity) => ({
+      title: entity.title,
+      emoji: entity.emoji || "",
+      content: entity.content || "",
+      color: entity.color || "#7C3AED",
+      tags: entity.tags || [],
+    }),
+    // Note uses default toggle behavior for archive (no archivePayload)
+    navigateToList: "/notes",
+    successMessages: {
+      save: "Nota salva!",
+      delete: "Nota excluída",
+      archive: "Nota arquivada",
+    },
+  });
+
+  // Sync hasUnsavedChanges when entity loads
+  useEffect(() => {
+    if (entityDetail.entity) {
+      setHasUnsavedChanges(false);
+    }
+  }, [entityDetail.entity]);
+
+  // Override save mutation to add extra invalidation for note-tags
   const saveMutation = useMutation({
     mutationFn: async () => {
       if (!id) throw new Error("No note ID");
-      const finalTitle = deriveTitle(title, content);
-      return updateNote(id, { title: finalTitle, emoji: emoji || null, content, color, tags });
+      const finalTitle = deriveTitle(entityDetail.formState.title, entityDetail.formState.content);
+      return updateNote(id, {
+        title: finalTitle,
+        emoji: entityDetail.formState.emoji || null,
+        content: entityDetail.formState.content,
+        color: entityDetail.formState.color,
+        tags: entityDetail.formState.tags,
+      });
     },
     onSuccess: () => {
       if (!isMounted.current) return;
@@ -120,11 +104,11 @@ export function useNoteDetail(id: string | undefined) {
 
   const handleSave = useCallback(() => saveMutation.mutate(), [saveMutation]);
 
-  // Pin mutation (toggle)
+  // Pin mutation (Note-specific)
   const pinMutation = useMutation({
     mutationFn: async () => {
-      if (!id || !note) throw new Error("No note");
-      return updateNote(id, { pinned: !note.pinned });
+      if (!id || !entityDetail.entity) throw new Error("No note");
+      return updateNote(id, { pinned: !entityDetail.entity.pinned });
     },
     onSuccess: (updatedNote) => {
       queryClient.invalidateQueries({ queryKey: ["note", id] });
@@ -138,11 +122,11 @@ export function useNoteDetail(id: string | undefined) {
 
   const handlePin = useCallback(() => pinMutation.mutate(), [pinMutation]);
 
-  // Archive mutation (toggle)
+  // Override archive mutation to use custom success messages
   const archiveMutation = useMutation({
     mutationFn: async () => {
-      if (!id || !note) throw new Error("No note");
-      return updateNote(id, { archived: !note.archived });
+      if (!id || !entityDetail.entity) throw new Error("No note");
+      return updateNote(id, { archived: !entityDetail.entity.archived });
     },
     onSuccess: (updatedNote) => {
       queryClient.invalidateQueries({ queryKey: ["note", id] });
@@ -156,38 +140,43 @@ export function useNoteDetail(id: string | undefined) {
 
   const handleArchive = useCallback(() => archiveMutation.mutate(), [archiveMutation]);
 
-  // Delete mutation
-  const deleteMutation = useMutation({
-    mutationFn: async () => {
-      if (!id) throw new Error("No note ID");
-      await deleteNote(id);
-    },
-    onSuccess: () => {
-      invalidateAllEntities(queryClient);
-      toast.success("Nota excluída");
-      navigate("/notes");
-    },
-    onError: () => {
-      toast.error("Erro ao excluir");
-    },
-  });
+  // Specific setters for Note fields
+  const setTitle = useCallback((value: string) => {
+    entityDetail.setFormField("title", value);
+    setHasUnsavedChanges(true);
+  }, [entityDetail]);
 
-  const handleDelete = useCallback(() => deleteMutation.mutate(), [deleteMutation]);
+  const setEmoji = useCallback((value: string) => {
+    entityDetail.setFormField("emoji", value);
+    setHasUnsavedChanges(true);
+  }, [entityDetail]);
 
-  // Navigation blocker
-  const blocker = useBlocker(hasUnsavedChanges);
+  const setContent = useCallback((value: string) => {
+    entityDetail.setFormField("content", value);
+    setHasUnsavedChanges(true);
+  }, [entityDetail]);
+
+  const setColor = useCallback((value: string) => {
+    entityDetail.setFormField("color", value);
+    setHasUnsavedChanges(true);
+  }, [entityDetail]);
+
+  const setTags = useCallback((value: string[]) => {
+    entityDetail.setFormField("tags", value);
+    setHasUnsavedChanges(true);
+  }, [entityDetail]);
 
   return {
     // Data
-    note,
-    isLoading,
+    note: entityDetail.entity,
+    isLoading: entityDetail.isLoading,
     
     // Form state
-    title,
-    emoji,
-    content,
-    color,
-    tags,
+    title: entityDetail.formState.title,
+    emoji: entityDetail.formState.emoji,
+    content: entityDetail.formState.content,
+    color: entityDetail.formState.color,
+    tags: entityDetail.formState.tags,
     hasUnsavedChanges,
     
     // Setters
@@ -201,16 +190,16 @@ export function useNoteDetail(id: string | undefined) {
     saveMutation,
     pinMutation,
     archiveMutation,
-    deleteMutation,
+    deleteMutation: entityDetail.deleteMutation,
     
     // Actions
     handleSave,
     handlePin,
     handleArchive,
-    handleDelete,
+    handleDelete: entityDetail.handleDelete,
     
     // Blocker
-    blocker,
+    blocker: entityDetail.blocker,
     
     // Helper
     deriveTitle,

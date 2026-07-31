@@ -1,206 +1,94 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import { useNavigate, useBlocker } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useRef } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { fetchTask, updateTask, deleteTask } from "@/lib/api/tasks";
 import { createNote } from "@/lib/api/notes";
 import { createEntityLink } from "@/lib/api/links";
 import { invalidateAllEntities } from "@/lib/cache";
+import { useEntityDetail, type EntityDetailConfig } from "@/hooks/useEntityDetail";
 import type { Task, TaskStatus, TaskPriority } from "@/types/entities";
 
+interface TaskFormState {
+  title: string;
+  description: string;
+  status: TaskStatus;
+  priority: TaskPriority;
+  dueDate: Date | undefined;
+  dueTime: string;
+  recurrenceRule: string | null;
+  recurrenceDays: number[] | null;
+  estimatedMinutes: string;
+}
+
 export function useTaskDetail(id: string | undefined) {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isMounted = useRef(true);
 
-  useEffect(() => {
-    // Garante que isMounted volte a true em re-mount (StrictMode roda effects 2x).
-    isMounted.current = true;
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
-
-  // Fetch task
-  const { data: task, isLoading } = useQuery({
-    queryKey: ["task", id],
-    queryFn: () => fetchTask(id!),
-    enabled: !!id,
-  });
-
-  // Form state - specific to tasks
-  const [title, setTitleState] = useState("");
-  const [description, setDescriptionState] = useState("");
-  const [status, setStatusState] = useState<TaskStatus>("backlog");
-  const [priority, setPriorityState] = useState<TaskPriority>("none");
-  const [dueDate, setDueDateState] = useState<Date | undefined>();
-  const [dueTime, setDueTimeState] = useState<string>("");
-  const [recurrenceRule, setRecurrenceRuleState] = useState<string | null>(null);
-  const [recurrenceDays, setRecurrenceDaysState] = useState<number[] | null>(null);
-  const [estimatedMinutes, setEstimatedMinutesState] = useState<string>("");
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [loadedId, setLoadedId] = useState<string | null>(null);
-
-  // Sync with fetched data
-  useEffect(() => {
-    if (task && task.id === id && loadedId !== id) {
-      setTitleState(task.title);
-      setDescriptionState(task.description || "");
-      setStatusState(task.status);
-      setPriorityState(task.priority);
-      setDueDateState(task.due_date ? new Date(task.due_date + "T00:00:00") : undefined);
-      setDueTimeState(task.due_time || "");
-      setRecurrenceRule(task.recurrence_rule);
-      setRecurrenceDays(task.recurrence_days);
-      setEstimatedMinutes(task.estimated_minutes?.toString() || "");
-      setLoadedId(id!);
-      setHasUnsavedChanges(false);
-    }
-  }, [task, loadedId, id]);
-
-  // Mark as changed
-  const markChanged = useCallback(() => setHasUnsavedChanges(true), []);
-
-  // Safe state setters
-  const setTitle = useCallback((value: string) => {
-    if (isMounted.current) {
-      setTitleState(value);
-      markChanged();
-    }
-  }, [markChanged]);
-
-  const setDescription = useCallback((value: string) => {
-    if (isMounted.current) {
-      setDescriptionState(value);
-      markChanged();
-    }
-  }, [markChanged]);
-
-  const setStatus = useCallback((value: TaskStatus) => {
-    if (isMounted.current) {
-      setStatusState(value);
-      markChanged();
-    }
-  }, [markChanged]);
-
-  const setPriority = useCallback((value: TaskPriority) => {
-    if (isMounted.current) {
-      setPriorityState(value);
-      markChanged();
-    }
-  }, [markChanged]);
-
-  const setDueDate = useCallback((value: Date | undefined) => {
-    if (isMounted.current) {
-      setDueDateState(value);
-      markChanged();
-    }
-  }, [markChanged]);
-
-  const setDueTime = useCallback((value: string) => {
-    if (isMounted.current) {
-      setDueTimeState(value);
-      markChanged();
-    }
-  }, [markChanged]);
-
-  const setRecurrenceRule = useCallback((value: string | null) => {
-    if (isMounted.current) {
-      setRecurrenceRuleState(value);
-      markChanged();
-    }
-  }, [markChanged]);
-
-  const setRecurrenceDays = useCallback((value: number[] | null) => {
-    if (isMounted.current) {
-      setRecurrenceDaysState(value);
-      markChanged();
-    }
-  }, [markChanged]);
-
-  const setEstimatedMinutes = useCallback((value: string) => {
-    if (isMounted.current) {
-      setEstimatedMinutesState(value);
-      markChanged();
-    }
-  }, [markChanged]);
-
-  // Save mutation
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      if (!id) throw new Error("No task ID");
-      const statusChanged = !!task && task.status !== status;
-      return updateTask(id, {
-        title,
-        description: description || null,
-        status,
-        priority,
-        due_date: dueDate ? format(dueDate, "yyyy-MM-dd") : null,
-        due_time: dueTime || null,
-        recurrence_rule: recurrenceRule,
-        recurrence_days: recurrenceDays,
-        estimated_minutes: estimatedMinutes ? parseInt(estimatedMinutes, 10) : null,
+  // Config específica para Task
+  const config: EntityDetailConfig<Task, TaskFormState> = {
+    queryKey: "task",
+    fetchFn: fetchTask,
+    updateFn: updateTask,
+    deleteFn: deleteTask,
+    initialFormState: {
+      title: "",
+      description: "",
+      status: "backlog",
+      priority: "none",
+      dueDate: undefined,
+      dueTime: "",
+      recurrenceRule: null,
+      recurrenceDays: null,
+      estimatedMinutes: "",
+    },
+    formToPayload: (formState: TaskFormState, currentEntity) => {
+      const statusChanged = !!currentEntity && currentEntity.status !== formState.status;
+      return {
+        title: formState.title,
+        description: formState.description || null,
+        status: formState.status,
+        priority: formState.priority,
+        due_date: formState.dueDate ? format(formState.dueDate, "yyyy-MM-dd") : null,
+        due_time: formState.dueTime || null,
+        recurrence_rule: formState.recurrenceRule,
+        recurrence_days: formState.recurrenceDays,
+        estimated_minutes: formState.estimatedMinutes ? parseInt(formState.estimatedMinutes, 10) : null,
         manualStatusChange: statusChanged,
-      });
+      } as any;
     },
-    onSuccess: () => {
-      if (!isMounted.current) return;
-      setHasUnsavedChanges(false);
-      queryClient.invalidateQueries({ queryKey: ["task", id] });
-      invalidateAllEntities(queryClient);
-      toast.success("Tarefa salva!");
+    syncFn: (entity: Task, _formState: TaskFormState): TaskFormState => ({
+      title: entity.title,
+      description: entity.description || "",
+      status: entity.status,
+      priority: entity.priority,
+      dueDate: entity.due_date ? new Date(entity.due_date + "T00:00:00") : undefined,
+      dueTime: entity.due_time || "",
+      recurrenceRule: entity.recurrence_rule,
+      recurrenceDays: entity.recurrence_days,
+      estimatedMinutes: entity.estimated_minutes?.toString() || "",
+    }),
+    archivePayload: { archived: true, status: "todo", completed_at: null } as any,
+    navigateToList: "/tasks",
+    successMessages: {
+      save: "Tarefa salva!",
+      delete: "Tarefa excluída",
+      archive: "Tarefa arquivada",
     },
-    onError: () => {
-      if (isMounted.current) toast.error("Erro ao salvar");
-    },
-  });
+  };
 
-  const handleSave = useCallback(() => saveMutation.mutate(), [saveMutation]);
+  const useEntityDetailState = useEntityDetail<Task, TaskFormState>(id, config);
 
-  // Delete mutation
-  const deleteMutation = useMutation({
-    mutationFn: async () => {
-      if (!id) throw new Error("No task ID");
-      await deleteTask(id);
-    },
-    onSuccess: () => {
-      invalidateAllEntities(queryClient);
-      toast.success("Tarefa excluída");
-      navigate("/tasks");
-    },
-  });
-
-  const handleDelete = useCallback(() => deleteMutation.mutate(), [deleteMutation]);
-
-  // Archive mutation
-  const archiveMutation = useMutation({
-    mutationFn: async () => {
-      if (!id) throw new Error("No task ID");
-      return updateTask(id, { archived: true, status: "todo", completed_at: null });
-    },
-    onSuccess: () => {
-      if (!isMounted.current) return;
-      setHasUnsavedChanges(false);
-      invalidateAllEntities(queryClient);
-      toast.success("Tarefa arquivada");
-      navigate("/tasks");
-    },
-    onError: () => {
-      if (isMounted.current) toast.error("Erro ao arquivar");
-    },
-  });
-
-  const handleArchive = useCallback(() => archiveMutation.mutate(), [archiveMutation]);
-
-  // Extract mutation
+  // Extract mutation (específico de Task)
   const extractMutation = useMutation({
     mutationFn: async () => {
-      if (!description || !id || !task) throw new Error("Sem conteúdo para extrair");
+      if (!useEntityDetailState.formState.description || !id || !useEntityDetailState.entity) {
+        throw new Error("Sem conteúdo para extrair");
+      }
 
       const note = await createNote({
-        title: `Ref: ${task?.title || 'Sem título'}`,
-        content: description,
+        title: `Ref: ${useEntityDetailState.entity.title || 'Sem título'}`,
+        content: useEntityDetailState.formState.description,
       });
 
       await createEntityLink({
@@ -216,8 +104,8 @@ export function useTaskDetail(id: string | undefined) {
     },
     onSuccess: () => {
       if (!isMounted.current) return;
-      setDescriptionState("");
-      setHasUnsavedChanges(false);
+      useEntityDetailState.setFormField("description", "");
+      useEntityDetailState.markChanged();
       queryClient.invalidateQueries({ queryKey: ["task", id] });
       invalidateAllEntities(queryClient);
       toast.success("Nota extraída e vinculada com sucesso!");
@@ -231,50 +119,47 @@ export function useTaskDetail(id: string | undefined) {
 
   const handleExtract = useCallback(() => extractMutation.mutate(), [extractMutation]);
 
-  // Navigation blocker
-  const blocker = useBlocker(hasUnsavedChanges);
-
   return {
     // Data
-    task,
-    isLoading,
-    
-    // Form state
-    title,
-    description,
-    status,
-    priority,
-    dueDate,
-    dueTime,
-    recurrenceRule,
-    recurrenceDays,
-    estimatedMinutes,
-    hasUnsavedChanges,
-    
-    // Setters
-    setTitle,
-    setDescription,
-    setStatus,
-    setPriority,
-    setDueDate,
-    setDueTime,
-    setRecurrenceRule,
-    setRecurrenceDays,
-    setEstimatedMinutes,
-    
+    task: useEntityDetailState.entity,
+    isLoading: useEntityDetailState.isLoading,
+
+    // Form state (extraído do formState genérico)
+    title: useEntityDetailState.formState.title,
+    description: useEntityDetailState.formState.description,
+    status: useEntityDetailState.formState.status,
+    priority: useEntityDetailState.formState.priority,
+    dueDate: useEntityDetailState.formState.dueDate,
+    dueTime: useEntityDetailState.formState.dueTime,
+    recurrenceRule: useEntityDetailState.formState.recurrenceRule,
+    recurrenceDays: useEntityDetailState.formState.recurrenceDays,
+    estimatedMinutes: useEntityDetailState.formState.estimatedMinutes,
+    hasUnsavedChanges: useEntityDetailState.hasUnsavedChanges,
+
+    // Setters (usando setFormField genérico)
+    setTitle: (value: string) => useEntityDetailState.setFormField("title", value),
+    setDescription: (value: string) => useEntityDetailState.setFormField("description", value),
+    setStatus: (value: TaskStatus) => useEntityDetailState.setFormField("status", value),
+    setPriority: (value: TaskPriority) => useEntityDetailState.setFormField("priority", value),
+    setDueDate: (value: Date | undefined) => useEntityDetailState.setFormField("dueDate", value),
+    setDueTime: (value: string) => useEntityDetailState.setFormField("dueTime", value),
+    setRecurrenceRule: (value: string | null) => useEntityDetailState.setFormField("recurrenceRule", value),
+    setRecurrenceDays: (value: number[] | null) => useEntityDetailState.setFormField("recurrenceDays", value),
+    setEstimatedMinutes: (value: string) => useEntityDetailState.setFormField("estimatedMinutes", value),
+
     // Mutations
-    saveMutation,
-    deleteMutation,
-    archiveMutation,
+    saveMutation: useEntityDetailState.saveMutation,
+    deleteMutation: useEntityDetailState.deleteMutation,
+    archiveMutation: useEntityDetailState.archiveMutation,
     extractMutation,
-    
+
     // Actions
-    handleSave,
-    handleDelete,
-    handleArchive,
+    handleSave: useEntityDetailState.handleSave,
+    handleDelete: useEntityDetailState.handleDelete,
+    handleArchive: useEntityDetailState.handleArchive,
     handleExtract,
-    
+
     // Blocker
-    blocker,
+    blocker: useEntityDetailState.blocker,
   };
 }
