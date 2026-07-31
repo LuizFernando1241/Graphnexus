@@ -16,27 +16,14 @@ import {
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { PROJECT_STATUS_CONFIG, getProgressBarColor } from "@/lib/projectStatus";
 import type { Project, ProjectStatus, ProjectTree } from "@/types/entities";
 import { PageTransition } from "@/components/PageTransition";
 import { PageHeader } from "@/components/PageHeader";
 import { ImportDropzone } from "@/components/import/ImportDropzone";
 import { ProjectsGridSkeleton } from "@/components/ui/page-skeleton";
 
-const STATUS_CONFIG: Record<ProjectStatus, { label: string; className: string }> = {
-  active:    { label: "Ativo",     className: "bg-success/15 text-success border-success/30" },
-  paused:    { label: "Pausado",   className: "bg-warning/15 text-warning border-warning/30" },
-  completed: { label: "Concluído", className: "bg-info/15 text-info border-info/30" },
-  archived:  { label: "Arquivado", className: "bg-muted text-muted-foreground border-border" },
-};
-
 const PROJECT_COLORS = ["#7C3AED", "#2563EB", "#059669", "#D97706", "#DC2626", "#DB2777", "#4F46E5", "#0EA5E9"];
-
-function progressBarColor(percent: number): string {
-  if (percent >= 80) return "bg-success";
-  if (percent >= 50) return "bg-info";
-  if (percent >= 20) return "bg-warning";
-  return "bg-destructive";
-}
 
 function NewProjectDialog({ projects }: { projects: Project[] }) {
   const [open, setOpen] = useState(false);
@@ -124,7 +111,7 @@ function ProjectNode({
   const navigate = useNavigate();
   const isExpanded = expandedIds.has(node.id);
   const hasChildren = node.children.length > 0;
-  const statusCfg = STATUS_CONFIG[node.status] ?? STATUS_CONFIG.active;
+  const statusCfg = PROJECT_STATUS_CONFIG[node.status] ?? PROJECT_STATUS_CONFIG.active;
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -171,7 +158,7 @@ function ProjectNode({
           {node.totalTasksRecursive > 0 ? (
             <div className="flex items-center gap-2">
               <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden max-w-[240px]">
-                <div className={cn("h-full", progressBarColor(node.progressPercent))}
+                <div className={cn("h-full", getProgressBarColor(node.progressPercent))}
                   style={{ width: `${Math.min(node.progressPercent, 100)}%` }} />
               </div>
               <span className="text-xs text-muted-foreground tabular-nums">

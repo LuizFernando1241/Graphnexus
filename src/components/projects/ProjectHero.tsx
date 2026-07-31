@@ -3,20 +3,7 @@ import { Calendar, Target } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import type { Project, ProjectStatus } from "@/types/entities";
-
-const STATUS_LABEL: Record<ProjectStatus, string> = {
-  active: "Ativo",
-  paused: "Pausado",
-  completed: "Completo",
-  archived: "Arquivado",
-};
-
-const STATUS_VARIANT: Record<ProjectStatus, string> = {
-  active: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30",
-  paused: "bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30",
-  completed: "bg-sky-500/15 text-sky-700 dark:text-sky-300 border-sky-500/30",
-  archived: "bg-muted text-muted-foreground border-border",
-};
+import { PROJECT_STATUS_CONFIG } from "@/lib/projectStatus";
 
 interface Props {
   project: Project;
@@ -66,8 +53,8 @@ export function ProjectHero({
             placeholder="Nome do projeto"
             aria-label="Nome do projeto"
           />
-          <Badge variant="outline" className={STATUS_VARIANT[status]}>
-            {STATUS_LABEL[status]}
+          <Badge variant="outline" className={PROJECT_STATUS_CONFIG[status].className}>
+            {PROJECT_STATUS_CONFIG[status].label}
           </Badge>
         </div>
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-xs text-muted-foreground">

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { fetchLinkedTasksForProject } from "@/lib/api/projectStats";
 import { useProjects } from "@/hooks/useProjects";
 import { cn } from "@/lib/utils";
+import { getProgressBarColor } from "@/lib/projectStatus";
 import type { ProjectTree, Task } from "@/types/entities";
 
 function findNode(nodes: ProjectTree[], id: string): ProjectTree | null {
@@ -15,13 +16,6 @@ function findNode(nodes: ProjectTree[], id: string): ProjectTree | null {
     if (found) return found;
   }
   return null;
-}
-
-function progressBarColor(percent: number): string {
-  if (percent >= 80) return "bg-emerald-500";
-  if (percent >= 50) return "bg-blue-500";
-  if (percent >= 20) return "bg-amber-500";
-  return "bg-red-500";
 }
 
 interface Props {
@@ -64,7 +58,7 @@ export function ProjectNarrative({ projectId, tasks, onAddSubproject }: Props) {
         </div>
         <div className="h-2 rounded-full bg-muted overflow-hidden">
           <div
-            className={cn("h-full transition-all", progressBarColor(percent))}
+            className={cn("h-full transition-all", getProgressBarColor(percent))}
             style={{ width: `${Math.min(percent, 100)}%` }}
           />
         </div>
@@ -143,7 +137,7 @@ export function ProjectNarrative({ projectId, tasks, onAddSubproject }: Props) {
                   <div className="flex items-center gap-2 mt-1.5">
                     <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
                       <div
-                        className={cn("h-full", progressBarColor(child.progressPercent))}
+                        className={cn("h-full", getProgressBarColor(child.progressPercent))}
                         style={{ width: `${Math.min(child.progressPercent, 100)}%` }}
                       />
                     </div>
