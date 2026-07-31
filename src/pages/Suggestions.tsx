@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Sparkles, Link2, X, Loader2, RefreshCw, ArrowRight, StickyNote, CheckSquare, FolderKanban, Crosshair } from "lucide-react";
+import { useState } from "react";
+import { Sparkles, Link2, X, Loader2, RefreshCw, ArrowRight, StickyNote, CheckSquare, FolderKanban, Crosshair, Check } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageTransition } from "@/components/PageTransition";
@@ -8,6 +9,14 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+} from "@/components/ui/alert-dialog";
 import {
   acceptSuggestion,
   dismissSuggestion,
@@ -94,6 +103,8 @@ function EntityChip({ type, id, title }: { type: EmbedEntityType; id: string; ti
 
 export default function Suggestions() {
   const qc = useQueryClient();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [acceptingAll, setAcceptingAll] = useState(false);
 
   const { data: suggestions = [], isLoading, refetch } = useQuery({
     queryKey: ["link-suggestions"],
@@ -135,6 +146,49 @@ export default function Suggestions() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["link-suggestions"] }),
   });
 
+  const acceptAllMut = useMutation({
+    mutationFn: async (suggestionsToAccept: LinkSuggestion[]) => {
+      const BATCH_SIZE = 10;
+      let successCount = 0;
+      let failCount = 0;
+
+      for (let i = 0; i < suggestionsToAccept.length; i += BATCH_SIZE) {
+        const batch = suggestionsToAccept.slice(i, i + BATCH_SIZE);
+        const results = await Promise.allSettled(
+          batch.map((s) => acceptSuggestion(s))
+        );
+
+        results.forEach((result) => {
+          if (result.status === "fulfilled") {
+            successCount++;
+          } else {
+            failCount++;
+          }
+        });
+      }
+
+      return { successCount, failCount };
+    },
+    onSuccess: (result) => {
+      qc.invalidateQueries({ queryKey: ["link-suggestions"] });
+      qc.invalidateQueries({ queryKey: ["entity_links"] });
+      qc.invalidateQueries({ queryKey: ["radar-entity-links"] });
+
+      if (result.failCount === 0) {
+        toast.success(`${result.successCount} sugestões aceitas`);
+      } else {
+        toast.error(
+          `${result.successCount} aceitas, ${result.failCount} falharam`,
+          { description: "As sugestões que falharam continuam na lista." }
+        );
+      }
+    },
+    onError: (error) => {
+      console.error("Erro ao aceitar todas:", error);
+      toast.error("Erro ao processar sugestões");
+    },
+  });
+
   return (
     <PageTransition>
       <div className="flex flex-col gap-6 max-w-4xl">
@@ -143,15 +197,37 @@ export default function Suggestions() {
           icon={Sparkles}
           description="A IA encontrou possíveis vínculos entre seus itens. Aceite os que fizerem sentido."
           actions={
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => scanMut.mutate()}
-              disabled={scanMut.isPending}
-            >
-              {scanMut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-              Procurar agora
-            </Button>
+            <div className="flex items-center gap-2">
+              {suggestions.length > 0 && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setConfirmOpen(true)}
+                  disabled={acceptingAll || acceptMut.isPending || dismissMut.isPending}
+                >
+                  {acceptingAll ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Aceitando...
+                    </>
+                  ) : (
+                    <>
+                      <Check className="mr-2 h-4 w-4" />
+                      Aceitar todos
+                    </>
+                  )}
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => scanMut.mutate()}
+                disabled={scanMut.isPending}
+              >
+                {scanMut.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                Procurar agora
+              </Button>
+            </div>
           }
         />
 
@@ -220,6 +296,41 @@ export default function Suggestions() {
           </div>
         )}
       </div>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Aceitar todas as sugestões?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Isso criará vínculos para {suggestions.length} sugestão{ suggestions.length !== 1 ? "ões" : "" } pendente{ suggestions.length !== 1 ? "s" : "" }.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button variant="ghost" onClick={() => setConfirmOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => {
+                setConfirmOpen(false);
+                setAcceptingAll(true);
+                acceptAllMut.mutate(suggestions, {
+                  onSettled: () => setAcceptingAll(false),
+                });
+              }}
+              disabled={acceptAllMut.isPending}
+            >
+              {acceptAllMut.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Aceitando...
+                </>
+              ) : (
+                "Confirmar"
+              )}
+            </Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageTransition>
   );
 }
