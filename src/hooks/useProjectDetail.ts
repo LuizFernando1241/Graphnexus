@@ -1,196 +1,87 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import { useNavigate, useBlocker } from "react-router-dom";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useRef } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { fetchProject, updateProject, deleteProject } from "@/lib/api/projects";
 import { createNote } from "@/lib/api/notes";
 import { createEntityLink } from "@/lib/api/links";
 import { invalidateAllEntities } from "@/lib/cache";
+import { useEntityDetail, type EntityDetailConfig } from "@/hooks/useEntityDetail";
 import type { Project, ProjectStatus } from "@/types/entities";
 
+interface ProjectFormState {
+  title: string;
+  emoji: string;
+  description: string;
+  status: ProjectStatus;
+  coverColor: string;
+  startDate: Date | undefined;
+  targetDate: Date | undefined;
+  parentId: string | null;
+}
+
 export function useProjectDetail(id: string | undefined) {
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isMounted = useRef(true);
 
-  useEffect(() => {
-    // Garante que isMounted volte a true em re-mount (StrictMode roda effects 2x).
-    isMounted.current = true;
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
-
-  // Fetch project
-  const { data: project, isLoading } = useQuery({
-    queryKey: ["project", id],
-    queryFn: () => fetchProject(id!),
-    enabled: !!id,
-  });
-
-  // Form state - specific to projects
-  const [title, setTitleState] = useState("");
-  const [emoji, setEmojiState] = useState("");
-  const [description, setDescriptionState] = useState("");
-  const [status, setStatusState] = useState<ProjectStatus>("active");
-  const [coverColor, setCoverColorState] = useState("#7C3AED");
-  const [startDate, setStartDateState] = useState<Date | undefined>();
-  const [targetDate, setTargetDateState] = useState<Date | undefined>();
-  const [parentId, setParentIdState] = useState<string | null>(null);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [loadedId, setLoadedId] = useState<string | null>(null);
-
-  // Sync with fetched data
-  useEffect(() => {
-    if (project && project.id === id && loadedId !== id) {
-      setTitleState(project.title);
-      setEmojiState(project.emoji || "");
-      setDescriptionState(project.description || "");
-      setStatusState(project.status);
-      setCoverColorState(project.cover_color || "#7C3AED");
-      setStartDateState(project.start_date ? new Date(project.start_date + "T00:00:00") : undefined);
-      setTargetDateState(project.target_date ? new Date(project.target_date + "T00:00:00") : undefined);
-      setParentIdState(project.parent_id ?? null);
-      setLoadedId(id!);
-      setHasUnsavedChanges(false);
-    }
-  }, [project, loadedId, id]);
-
-
-  // Mark as changed
-  const markChanged = useCallback(() => setHasUnsavedChanges(true), []);
-
-  // Safe state setters
-  const setTitle = useCallback((value: string) => {
-    if (isMounted.current) {
-      setTitleState(value);
-      markChanged();
-    }
-  }, [markChanged]);
-
-  const setEmoji = useCallback((value: string) => {
-    if (isMounted.current) {
-      setEmojiState(value);
-      markChanged();
-    }
-  }, [markChanged]);
-
-  const setDescription = useCallback((value: string) => {
-    if (isMounted.current) {
-      setDescriptionState(value);
-      markChanged();
-    }
-  }, [markChanged]);
-
-  const setStatus = useCallback((value: ProjectStatus) => {
-    if (isMounted.current) {
-      setStatusState(value);
-      markChanged();
-    }
-  }, [markChanged]);
-
-  const setCoverColor = useCallback((value: string) => {
-    if (isMounted.current) {
-      setCoverColorState(value);
-      markChanged();
-    }
-  }, [markChanged]);
-
-  const setStartDate = useCallback((value: Date | undefined) => {
-    if (isMounted.current) {
-      setStartDateState(value);
-      markChanged();
-    }
-  }, [markChanged]);
-
-  const setTargetDate = useCallback((value: Date | undefined) => {
-    if (isMounted.current) {
-      setTargetDateState(value);
-      markChanged();
-    }
-  }, [markChanged]);
-
-  const setParentId = useCallback((value: string | null) => {
-    if (isMounted.current) {
-      setParentIdState(value);
-      markChanged();
-    }
-  }, [markChanged]);
-
-  // Save mutation
-  const saveMutation = useMutation({
-    mutationFn: async () => {
-      if (!id) throw new Error("No project ID");
-      return updateProject(id, {
-        title,
-        emoji: emoji || null,
-        description: description || null,
-        status,
-        cover_color: coverColor,
-        start_date: startDate ? format(startDate, "yyyy-MM-dd") : null,
-        target_date: targetDate ? format(targetDate, "yyyy-MM-dd") : null,
-        parent_id: parentId,
-      });
+  // Config específica para Project
+  const config: EntityDetailConfig<Project, ProjectFormState> = {
+    queryKey: "project",
+    fetchFn: fetchProject,
+    updateFn: updateProject,
+    deleteFn: deleteProject,
+    initialFormState: {
+      title: "",
+      emoji: "",
+      description: "",
+      status: "active",
+      coverColor: "#7C3AED",
+      startDate: undefined,
+      targetDate: undefined,
+      parentId: null,
     },
-
-    onSuccess: () => {
-      if (!isMounted.current) return;
-      setHasUnsavedChanges(false);
-      queryClient.invalidateQueries({ queryKey: ["project", id] });
-      invalidateAllEntities(queryClient);
-      toast.success("Projeto salvo!");
+    formToPayload: (formState: ProjectFormState, _currentEntity) => {
+      return {
+        title: formState.title,
+        emoji: formState.emoji || null,
+        description: formState.description || null,
+        status: formState.status,
+        cover_color: formState.coverColor,
+        start_date: formState.startDate ? format(formState.startDate, "yyyy-MM-dd") : null,
+        target_date: formState.targetDate ? format(formState.targetDate, "yyyy-MM-dd") : null,
+        parent_id: formState.parentId,
+      } as any;
     },
-    onError: () => {
-      if (isMounted.current) toast.error("Erro ao salvar");
+    syncFn: (entity: Project, _formState: ProjectFormState): ProjectFormState => ({
+      title: entity.title,
+      emoji: entity.emoji || "",
+      description: entity.description || "",
+      status: entity.status,
+      coverColor: entity.cover_color || "#7C3AED",
+      startDate: entity.start_date ? new Date(entity.start_date + "T00:00:00") : undefined,
+      targetDate: entity.target_date ? new Date(entity.target_date + "T00:00:00") : undefined,
+      parentId: entity.parent_id ?? null,
+    }),
+    navigateToList: "/projects",
+    successMessages: {
+      save: "Projeto salvo!",
+      delete: "Projeto excluído",
+      archive: "Projeto arquivado",
     },
-  });
+  };
 
-  const handleSave = useCallback(() => saveMutation.mutate(), [saveMutation]);
+  const useEntityDetailState = useEntityDetail<Project, ProjectFormState>(id, config);
 
-  // Delete mutation
-  const deleteMutation = useMutation({
-    mutationFn: async () => {
-      if (!id) throw new Error("No project ID");
-      await deleteProject(id);
-    },
-    onSuccess: () => {
-      invalidateAllEntities(queryClient);
-      toast.success("Projeto excluído");
-      navigate("/projects");
-    },
-  });
-
-  const handleDelete = useCallback(() => deleteMutation.mutate(), [deleteMutation]);
-
-  // Archive mutation (toggle)
-  const archiveMutation = useMutation({
-    mutationFn: async () => {
-      if (!id || !project) throw new Error("No project");
-      return updateProject(id, { archived: !project.archived });
-    },
-    onSuccess: () => {
-      if (!isMounted.current) return;
-      setHasUnsavedChanges(false);
-      queryClient.invalidateQueries({ queryKey: ["project", id] });
-      invalidateAllEntities(queryClient);
-      toast.success(project?.archived ? "Projeto desarquivado" : "Projeto arquivado");
-    },
-    onError: () => {
-      if (isMounted.current) toast.error("Erro ao arquivar");
-    },
-  });
-
-  const handleArchive = useCallback(() => archiveMutation.mutate(), [archiveMutation]);
-
-  // Extract mutation
+  // Extract mutation (específico de Project)
   const extractMutation = useMutation({
     mutationFn: async () => {
-      if (!description || !id || !project) throw new Error("Sem conteúdo para extrair");
+      if (!useEntityDetailState.formState.description || !id || !useEntityDetailState.entity) {
+        throw new Error("Sem conteúdo para extrair");
+      }
 
       const note = await createNote({
-        title: `Ref: ${project?.title || 'Sem título'}`,
-        content: description,
+        title: `Ref: ${useEntityDetailState.entity.title || 'Sem título'}`,
+        content: useEntityDetailState.formState.description,
       });
 
       await createEntityLink({
@@ -206,8 +97,8 @@ export function useProjectDetail(id: string | undefined) {
     },
     onSuccess: () => {
       if (!isMounted.current) return;
-      setDescriptionState("");
-      setHasUnsavedChanges(false);
+      useEntityDetailState.setFormField("description", "");
+      useEntityDetailState.markChanged();
       queryClient.invalidateQueries({ queryKey: ["project", id] });
       invalidateAllEntities(queryClient);
       toast.success("Nota extraída e vinculada com sucesso!");
@@ -221,49 +112,45 @@ export function useProjectDetail(id: string | undefined) {
 
   const handleExtract = useCallback(() => extractMutation.mutate(), [extractMutation]);
 
-  // Navigation blocker
-  const blocker = useBlocker(hasUnsavedChanges);
-
   return {
     // Data
-    project,
-    isLoading,
-    
-    // Form state
-    title,
-    emoji,
-    description,
-    status,
-    coverColor,
-    startDate,
-    targetDate,
-    parentId,
-    hasUnsavedChanges,
+    project: useEntityDetailState.entity,
+    isLoading: useEntityDetailState.isLoading,
 
-    // Setters
-    setTitle,
-    setEmoji,
-    setDescription,
-    setStatus,
-    setCoverColor,
-    setStartDate,
-    setTargetDate,
-    setParentId,
+    // Form state (extraído do formState genérico)
+    title: useEntityDetailState.formState.title,
+    emoji: useEntityDetailState.formState.emoji,
+    description: useEntityDetailState.formState.description,
+    status: useEntityDetailState.formState.status,
+    coverColor: useEntityDetailState.formState.coverColor,
+    startDate: useEntityDetailState.formState.startDate,
+    targetDate: useEntityDetailState.formState.targetDate,
+    parentId: useEntityDetailState.formState.parentId,
+    hasUnsavedChanges: useEntityDetailState.hasUnsavedChanges,
 
-    
+    // Setters (usando setFormField genérico)
+    setTitle: (value: string) => useEntityDetailState.setFormField("title", value),
+    setEmoji: (value: string) => useEntityDetailState.setFormField("emoji", value),
+    setDescription: (value: string) => useEntityDetailState.setFormField("description", value),
+    setStatus: (value: ProjectStatus) => useEntityDetailState.setFormField("status", value),
+    setCoverColor: (value: string) => useEntityDetailState.setFormField("coverColor", value),
+    setStartDate: (value: Date | undefined) => useEntityDetailState.setFormField("startDate", value),
+    setTargetDate: (value: Date | undefined) => useEntityDetailState.setFormField("targetDate", value),
+    setParentId: (value: string | null) => useEntityDetailState.setFormField("parentId", value),
+
     // Mutations
-    saveMutation,
-    deleteMutation,
-    archiveMutation,
+    saveMutation: useEntityDetailState.saveMutation,
+    deleteMutation: useEntityDetailState.deleteMutation,
+    archiveMutation: useEntityDetailState.archiveMutation,
     extractMutation,
-    
+
     // Actions
-    handleSave,
-    handleDelete,
-    handleArchive,
+    handleSave: useEntityDetailState.handleSave,
+    handleDelete: useEntityDetailState.handleDelete,
+    handleArchive: useEntityDetailState.handleArchive,
     handleExtract,
-    
+
     // Blocker
-    blocker,
+    blocker: useEntityDetailState.blocker,
   };
 }
