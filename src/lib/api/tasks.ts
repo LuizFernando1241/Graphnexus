@@ -13,7 +13,56 @@ function rowToTask(row: Record<string, unknown>): Task {
   } as unknown as Task;
 }
 
-export async function fetchTasks(opts?: { includeOldDone?: boolean }) {
+export async function fetchTasks(opts?: { includeOldDone?: boolean; search?: string }) {
+  // Se há busca, usamos duas queries separadas e combinamos (100% seguro, sem interpolação)
+  if (opts?.search && opts.search.trim()) {
+    const searchPattern = `%${opts.search}%`;
+
+    // Query 1: Busca no título
+    let titleQuery = supabase
+      .from("tasks")
+      .select("*")
+      .ilike("title", searchPattern)
+      .eq("archived", false)
+      .neq("status", "cancelled");
+
+    // Query 2: Busca na descrição
+    let descQuery = supabase
+      .from("tasks")
+      .select("*")
+      .ilike("description", searchPattern)
+      .eq("archived", false)
+      .neq("status", "cancelled");
+
+    // Executar ambas as queries em paralelo
+    const [titleResult, descResult] = await Promise.all([titleQuery, descQuery]);
+
+    if (titleResult.error) throw titleResult.error;
+    if (descResult.error) throw descResult.error;
+
+    // Combinar resultados e remover duplicatas (por ID)
+    const combined = new Map<string, Task>();
+    (titleResult.data || []).forEach((task: Task) => combined.set(task.id, task));
+    (descResult.data || []).forEach((task: Task) => combined.set(task.id, task));
+
+    let tasks = Array.from(combined.values());
+
+    // Filtrar tarefas concluídas antigas
+    if (!opts?.includeOldDone) {
+      const twoDaysAgo = new Date();
+      twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+      tasks = tasks.filter((t) => {
+        if (t.status !== "done") return true;
+        if (!t.completed_at) return true;
+        return new Date(t.completed_at) >= twoDaysAgo;
+      });
+    }
+
+    // Ordenar por created_at
+    return tasks.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  }
+
+  // Sem busca: query normal
   let query = supabase
     .from("tasks")
     .select("*")

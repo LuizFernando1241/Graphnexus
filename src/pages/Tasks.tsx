@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchTasks } from "@/lib/api/tasks";
 import { useTasksView } from "@/hooks/useTasksView";
 import { useTaskKeyboardShortcuts } from "@/hooks/useTaskKeyboardShortcuts";
+import { useDebouncedValue } from "@/lib/utils";
 import { PageTransition } from "@/components/PageTransition";
 import { PageHeader } from "@/components/PageHeader";
 import { ImportDropzone } from "@/components/import/ImportDropzone";
@@ -28,9 +29,11 @@ export default function Tasks() {
   const queryClient = useQueryClient();
   const completeRecurring = useCompleteRecurringTask();
 
+  const debouncedSearch = useDebouncedValue(filters.search);
+
   const { data: tasks = [], isLoading } = useQuery({
-    queryKey: ["tasks"],
-    queryFn: () => fetchTasks(),
+    queryKey: ["tasks", debouncedSearch],
+    queryFn: () => fetchTasks({ search: debouncedSearch }),
   });
 
   useTaskKeyboardShortcuts({
@@ -43,14 +46,10 @@ export default function Tasks() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["tasks"] }),
   });
 
-  // Apply filters + sort
+  // Apply filters + sort (search is now server-side)
   const filteredTasks = useMemo(() => {
     let list = tasks;
 
-    if (filters.search.trim()) {
-      const q = filters.search.toLowerCase();
-      list = list.filter((t) => t.title.toLowerCase().includes(q));
-    }
     if (filters.priority.length > 0) {
       list = list.filter((t) => filters.priority.includes(t.priority));
     }

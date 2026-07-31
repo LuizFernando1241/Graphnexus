@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { StickyNote, CheckSquare, FolderKanban, Search, Crosshair } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +9,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import type { EntityType } from "@/types/entities";
-import { useDebouncedValue, escapeLikePattern } from "@/lib/utils";
+import { useDebouncedValue } from "@/lib/utils";
+import { useEntitySearch } from "@/hooks/useEntitySearch";
 
 interface SearchResult {
   id: string;
@@ -40,34 +40,6 @@ const TYPE_ROUTES: Record<EntityType, string> = {
   product: "/radar",
 };
 
-async function searchAll(query: string): Promise<SearchResult[]> {
-  if (!query.trim()) return [];
-  const q = `%${escapeLikePattern(query)}%`;
-  
-  // Busca segura: duas queries por entidade (evita interpolação em .or())
-  // Notes: busca em title e content separadamente
-  const [notesTitle, notesContent, tasksTitle, tasksDesc, projectsTitle, projectsDesc] = await Promise.all([
-    supabase.from("notes").select("id, title, emoji").ilike("title", q).eq("archived", false).limit(5),
-    supabase.from("notes").select("id, title, emoji").ilike("content", q).eq("archived", false).limit(5),
-    supabase.from("tasks").select("id, title").ilike("title", q).eq("archived", false).limit(5),
-    supabase.from("tasks").select("id, title").ilike("description", q).eq("archived", false).limit(5),
-    supabase.from("projects").select("id, title, emoji").ilike("title", q).eq("archived", false).limit(5),
-    supabase.from("projects").select("id, title, emoji").ilike("description", q).eq("archived", false).limit(5),
-  ]);
-
-  // Combinar resultados e remover duplicatas
-  const combined = new Map<string, SearchResult>();
-  
-  (notesTitle.data || []).forEach((n) => combined.set(n.id, { id: n.id, type: "note", title: n.title, emoji: n.emoji }));
-  (notesContent.data || []).forEach((n) => combined.set(n.id, { id: n.id, type: "note", title: n.title, emoji: n.emoji }));
-  (tasksTitle.data || []).forEach((t) => combined.set(t.id, { id: t.id, type: "task", title: t.title }));
-  (tasksDesc.data || []).forEach((t) => combined.set(t.id, { id: t.id, type: "task", title: t.title }));
-  (projectsTitle.data || []).forEach((p) => combined.set(p.id, { id: p.id, type: "project", title: p.title, emoji: p.emoji }));
-  (projectsDesc.data || []).forEach((p) => combined.set(p.id, { id: p.id, type: "project", title: p.title, emoji: p.emoji }));
-  
-  return Array.from(combined.values());
-}
-
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -75,11 +47,17 @@ export function CommandPalette() {
 
   const debouncedSearch = useDebouncedValue(search);
 
-  const { data: results = [] } = useQuery({
-    queryKey: ["cmd-search", debouncedSearch],
-    queryFn: () => searchAll(debouncedSearch),
-    enabled: open && debouncedSearch.length > 0,
-  });
+  // Search each entity type in parallel
+  const { results: notes } = useEntitySearch("note", debouncedSearch, { limit: 5 });
+  const { results: tasks } = useEntitySearch("task", debouncedSearch, { limit: 5 });
+  const { results: projects } = useEntitySearch("project", debouncedSearch, { limit: 5 });
+
+  // Combine and map to SearchResult format
+  const results: SearchResult[] = [
+    ...notes.map((n) => ({ id: n.id, type: "note" as EntityType, title: n.title, emoji: n.emoji })),
+    ...tasks.map((t) => ({ id: t.id, type: "task" as EntityType, title: t.title })),
+    ...projects.map((p) => ({ id: p.id, type: "project" as EntityType, title: p.title, emoji: p.emoji })),
+  ];
 
   // Keyboard shortcut
   useEffect(() => {
