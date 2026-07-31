@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
-import { Crosshair, Plus, SlidersHorizontal, ChevronDown, Maximize2, Minimize2, Filter, FileText } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
+import { Crosshair, Plus, SlidersHorizontal, ChevronDown, Maximize2, Minimize2, Filter, FileText, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -35,6 +35,7 @@ const STAGE_CHIPS: { stage: PipelineStage; label: string }[] = [
 
 
 export default function RadarPage() {
+  const navigate = useNavigate();
   const { produtos, isLoading } = useRadarProdutos();
   const { preferences, setColumnSort, removeColumnSort, setAdvancedFilters, clearAdvancedFilters } = useRadarPreferences();
   const [filtrosAbertos, setFiltrosAbertos] = useState(false);
@@ -130,6 +131,9 @@ export default function RadarPage() {
           }
           actions={
             <>
+              <Button variant="ghost" size="sm" onClick={() => navigate("/settings?tab=radar")} title="Parâmetros do Radar">
+                <Settings className="h-4 w-4" />
+              </Button>
               <Button variant="outline" size="sm" onClick={() => setOrcamentoAberto(true)}>
                 <FileText className="h-4 w-4 mr-2" />
                 Solicitar orçamento

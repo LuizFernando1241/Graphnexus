@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Sparkles, Link2, X, ArrowRight, StickyNote, CheckSquare, FolderKanban, Crosshair } from "lucide-react";
+import { Sparkles, Link2, X, ArrowRight, StickyNote, CheckSquare, FolderKanban, Crosshair, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
@@ -86,9 +86,19 @@ export function RelatedSuggestions({ entityType, entityId }: Props) {
 
   return (
     <Card className="p-4 border-primary/20 bg-primary/5">
-      <div className="flex items-center gap-2 mb-3">
-        <Sparkles className="h-4 w-4 text-primary" />
-        <h3 className="font-semibold text-sm">Pode estar relacionado a…</h3>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-primary" />
+          <h3 className="font-semibold text-sm">Pode estar relacionado a…</h3>
+        </div>
+        <button
+          onClick={() => navigate("/suggestions")}
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+          title="Ver todas as sugestões da IA"
+        >
+          <ExternalLink className="h-3 w-3" />
+          <span>Ver todas</span>
+        </button>
       </div>
       <div className="flex flex-col gap-2">
         {enriched.map(({ s, other }) => {

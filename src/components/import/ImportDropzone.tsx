@@ -73,6 +73,14 @@ export function ImportDropzone({ defaultType, children, className }: Props) {
       className={cn("relative", className)}
     >
       {children}
+      {/* Hint estático - sempre visível, discreto */}
+      <div className="absolute bottom-2 right-2 z-10 pointer-events-none">
+        <div className="flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted/50 border border-border/50 text-xs text-muted-foreground">
+          <Upload className="h-3 w-3" />
+          <span>Arraste .md ou .zip</span>
+        </div>
+      </div>
+      {/* Overlay durante drag/import */}
       {(dragging || importing) && (
         <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
           <div className="flex flex-col items-center gap-3 rounded-2xl border-2 border-dashed border-primary bg-card p-8 shadow-2xl">

@@ -1,5 +1,6 @@
 import { Settings as SettingsIcon, Crosshair, Sparkles, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,16 @@ import { ParametrosRadar } from "@/components/radar/ParametrosRadar";
 import { reindexAll } from "@/lib/api/embedding";
 
 export default function Settings() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [reindexing, setReindexing] = useState(false);
+  const [activeTab, setActiveTab] = useState("radar");
+
+  useEffect(() => {
+    const tab = searchParams.get("tab");
+    if (tab === "radar" || tab === "ai") {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   const handleReindex = async () => {
     setReindexing(true);
@@ -30,7 +40,7 @@ export default function Settings() {
       <div className="flex flex-col gap-6">
         <PageHeader title="Configurações" icon={SettingsIcon} />
 
-        <Tabs defaultValue="radar" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList>
             <TabsTrigger value="radar">
               <Crosshair className="w-4 h-4 mr-2" />
