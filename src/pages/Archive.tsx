@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { RefreshCcw, Trash2, Search } from "lucide-react";
+import { RefreshCcw, Trash2, Search, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -157,6 +157,8 @@ export default function Archive() {
 
   const [deleteTarget, setDeleteTarget] = useState<{ table: ArchiveTable; id: string } | null>(null);
   const [productSearch, setProductSearch] = useState("");
+  const [restoreAllTarget, setRestoreAllTarget] = useState<{ table: ArchiveTable; items: ArchivedItem[] } | null>(null);
+  const [restoringAll, setRestoringAll] = useState(false);
 
   const restoreMutation = useMutation({
     mutationFn: async ({ table, id }: { table: ArchiveTable; id: string }) => {
@@ -207,6 +209,54 @@ export default function Archive() {
     },
   });
 
+  const restoreAllMutation = useMutation({
+    mutationFn: async ({ table, items }: { table: ArchiveTable; items: ArchivedItem[] }) => {
+      const BATCH_SIZE = 10;
+      let successCount = 0;
+      let failCount = 0;
+
+      for (let i = 0; i < items.length; i += BATCH_SIZE) {
+        const batch = items.slice(i, i + BATCH_SIZE);
+        const results = await Promise.allSettled(
+          batch.map((item) => restoreMutation.mutateAsync({ table, id: item.id }))
+        );
+
+        results.forEach((result) => {
+          if (result.status === "fulfilled") {
+            successCount++;
+          } else {
+            failCount++;
+          }
+        });
+      }
+
+      return { successCount, failCount };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["archived-notes"] });
+      queryClient.invalidateQueries({ queryKey: ["archived-projects"] });
+      queryClient.invalidateQueries({ queryKey: ["archived-tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["archived-products"] });
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["radar-produtos"] });
+
+      if (result.failCount === 0) {
+        toast.success(`${result.successCount} itens restaurados`);
+      } else {
+        toast.error(
+          `${result.successCount} restaurados, ${result.failCount} falharam`,
+          { description: "Os itens que falharam continuam na lista." }
+        );
+      }
+    },
+    onError: (error) => {
+      console.error("Erro ao restaurar todos:", error);
+      toast.error("Erro ao processar restauração");
+    },
+  });
+
   const renderList = (
     items: ArchivedItem[] | undefined,
     isLoading: boolean | undefined,
@@ -220,17 +270,44 @@ export default function Archive() {
           <p className="text-sm">Nenhum item arquivado.</p>
         </div>
       );
+
+    const typeLabel = table === "notes" ? "notas" : table === "projects" ? "projetos" : table === "tasks" ? "tarefas" : "itens";
+
     return (
-      <div className="grid gap-2 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-        {items.map((item) => (
-          <ItemRow
-            key={item.id}
-            item={item}
-            restoring={restoreMutation.isPending}
-            onRestore={() => restoreMutation.mutate({ table, id: item.id })}
-            onDelete={() => setDeleteTarget({ table, id: item.id })}
-          />
-        ))}
+      <div className="flex flex-col gap-3">
+        {items.length > 0 && (
+          <div className="flex justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setRestoreAllTarget({ table, items })}
+              disabled={restoringAll || restoreMutation.isPending}
+            >
+              {restoringAll ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Restaurando...
+                </>
+              ) : (
+                <>
+                  <Check className="mr-2 h-4 w-4" />
+                  Restaurar todos
+                </>
+              )}
+            </Button>
+          </div>
+        )}
+        <div className="grid gap-2 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
+          {items.map((item) => (
+            <ItemRow
+              key={item.id}
+              item={item}
+              restoring={restoreMutation.isPending || restoringAll}
+              onRestore={() => restoreMutation.mutate({ table, id: item.id })}
+              onDelete={() => setDeleteTarget({ table, id: item.id })}
+            />
+          ))}
+        </div>
       </div>
     );
   };
@@ -293,6 +370,41 @@ export default function Archive() {
                 disabled={deleteMutation.isPending}
               >
                 Excluir
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        <AlertDialog open={!!restoreAllTarget} onOpenChange={() => setRestoreAllTarget(null)}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Restaurar todos os itens?</AlertDialogTitle>
+              <AlertDialogDescription>
+                Isso restaurará {restoreAllTarget?.items.length} {restoreAllTarget?.table === "notes" ? "nota" : restoreAllTarget?.table === "projects" ? "projeto" : restoreAllTarget?.table === "tasks" ? "tarefa" : "item"}{restoreAllTarget?.items.length !== 1 ? "s" : ""} arquivado{restoreAllTarget?.items.length !== 1 ? "s" : ""}.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <Button variant="ghost" onClick={() => setRestoreAllTarget(null)}>Cancelar</Button>
+              <Button
+                onClick={() => {
+                  if (restoreAllTarget) {
+                    setRestoreAllTarget(null);
+                    setRestoringAll(true);
+                    restoreAllMutation.mutate(restoreAllTarget, {
+                      onSettled: () => setRestoringAll(false),
+                    });
+                  }
+                }}
+                disabled={restoreAllMutation.isPending}
+              >
+                {restoreAllMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Restaurando...
+                  </>
+                ) : (
+                  "Confirmar"
+                )}
               </Button>
             </AlertDialogFooter>
           </AlertDialogContent>
