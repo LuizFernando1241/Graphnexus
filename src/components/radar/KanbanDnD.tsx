@@ -33,6 +33,9 @@ interface KanbanDnDProps {
   columnSorts: ColumnSortConfigs;
   onSortChange: (stage: PipelineStage, field: SortField, direction: SortDirection) => void;
   onSortClear: (stage: PipelineStage) => void;
+  selectionMode?: boolean;
+  selectedIds?: Set<string>;
+  onToggleSelection?: (id: string) => void;
 }
 
 export function KanbanDnD({
@@ -46,6 +49,9 @@ export function KanbanDnD({
   columnSorts,
   onSortChange,
   onSortClear,
+  selectionMode = false,
+  selectedIds = new Set(),
+  onToggleSelection,
 }: KanbanDnDProps) {
   const { moverEtapa } = useRadarProdutos();
   const [activeProduto, setActiveProduto] = useState<RadarProduto | null>(null);
@@ -78,36 +84,59 @@ export function KanbanDnD({
   }
 
   return (
-    <DndContext
-      sensors={sensors}
-      collisionDetection={pointerWithin}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-      onDragCancel={() => setActiveProduto(null)}
-    >
-      <KanbanBoard
-        produtos={produtos}
-        onEdit={onEdit}
-        onHistorico={onHistorico}
-        expandedIds={expandedIds}
-        onToggleExpand={onToggleExpand}
-        decisionFilter={decisionFilter}
-        onChangeDecisionFilter={onChangeDecisionFilter}
-        columnSorts={columnSorts}
-        onSortChange={onSortChange}
-        onSortClear={onSortClear}
-      />
-      <DragOverlay>
-        {activeProduto && (
-          <div className="rotate-2 opacity-95">
-            <ProdutoCard
-              produto={activeProduto}
-              onEdit={() => {}}
-              onHistorico={() => {}}
-            />
-          </div>
-        )}
-      </DragOverlay>
-    </DndContext>
+    <>
+      {selectionMode ? (
+        <KanbanBoard
+          produtos={produtos}
+          onEdit={onEdit}
+          onHistorico={onHistorico}
+          expandedIds={expandedIds}
+          onToggleExpand={onToggleExpand}
+          decisionFilter={decisionFilter}
+          onChangeDecisionFilter={onChangeDecisionFilter}
+          columnSorts={columnSorts}
+          onSortChange={onSortChange}
+          onSortClear={onSortClear}
+          selectionMode={selectionMode}
+          selectedIds={selectedIds}
+          onToggleSelection={onToggleSelection}
+        />
+      ) : (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={pointerWithin}
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+          onDragCancel={() => setActiveProduto(null)}
+        >
+          <KanbanBoard
+            produtos={produtos}
+            onEdit={onEdit}
+            onHistorico={onHistorico}
+            expandedIds={expandedIds}
+            onToggleExpand={onToggleExpand}
+            decisionFilter={decisionFilter}
+            onChangeDecisionFilter={onChangeDecisionFilter}
+            columnSorts={columnSorts}
+            onSortChange={onSortChange}
+            onSortClear={onSortClear}
+            selectionMode={selectionMode}
+            selectedIds={selectedIds}
+            onToggleSelection={onToggleSelection}
+          />
+          <DragOverlay>
+            {activeProduto && (
+              <div className="rotate-2 opacity-95">
+                <ProdutoCard
+                  produto={activeProduto}
+                  onEdit={() => {}}
+                  onHistorico={() => {}}
+                />
+              </div>
+            )}
+          </DragOverlay>
+        </DndContext>
+      )}
+    </>
   );
 }

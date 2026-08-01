@@ -21,6 +21,9 @@ interface ProdutoCardProps {
   onHistorico: (produto: RadarProduto) => void;
   expanded?: boolean;
   onToggleExpand?: () => void;
+  selectionMode?: boolean;
+  selected?: boolean;
+  onToggleSelection?: () => void;
 }
 
 export function ProdutoCard({
@@ -29,13 +32,16 @@ export function ProdutoCard({
   onHistorico,
   expanded = false,
   onToggleExpand,
+  selectionMode = false,
+  selected = false,
+  onToggleSelection,
 }: ProdutoCardProps) {
   const { moverEtapa, isMovendo } = useRadarProdutos();
   const { parametros } = useRadarParametros();
   const scoreResult = calcularScore(produto, parametros);
 
   const { attributes, listeners, setNodeRef, transform, isDragging } =
-    useDraggable({ id: produto.id });
+    useDraggable({ id: produto.id, disabled: selectionMode });
 
   const dragStyle = transform
     ? { transform: CSS.Translate.toString(transform) }
@@ -87,11 +93,27 @@ export function ProdutoCard({
       className={cn(isDragging ? "opacity-40 cursor-grabbing" : "cursor-grab")}
     >
       <Card
-        className="hover:border-primary/40 hover:shadow-sm transition-all overflow-hidden"
+        className={cn(
+          "hover:border-primary/40 hover:shadow-sm transition-all overflow-hidden",
+          selectionMode && "cursor-pointer",
+          selected && "ring-2 ring-primary"
+        )}
         title={produto.nome}
+        onClick={selectionMode ? onToggleSelection : undefined}
       >
         <CardContent className="p-0">
           <div className="flex items-stretch gap-2">
+            {selectionMode && (
+              <div className="flex items-center justify-center pl-3">
+                <input
+                  type="checkbox"
+                  checked={selected}
+                  onChange={onToggleSelection}
+                  onClick={(e) => e.stopPropagation()}
+                  className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                />
+              </div>
+            )}
             <div className={cn("w-1 shrink-0", stripeColor)} />
             <div className="flex flex-col gap-2 py-2 pr-3 min-w-0 flex-1">
               {/* Linha 1 */}

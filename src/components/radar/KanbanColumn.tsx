@@ -21,6 +21,9 @@ interface KanbanColumnProps {
   sortConfig?: ColumnSortConfig | null;
   onSortChange?: (field: SortField, direction: SortDirection) => void;
   onSortClear?: () => void;
+  selectionMode?: boolean;
+  selectedIds?: Set<string>;
+  onToggleSelection?: (id: string) => void;
 }
 
 export function KanbanColumn({
@@ -39,6 +42,9 @@ export function KanbanColumn({
   sortConfig,
   onSortChange,
   onSortClear,
+  selectionMode = false,
+  selectedIds = new Set(),
+  onToggleSelection,
 }: KanbanColumnProps) {
   const { setNodeRef, isOver } = useDroppable({ id: stage });
 
@@ -117,6 +123,9 @@ export function KanbanColumn({
                 onHistorico={onHistorico}
                 expanded={expandedIds.has(produto.id)}
                 onToggleExpand={() => onToggleExpand(produto.id)}
+                selectionMode={selectionMode}
+                selected={selectedIds.has(produto.id)}
+                onToggleSelection={() => onToggleSelection?.(produto.id)}
               />
             ))
           )}

@@ -14,6 +14,9 @@ interface KanbanBoardProps {
   columnSorts: ColumnSortConfigs;
   onSortChange: (stage: PipelineStage, field: SortField, direction: SortDirection) => void;
   onSortClear: (stage: PipelineStage) => void;
+  selectionMode?: boolean;
+  selectedIds?: Set<string>;
+  onToggleSelection?: (id: string) => void;
 }
 
 type ColunaCfg = {
@@ -66,6 +69,9 @@ export function KanbanBoard({
   columnSorts,
   onSortChange,
   onSortClear,
+  selectionMode = false,
+  selectedIds = new Set(),
+  onToggleSelection,
 }: KanbanBoardProps) {
   // Função de ordenação baseada no campo e direção
   function sortProducts(products: RadarProduto[], field: SortField, direction: SortDirection) {
@@ -138,6 +144,9 @@ export function KanbanBoard({
             sortConfig={sortConfig ?? null}
             onSortChange={(field, direction) => onSortChange(col.stage, field, direction)}
             onSortClear={() => onSortClear(col.stage)}
+            selectionMode={selectionMode}
+            selectedIds={selectedIds}
+            onToggleSelection={onToggleSelection}
           />
         );
       })}

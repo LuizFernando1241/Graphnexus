@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Crosshair, Plus, SlidersHorizontal, ChevronDown, Maximize2, Minimize2, Filter, FileText, Settings } from "lucide-react";
+import { Crosshair, Plus, SlidersHorizontal, ChevronDown, Maximize2, Minimize2, Filter, FileText, Settings, CheckSquare2, X, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,7 +14,12 @@ import { useRadarPreferences } from "@/hooks/radar/useRadarPreferences";
 import { ProdutoSheet } from "@/components/radar/ProdutoSheet";
 import { HistoricoModal } from "@/components/radar/HistoricoModal";
 import { OrcamentoDialog } from "@/components/radar/OrcamentoDialog";
+import { ExportFieldsDialog } from "@/components/radar/ExportFieldsDialog";
 import { STAGE_SOLID, STAGE_CHIP_ACTIVE } from "@/lib/radar/decisionColors";
+import { buildExportFields, type ExportField } from "@/lib/radar/radarExportFields";
+import { calcularScore } from "@/lib/radar/radarScore";
+import { useRadarParametros } from "@/hooks/radar/useRadarParametros";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { RadarProduto, PipelineStage } from "@/types/radar";
 
@@ -38,6 +43,7 @@ export default function RadarPage() {
   const navigate = useNavigate();
   const { produtos, isLoading } = useRadarProdutos();
   const { preferences, setColumnSort, removeColumnSort, setAdvancedFilters, clearAdvancedFilters } = useRadarPreferences();
+  const { parametros } = useRadarParametros();
   const [filtrosAbertos, setFiltrosAbertos] = useState(false);
   const [filtrosAvancadosAbertos, setFiltrosAvancadosAbertos] = useState(false);
   const [produtoSelecionado, setProdutoSelecionado] = useState<RadarProduto | Record<string, never> | null>(null);
@@ -46,6 +52,9 @@ export default function RadarPage() {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [decisionFilter, setDecisionFilter] = useState<"todos" | "aprovado" | "reprovado">("todos");
   const [orcamentoAberto, setOrcamentoAberto] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
   const location = useLocation();
   useEffect(() => {
@@ -115,6 +124,79 @@ export default function RadarPage() {
     setExpandedIds(allExpanded ? new Set() : new Set(visibleIds));
   }
 
+  function toggleSelection(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selectedIds.size === visibleIds.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(visibleIds));
+    }
+  }
+
+  function exitSelectionMode() {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+  }
+
+  function openExportDialog() {
+    setExportDialogOpen(true);
+  }
+
+  function handleExport(selectedFieldIds: string[]) {
+    const selectedProdutos = produtosFiltrados.filter((p) => selectedIds.has(p.id));
+    if (selectedProdutos.length === 0) {
+      toast.error("Nenhum produto selecionado para exportação");
+      return;
+    }
+
+    // Usar o primeiro produto para determinar os campos disponíveis (incluindo pilares customizados)
+    const sampleProduto = selectedProdutos[0];
+    const allFields = buildExportFields(sampleProduto, parametros);
+    const selectedFields = allFields.filter((f) => selectedFieldIds.includes(f.id));
+
+    if (selectedFields.length === 0) {
+      toast.error("Nenhum campo selecionado para exportação");
+      return;
+    }
+
+    // Importar xlsx dinamicamente
+    import("xlsx").then((XLSX) => {
+      // Montar dados para Excel
+      const headers = selectedFields.map((f) => f.label);
+      const rows = selectedProdutos.map((produto) => {
+        const scoreResult = calcularScore(produto, parametros);
+        return selectedFields.map((field) => field.getValue(produto, scoreResult.pilares));
+      });
+
+      // Criar worksheet
+      const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, "Produtos");
+
+      // Gerar nome do arquivo
+      const date = new Date().toISOString().split("T")[0];
+      const filename = `radar-export-${date}.xlsx`;
+
+      // Salvar arquivo
+      XLSX.writeFile(workbook, filename);
+
+      // Feedback e limpeza
+      toast.success(`${selectedProdutos.length} produto${selectedProdutos.length !== 1 ? "s" : ""} exportado${selectedProdutos.length !== 1 ? "s" : ""}`);
+      exitSelectionMode();
+    }).catch((error) => {
+      console.error("Erro ao exportar Excel:", error);
+      toast.error("Erro ao exportar arquivo Excel");
+    });
+  }
+
   const emDecisao = produtos.filter((p) => p.stage === "aguardando_decisao").length;
 
   return (
@@ -168,6 +250,17 @@ export default function RadarPage() {
               <Button size="sm" onClick={() => setProdutoSelecionado({})}>
                 <Plus className="h-4 w-4 mr-2" />
                 Novo Produto
+              </Button>
+              <Button
+                variant={selectionMode ? "default" : "outline"}
+                size="sm"
+                onClick={() => {
+                  if (selectionMode) exitSelectionMode();
+                  else setSelectionMode(true);
+                }}
+              >
+                <CheckSquare2 className="h-4 w-4 mr-2" />
+                {selectionMode ? "Cancelar seleção" : "Selecionar produtos"}
               </Button>
             </>
           }
@@ -242,6 +335,9 @@ export default function RadarPage() {
             columnSorts={preferences.columnSorts}
             onSortChange={setColumnSort}
             onSortClear={removeColumnSort}
+            selectionMode={selectionMode}
+            selectedIds={selectedIds}
+            onToggleSelection={toggleSelection}
           />
         )}
       </div>
@@ -266,6 +362,48 @@ export default function RadarPage() {
       )}
 
       <OrcamentoDialog open={orcamentoAberto} onOpenChange={setOrcamentoAberto} produtos={produtos} />
+
+      <ExportFieldsDialog
+        open={exportDialogOpen}
+        onOpenChange={setExportDialogOpen}
+        fields={selectedIds.size > 0 ? buildExportFields(produtosFiltrados[0], parametros) : []}
+        onExport={handleExport}
+      />
+
+      {/* Barra de ações flutuante durante seleção */}
+      {selectionMode && selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-background border border-border rounded-lg shadow-lg px-4 py-3 flex items-center gap-4">
+          <span className="text-sm font-medium">
+            {selectedIds.size} produto{selectedIds.size !== 1 ? "s" : ""} selecionado{selectedIds.size !== 1 ? "s" : ""}
+          </span>
+          <div className="h-4 w-px bg-border" />
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleSelectAll}
+            className="text-xs"
+          >
+            {selectedIds.size === visibleIds.length ? "Limpar seleção" : "Selecionar todos"}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={exitSelectionMode}
+            className="text-xs"
+          >
+            <X className="h-3 w-3 mr-1" />
+            Cancelar
+          </Button>
+          <Button
+            size="sm"
+            onClick={openExportDialog}
+            className="text-xs"
+          >
+            <Download className="h-3 w-3 mr-1" />
+            Exportar selecionados
+          </Button>
+        </div>
+      )}
     </PageTransition>
   );
 }
