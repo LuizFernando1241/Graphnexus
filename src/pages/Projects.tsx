@@ -1,36 +1,24 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, FolderKanban, ChevronRight, ChevronDown, FolderOpen, FolderTree } from "lucide-react";
+import { FolderKanban, ChevronRight, ChevronDown, FolderOpen, FolderTree } from "lucide-react";
 import { toast } from "sonner";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { createProject } from "@/lib/api/projects";
 import { useProjects } from "@/hooks/useProjects";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { PROJECT_STATUS_CONFIG, getProgressBarColor } from "@/lib/projectStatus";
-import type { Project, ProjectStatus, ProjectTree } from "@/types/entities";
+import type { Project, ProjectTree } from "@/types/entities";
 import { PageTransition } from "@/components/PageTransition";
 import { PageHeader } from "@/components/PageHeader";
+import { CreateEntityDialog } from "@/components/CreateEntityDialog";
 import { ImportDropzone } from "@/components/import/ImportDropzone";
 import { ProjectsGridSkeleton } from "@/components/ui/page-skeleton";
 
 const PROJECT_COLORS = ["#7C3AED", "#2563EB", "#059669", "#D97706", "#DC2626", "#DB2777", "#4F46E5", "#0EA5E9"];
 
 function NewProjectDialog({ projects }: { projects: Project[] }) {
-  const [open, setOpen] = useState(false);
-  const [title, setTitle] = useState("");
-  const [emoji, setEmoji] = useState("");
-  const [color, setColor] = useState("#7C3AED");
-  const [parentId, setParentId] = useState<string | null>(null);
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
@@ -38,69 +26,33 @@ function NewProjectDialog({ projects }: { projects: Project[] }) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       toast.success("Projeto criado!");
-      setOpen(false);
-      setTitle(""); setEmoji(""); setParentId(null);
     },
     onError: () => toast.error("Erro ao criar projeto"),
   });
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button><Plus className="mr-2 h-4 w-4" /> Novo Projeto</Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader><DialogTitle>Novo Projeto</DialogTitle></DialogHeader>
-        <div className="flex flex-col gap-4 pt-2">
-          <div className="flex gap-3">
-            <Input placeholder="🎯" value={emoji} onChange={(e) => setEmoji(e.target.value)}
-              className="w-20 text-center text-lg" maxLength={2} />
-            <Input placeholder="Nome do projeto" value={title} onChange={(e) => setTitle(e.target.value)}
-              className="flex-1" />
-          </div>
-          <div>
-            <Label className="text-xs text-muted-foreground mb-2 block">Projeto pai (opcional)</Label>
-            <Select
-              value={parentId ?? "none"}
-              onValueChange={(v) => setParentId(v === "none" ? null : v)}
-            >
-              <SelectTrigger><SelectValue placeholder="Nenhum (projeto raiz)" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">Nenhum (projeto raiz)</SelectItem>
-                {projects.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.emoji ? `${p.emoji} ` : ""}{p.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Label className="text-xs text-muted-foreground mb-2 block">Cor</Label>
-            <div className="flex gap-2 flex-wrap">
-              {PROJECT_COLORS.map((c) => (
-                <button key={c} type="button" onClick={() => setColor(c)}
-                  aria-label={`Cor ${c}`}
-                  className={`h-8 w-8 rounded-full border-2 transition-transform ${
-                    color === c ? "scale-110 border-foreground" : "border-transparent"
-                  }`}
-                  style={{ backgroundColor: c }} />
-              ))}
-            </div>
-          </div>
-          <Button
-            onClick={() => mutation.mutate({
-              title: title.trim() || "Sem título", emoji, cover_color: color, parent_id: parentId,
-            })}
-            disabled={mutation.isPending}
-          >
-            {mutation.isPending ? "Criando..." : "Criar Projeto"}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+    <CreateEntityDialog
+      title="Novo Projeto"
+      triggerLabel="Novo Projeto"
+      submitLabel="Criar Projeto"
+      titlePlaceholder="Nome do projeto"
+      colors={PROJECT_COLORS}
+      parentOptions={projects}
+      parentLabel="Projeto pai (opcional)"
+      parentPlaceholder="Nenhum (projeto raiz)"
+      isPending={mutation.isPending}
+      onSubmit={(v) =>
+        mutation.mutateAsync({
+          title: v.title.trim() || "Sem título",
+          emoji: v.emoji,
+          cover_color: v.color,
+          parent_id: v.parentId,
+        })
+      }
+    />
   );
 }
+
 
 function ProjectNode({
   node, depth, expandedIds, onToggle,
