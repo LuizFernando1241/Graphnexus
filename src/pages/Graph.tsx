@@ -151,7 +151,7 @@ const TypeFilterButton = memo(function TypeFilterButton({
       size="sm"
       onClick={handleClick}
       className={`h-8 px-2.5 gap-2 text-xs transition-all rounded-lg ${
-        isActive ? "opacity-100 bg-white/5 text-white" : "opacity-40 hover:opacity-100 hover:bg-white/5 text-white/70"
+        isActive ? "opacity-100 bg-foreground/5 text-foreground" : "opacity-40 hover:opacity-100 hover:bg-foreground/5 text-muted-foreground"
       }`}
     >
       <span className="h-2.5 w-2.5 rounded-full shrink-0 shadow-sm" style={{ backgroundColor: color }} />
@@ -189,13 +189,13 @@ const GraphControls = memo(function GraphControls({
           placeholder="Explorar cosmos..."
           value={searchValue}
           onChange={onSearchChange}
-          className="pl-9 bg-black/40 backdrop-blur-xl border-white/10 text-white placeholder:text-white/40 shadow-lg h-10 rounded-xl hover:bg-black/50 transition-colors focus-visible:ring-1 focus-visible:ring-white/20"
+          className="pl-9 bg-background/60 backdrop-blur-xl border-border text-foreground placeholder:text-muted-foreground shadow-lg h-10 rounded-xl hover:bg-background/70 transition-colors focus-visible:ring-1 focus-visible:ring-ring"
           aria-label="Buscar no grafo"
         />
       </div>
 
       <div className="flex items-center gap-2 flex-wrap pointer-events-auto">
-        <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-black/40 backdrop-blur-xl px-2 py-1.5 shadow-lg">
+        <div className="flex items-center gap-1 rounded-xl border border-border bg-background/60 backdrop-blur-xl px-2 py-1.5 shadow-lg">
           {TYPE_CONFIG.map(({ type, label, icon, color }) => (
             <TypeFilterButton
               key={type}
@@ -209,14 +209,14 @@ const GraphControls = memo(function GraphControls({
           ))}
         </div>
 
-        <div className="flex items-center gap-2.5 rounded-xl border border-white/10 bg-black/40 backdrop-blur-xl px-3 py-1.5 shadow-lg">
+        <div className="flex items-center gap-2.5 rounded-xl border border-border bg-background/60 backdrop-blur-xl px-3 py-1.5 shadow-lg">
           <Switch
             id="show-orphans"
             checked={!hideOrphans}
             onCheckedChange={onToggleOrphans}
             className="data-[state=checked]:bg-primary"
           />
-          <Label htmlFor="show-orphans" className="text-xs font-medium text-white/80 cursor-pointer pt-0.5">
+          <Label htmlFor="show-orphans" className="text-xs font-medium text-foreground/80 cursor-pointer pt-0.5">
             Órfãos ({orphanCount})
           </Label>
         </div>
@@ -556,7 +556,7 @@ export default function Graph() {
 
   return (
     <PageTransition>
-      <div ref={containerRef} className="relative w-full h-[calc(100vh-5rem)] rounded-xl overflow-hidden shadow-2xl bg-[#09090b]">
+      <div ref={containerRef} className="relative w-full h-[calc(100vh-5rem)] rounded-xl overflow-hidden shadow-2xl bg-background">
         {data && (
           <GraphControls
             searchValue={graphSearch}

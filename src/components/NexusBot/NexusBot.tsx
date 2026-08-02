@@ -167,7 +167,7 @@ export function NexusBot() {
         )}
       >
         <Bot className="h-6 w-6" />
-        <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-background" />
+        <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-success ring-2 ring-background" />
       </button>
 
       <Sheet open={open} onOpenChange={setOpen}>
