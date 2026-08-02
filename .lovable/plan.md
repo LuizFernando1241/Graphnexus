@@ -1,107 +1,38 @@
-# Auditoria do NexusGraph
+# Onda 3 — Unificação e polimento UI/UX
 
-Relatório apenas — nenhum código foi alterado. Classificações: MANTER / MESCLAR / MELHORAR / CORTAR.
+Revisei o estado atual do código. As Ondas 1 e 2 continuam aplicadas: código morto removido, toasts só em Sonner, `PageHeader` usado em 9 páginas, tokens `--score-*` em uso e `useEntityDetail` já compartilhado pelos três hooks de detalhe. Sobraram quatro frentes de duplicação e um resíduo de cores fora do design system.
 
-## 1. Inventário de features por área
+## 1. Sistema de links: uma fonte só
 
-### Shell global (`AppLayout`, `App.tsx`)
-- Sidebar desktop + Sheet mobile; rotas protegidas por `ProtectedRoute`.
-- Cache TanStack Query persistido em IndexedDB (7 dias) + `OfflineBanner`.
-- `CommandPalette` (⌘K), `Caixa` (captura IA, atalhos shift+N / shift+space), `NexusBot` (chat IA flutuante).
-- Hooks globais: `useTaskDueNotifications`, `useAutoTriage`.
+Hoje existem dois caminhos para a mesma tabela `entity_links`:
+- `lib/api/links.ts` + `useLinks.ts` (notas, tarefas, projetos)
+- `hooks/radar/useRadarEntityLinks.ts` (produtos), com merge source/target próprio
 
-### Dashboard `/`
-Contadores (notas/tarefas/projetos), atrasadas/próximas, feed de atividade, swipe concluir/adiar, `WeeklyReview` (revisão guiada em 4 passos), `PainelInsights` (sinais do Radar).
+E duas UIs para a mesma função: `LinkPanel` + `LinkPicker` (212 linhas) e `PainelConexoes` do Radar (255 linhas), sem nada compartilhado.
 
-### Notas `/notes`, `/notes/:id`
-Lista com busca server-side debounced, filtro por tag, arquivadas, swipe fixar/arquivar. Detalhe: editor rich text, Ctrl+S, export markdown, fixar/arquivar/excluir, bloqueio de navegação com alterações não salvas, `LinkPanelDock`.
+Ação: `useRadarEntityLinks` passa a consumir `fetchEntityLinks/createLink/deleteLink` de `lib/api/links.ts`; `PainelConexoes` vira um wrapper fino sobre `LinkPanel`/`LinkPicker` (mantendo o visual atual do sheet do produto). Comportamento e dados não mudam.
 
-### Tarefas `/tasks`, `/tasks/:id`
-Views lista/board, toolbar de filtros/ordenação/densidade, `QuickAddTaskRow`, `MoveTaskDrawer`, recorrência (`RecurrenceSelector`, completar/pular), "Transformar em Nota", `LinkPanelDock`.
+## 2. Busca de entidades unificada
 
-### Projetos `/projects`, `/projects/:id`
-Árvore hierárquica com progresso recursivo, criar subprojeto, reparent com verificação de ciclo, `ProjectHero`, `ProjectNarrative`, `ProjectAIPanel`, abas Tarefas/Notas, `LinkPanelDock`.
+`useEntitySearch` já existe e é usado só pelo Command Palette. `LinkPicker` ainda faz `ilike` próprio, e Notas/Tarefas têm filtros paralelos. Ação: `LinkPicker` passa a usar `useEntitySearch`, garantindo que ⌘K e o seletor de links devolvam os mesmos resultados.
 
-### Grafo `/graph`
-Force-graph 3D de notas/tarefas/projetos/produtos + `entity_links`, busca, filtro por tipo, toggle órfãos, clique navega.
+## 3. Diálogos de criação compartilhados
 
-### Arquivo `/archive`
-Abas Notas/Projetos/Tarefas/Produtos, restaurar e excluir definitivo.
+`Notes.tsx` e `Projects.tsx` reimplementam cada um o próprio `Dialog` de criação. Ação: extrair um `CreateEntityDialog` com campos configuráveis, usando `useQuickCreate` (já centralizado), e reaproveitar nas duas páginas.
 
-### Importar `/import` + `ImportDropzone`
-Drag & drop de `.md`/`.zip`, detecção de tipo por linha, importação em lote.
+## 4. Últimas cores fora do design system
 
-### Radar `/radar`, `/radar/aprovados`
-Kanban 4 colunas com DnD, cards expansíveis, filtros básicos + avançados, `ProdutoDrawer` (abas Produto/Mercado/Notas, score em tempo real), `HistoricoModal`, `PainelConexoes`, `OrcamentoDialog` (PDF), tabela de aprovados com edição inline e export CSV.
+Restam classes cruas em: `Graph.tsx` (6 ocorrências, incluindo `bg-[#09090b]` e `text-white`), `Caixa.tsx` (4), `ProjectNarrative.tsx` (3), `TaskRow.tsx` (1), `NexusBot.tsx` (1). Ação: migrar para `--score-*`, `info`, `success`, `warning`, `muted`. No grafo 3D, mover as cores de nó para constantes derivadas dos tokens.
 
-### Sugestões IA `/suggestions` + `RelatedSuggestions`
-Inbox de links sugeridos por embeddings, rescan sob demanda, aceitar/descartar.
+## 5. Polimento UI/UX
 
-### Configurações `/settings`
-Aba Radar (`ParametrosRadar`: pesos, faixas, pilares customizados, descartes) e aba IA (reindexar tudo).
+- **Loading**: `Archive.tsx` ainda usa spinner de página — trocar por Skeleton (padrão nas demais telas). Os spinners restantes são de botão e ficam como estão.
+- **Densidade e espaçamento**: padronizar padding de card em `p-4` (listas) e `p-6` (painéis), corrigindo os pontos divergentes de Radar e Projetos.
+- **Descoberta de features**: o atalho de parâmetros do Radar já existe no header; adicionar dica visual de drop nas listas (Notas/Tarefas) para o `ImportDropzone`, hoje invisível.
+- **Fila de sugestões**: deixar explícito no dock (`RelatedSuggestions`) que é a mesma fila de `/suggestions`, com link "ver todas".
 
----
+## Detalhes técnicos
 
-## 2. Duplicações
-
-| Item | Evidência | Ação |
-|---|---|---|
-| 4 fluxos de criação (`Caixa.tsx`, `QuickAdd.tsx`, `QuickAddTaskRow.tsx`, `ProjectTasksTab.tsx:38`) reimplementam `createTask/createNote/createProject` + `parseTaskInput` | cada um com mutação/parse próprios | **MESCLAR** num hook `useQuickCreate`; `QuickAdd.tsx` já é morto → CORTAR |
-| 4 buscas independentes: `CommandPalette` (6 `ilike`), `Notes` (server debounced), `Tasks` (filtro client-side), `RadarFilters` | sem abstração comum | **MESCLAR** em `useEntitySearch` com estratégia única |
-| 2 sistemas de links sobre a mesma tabela `entity_links`: `lib/api/links.ts` + `useLinks.ts` (Task/Note/Project) vs `useRadarEntityLinks.ts` (produtos) | ambos duplicam o merge de query source/target | **MESCLAR** — Radar deve consumir `fetchEntityLinks` |
-| 2 UIs de links: `LinkPanel`+`LinkPicker` vs `PainelConexoes` | mesma função, zero código compartilhado | **MESCLAR** |
-| 3 hooks de detalhe quase idênticos (`useTaskDetail` 280l, `useNoteDetail` 218l, `useProjectDetail` 269l) + `useEntityDetail` genérico morto | refactor abandonado | **MESCLAR** finalizando `useEntityDetail<T>` |
-| Cor por status/progresso duplicada em `Projects.tsx:25-37`, `ProjectHero.tsx:15-17`, `ProjectNarrative.tsx:21-24` (com valores divergentes) | mesmo conceito, tons diferentes | **MESCLAR** num helper + tokens |
-| Paleta de decisão do Radar repetida 4x: `ScoreBar.tsx:12`, `KanbanBoard.tsx:30-51`, `PilarDots.tsx:18`, `ProdutoCard.tsx:71` | | **MESCLAR** num mapa único |
-
----
-
-## 3. Código morto — todos **CORTAR**
-
-- `src/components/QuickAdd.tsx` (154 linhas) — substituído pela `Caixa`, nunca importado.
-- `src/hooks/useEntityDetail.ts` (276 linhas) — nunca importado (ou finalizar o refactor: MESCLAR).
-- `src/components/projects/ProjectMetrics.tsx`
-- `src/components/radar/RadarChip.tsx`
-- `src/hooks/radar/useRadarFeedAtividade.ts`
-- `src/lib/radar/getProductContext.ts`
-- `src/pages/Index.tsx` — placeholder do template, fora das rotas.
-- Namespace `nexus.*` em `tailwind.config.ts:72-78` — sem uso.
-- 12 primitivos shadcn não usados: `aspect-ratio`, `avatar`, `carousel`, `chart`, `context-menu`, `hover-card`, `input-otp`, `menubar`, `navigation-menu`, `pagination`, `radio-group`, `toggle-group`.
-- Docs de análise obsoletos na raiz (`CODE_REVIEW.md`, `HOOKS_REFACTORING_GUIDE.md`, `PERFORMANCE_QUALITY_ANALYSIS.md`, `RUNTIME_ERRORS_ANALYSIS.md`) — **MELHORAR**: consolidar ou remover.
-
----
-
-## 4. Inconsistências visuais
-
-- **Dois sistemas de toast ativos ao mesmo tempo** (`App.tsx:8-9,95-96`: Radix `Toaster` + `Sonner`) — **MESCLAR** (escolher Sonner).
-- **Cores hardcoded fora do design system** (existe `success`/`warning`/`destructive` em `index.css:8-59`, mas o código usa `emerald/amber/violet/red/blue` cru): concentração em `RadarPage.tsx:131-167`, `ParametrosRadar.tsx`, `PainelInsights.tsx:30-56`, `AprovadosTable.tsx:165`, `ProdutoCard.tsx:71-79` (`bg-emerald-600 text-white`), `TaskRow.tsx:14-17`, `Projects.tsx:25-37`, `Graph.tsx:154-559` (`bg-black/40`, `bg-[#09090b]`, `text-white`) — **MELHORAR**: migrar para tokens e criar tokens de escala (score/prioridade).
-- **Overlays inconsistentes**: `Drawer` (Vaul) só em `MoveTaskDrawer`; `Sheet` no resto; `ProdutoDrawer` chama-se drawer mas é `Sheet` — **MELHORAR**/padronizar. `AlertDialog` para exclusão está consistente → **MANTER**.
-- **Headers de página**: 3 variações de `h1` (`text-2xl font-bold` na maioria; `Archive.tsx:251` com `font-heading … mb-6`; auth com outra ordem) — **MELHORAR** com componente `PageHeader`.
-- **Loading**: Skeleton é o padrão em ~13 telas, mas `Suggestions` e `Settings` usam spinner — **MELHORAR**.
-- **Cards**: `Suggestions.tsx:77-80` reimplementa card com `<button>` cru; paddings variam `p-4`/`p-6`/`px-4 py-3` sem regra — **MELHORAR**.
-- **Diálogos de criação locais** duplicados em Notes/Projects/Tasks em vez de um componente compartilhado — **MESCLAR**.
-
----
-
-## 5. Fluxos de usuário confusos
-
-1. **Criar tarefa: 4 caminhos** (Caixa flutuante, QuickAddTaskRow, aba de projeto, Command Palette indireto) com comportamentos diferentes de parsing IA — **MESCLAR**, manter 2 pontos claros: Caixa (global) e linha inline na lista.
-2. **Buscar: 3 caminhos** com resultados diferentes (⌘K global, busca da página, NexusBot semântico) — **MELHORAR**: unificar ⌘K com busca semântica.
-3. **Sugestões de link em 2 lugares** (`/suggestions` e `RelatedSuggestions` no dock) — **MANTER** ambos, mas **MELHORAR** deixando claro que são a mesma fila.
-4. **Pilares/parâmetros do Radar escondidos** em Configurações → aba Radar (usuário já se perdeu antes) — **MELHORAR**: atalho "Parâmetros" no header do `/radar`.
-5. **Arquivamento em dois lugares** (ação na entidade e página `/archive`) — **MANTER**, é padrão esperado.
-6. **`OrcamentoDialog` e export CSV** só existem em telas específicas do Radar sem indicação cruzada — **MELHORAR**.
-7. **Importar** existe como página `/import` e como dropzone invisível nas listas — **MELHORAR**: dica visual do drop.
-
----
-
-## 6. Ordem sugerida caso queira executar
-
-1. CORTAR código morto (baixo risco, ganho imediato).
-2. MESCLAR toasts + tokens de cor (consistência visual visível).
-3. MESCLAR sistema de links (Radar → `entity_links` compartilhado).
-4. MESCLAR hooks de detalhe via `useEntityDetail<T>`.
-5. MESCLAR criação/busca em hooks únicos.
-6. MELHORAR headers, cards, loading e descoberta de features.
-
-Aprove se quiser que eu execute alguma dessas etapas (posso começar pela 1 e 2).
+- Arquivos tocados: `hooks/radar/useRadarEntityLinks.ts`, `components/radar/PainelConexoes.tsx`, `components/LinkPanel.tsx`, `components/LinkPicker.tsx`, `hooks/useEntitySearch.ts`, novo `components/CreateEntityDialog.tsx`, `pages/Notes.tsx`, `pages/Projects.tsx`, `pages/Graph.tsx`, `pages/Archive.tsx`, `components/Caixa.tsx`, `components/projects/ProjectNarrative.tsx`, `components/tasks/TaskRow.tsx`, `components/NexusBot/NexusBot.tsx`, `components/RelatedSuggestions.tsx`.
+- Sem migrações de banco e sem mudança de regra de negócio: score, pipeline e IA permanecem intactos.
+- Ao final: typecheck e verificação visual das telas afetadas via preview.
