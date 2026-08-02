@@ -161,3 +161,51 @@ async function searchProjects(pattern: string, limit?: number): Promise<Project[
     new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
   );
 }
+
+/**
+ * Busca unificada em todas as entidades (notas, tarefas, projetos, produtos),
+ * devolvendo um formato leve `SearchResult`. Usada pelo LinkPicker para que
+ * o seletor de links e o ⌘K compartilhem a mesma estratégia de busca.
+ */
+export function useMultiEntitySearch(
+  search: string,
+  opts?: { limit?: number; enabled?: boolean }
+) {
+  const debouncedSearch = useDebouncedValue(search);
+  const limit = opts?.limit ?? 5;
+
+  const { data = [], isLoading } = useQuery({
+    queryKey: ["search", "multi", debouncedSearch, limit],
+    enabled: (opts?.enabled ?? true) && debouncedSearch.trim().length > 0,
+    queryFn: async (): Promise<SearchResult[]> => {
+      const pattern = `%${escapeLikePattern(debouncedSearch)}%`;
+      const [notes, tasks, projects, products] = await Promise.all([
+        searchNotes(pattern, limit),
+        searchTasks(pattern, limit),
+        searchProjects(pattern, limit),
+        supabase
+          .from("radar_produtos")
+          .select("id, nome")
+          .ilike("nome", pattern)
+          .limit(limit),
+      ]);
+
+      const results: SearchResult[] = [];
+      notes.slice(0, limit).forEach((n) =>
+        results.push({ id: n.id, type: "note", title: n.title, emoji: n.emoji })
+      );
+      tasks.slice(0, limit).forEach((t) =>
+        results.push({ id: t.id, type: "task", title: t.title })
+      );
+      projects.slice(0, limit).forEach((p) =>
+        results.push({ id: p.id, type: "project", title: p.title, emoji: p.emoji })
+      );
+      ((products.data || []) as { id: string; nome: string }[]).forEach((p) =>
+        results.push({ id: p.id, type: "product", title: p.nome })
+      );
+      return results;
+    },
+  });
+
+  return { results: data, isLoading };
+}

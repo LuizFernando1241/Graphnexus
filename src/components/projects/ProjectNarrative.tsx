@@ -74,7 +74,7 @@ export function ProjectNarrative({ projectId, tasks, onAddSubproject }: Props) {
             </span>
             {tarefasAtrasadas.length > 0 && (
               <div className="flex items-center gap-2 text-sm">
-                <AlertCircle className="h-4 w-4 text-red-500" />
+                <AlertCircle className="h-4 w-4 text-destructive" />
                 <span>
                   {tarefasAtrasadas.length} tarefa{tarefasAtrasadas.length > 1 ? "s" : ""} em atraso
                 </span>
@@ -82,7 +82,7 @@ export function ProjectNarrative({ projectId, tasks, onAddSubproject }: Props) {
             )}
             {tarefasEmAndamento.length > 0 && (
               <div className="flex items-center gap-2 text-sm">
-                <Clock className="h-4 w-4 text-amber-500" />
+                <Clock className="h-4 w-4 text-warning" />
                 <span>
                   {tarefasEmAndamento.length} tarefa{tarefasEmAndamento.length > 1 ? "s" : ""} em andamento
                 </span>
@@ -93,7 +93,7 @@ export function ProjectNarrative({ projectId, tasks, onAddSubproject }: Props) {
 
         {tarefasAtrasadas.length === 0 && percent > 0 && (
           <div className="flex items-center gap-2 text-sm pt-2 border-t border-border">
-            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+            <CheckCircle2 className="h-4 w-4 text-success" />
             <span className="text-muted-foreground">
               Sem atrasos.{" "}
               {proximaTarefa

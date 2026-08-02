@@ -42,10 +42,10 @@ interface Draft {
 
 function priorityColor(p?: string | null) {
   switch (p) {
-    case "urgent": return "bg-rose-500/15 text-rose-300 border-rose-500/30";
-    case "high": return "bg-amber-500/15 text-amber-300 border-amber-500/30";
-    case "medium": return "bg-blue-500/15 text-blue-300 border-blue-500/30";
-    case "low": return "bg-slate-500/15 text-slate-300 border-slate-500/30";
+    case "urgent": return "bg-destructive/15 text-destructive border-destructive/30";
+    case "high": return "bg-warning/15 text-warning border-warning/30";
+    case "medium": return "bg-info/15 text-info border-info/30";
+    case "low": return "bg-muted text-muted-foreground border-border";
     default: return "bg-muted text-muted-foreground border-border";
   }
 }
