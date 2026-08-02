@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { Plus, Search, Archive, Pin, StickyNote } from "lucide-react";
+import { Search, Archive, Pin, StickyNote } from "lucide-react";
 import { toast } from "sonner";
 import { fetchNotes, createNote, updateNote, getAllNoteTags } from "@/lib/api/notes";
 import { Input } from "@/components/ui/input";
@@ -12,15 +12,9 @@ import { Label } from "@/components/ui/label";
 import { SwipeableItem } from "@/components/ui/SwipeableItem";
 import { PageTransition } from "@/components/PageTransition";
 import { PageHeader } from "@/components/PageHeader";
+import { CreateEntityDialog } from "@/components/CreateEntityDialog";
 import { ImportDropzone } from "@/components/import/ImportDropzone";
 import { NotesGridSkeleton } from "@/components/ui/page-skeleton";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import type { Note } from "@/types/entities";
 import { useDebouncedValue, escapeLikePattern } from "@/lib/utils";
 
@@ -36,13 +30,6 @@ const NOTE_COLORS = [
 ];
 
 function NewNoteDialog({ onCreated }: { onCreated: () => void }) {
-  const [open, setOpen] = useState(false);
-  const [title, setTitle] = useState("");
-  const [emoji, setEmoji] = useState("");
-  const [color, setColor] = useState("#7C3AED");
-  const [tagInput, setTagInput] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
-
   const queryClient = useQueryClient();
   const mutation = useMutation({
     mutationFn: createNote,
@@ -50,111 +37,31 @@ function NewNoteDialog({ onCreated }: { onCreated: () => void }) {
       queryClient.invalidateQueries({ queryKey: ["notes"] });
       queryClient.invalidateQueries({ queryKey: ["note-tags"] });
       toast.success("Nota criada!");
-      setOpen(false);
-      setTitle("");
-      setEmoji("");
-      setColor("#7C3AED");
-      setTags([]);
       onCreated();
     },
     onError: () => toast.error("Erro ao criar nota"),
   });
 
-  const addTag = () => {
-    const t = tagInput.trim();
-    if (t && !tags.includes(t)) {
-      setTags([...tags, t]);
-    }
-    setTagInput("");
-  };
-
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" /> Nova Nota
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Nova Nota</DialogTitle>
-        </DialogHeader>
-        <div className="flex flex-col gap-4 pt-2">
-          <div className="flex gap-3">
-            <Input
-              placeholder="Emoji"
-              value={emoji}
-              onChange={(e) => setEmoji(e.target.value)}
-              className="w-20 text-center text-lg"
-              maxLength={2}
-            />
-            <Input
-              placeholder="Título"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="flex-1"
-            />
-          </div>
-
-          <div>
-            <Label className="text-xs text-muted-foreground mb-2 block">Cor</Label>
-            <div className="flex gap-2">
-              {NOTE_COLORS.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setColor(c)}
-                  aria-label={`Cor ${c}`}
-                  className={`h-8 w-8 rounded-full border-2 transition-transform ${
-                    color === c ? "scale-110 border-foreground" : "border-transparent"
-                  }`}
-                  style={{ backgroundColor: c }}
-                />
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <Label className="text-xs text-muted-foreground mb-2 block">Tags</Label>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Adicionar tag"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && (e.preventDefault(), addTag())}
-                className="flex-1"
-              />
-              <Button type="button" variant="secondary" size="sm" onClick={addTag}>
-                +
-              </Button>
-            </div>
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-2">
-                {tags.map((t) => (
-                  <Badge
-                    key={t}
-                    variant="secondary"
-                    className="cursor-pointer"
-                    onClick={() => setTags(tags.filter((x) => x !== t))}
-                  >
-                    {t} ×
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <Button
-            onClick={() => mutation.mutate({ title: title || "Sem título", emoji, color, tags })}
-            disabled={mutation.isPending}
-          >
-            {mutation.isPending ? "Criando..." : "Criar Nota"}
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+    <CreateEntityDialog
+      title="Nova Nota"
+      triggerLabel="Nova Nota"
+      submitLabel="Criar Nota"
+      colors={NOTE_COLORS}
+      showTags
+      isPending={mutation.isPending}
+      onSubmit={(v) =>
+        mutation.mutateAsync({
+          title: v.title || "Sem título",
+          emoji: v.emoji,
+          color: v.color,
+          tags: v.tags,
+        })
+      }
+    />
   );
 }
+
 
 function NoteCard({ note, onClick }: { note: Note; onClick: () => void }) {
   return (
