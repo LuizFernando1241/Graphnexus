@@ -13,6 +13,7 @@ import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
 import { useRadarPreferences } from "@/hooks/radar/useRadarPreferences";
 import { ProdutoSheet } from "@/components/radar/ProdutoSheet";
 import { HistoricoModal } from "@/components/radar/HistoricoModal";
+import { AprovadosTable } from "@/components/radar/AprovadosTable";
 import { OrcamentoDialog } from "@/components/radar/OrcamentoDialog";
 import { ExportFieldsDialog } from "@/components/radar/ExportFieldsDialog";
 import { STAGE_SOLID, STAGE_CHIP_ACTIVE } from "@/lib/radar/decisionColors";
