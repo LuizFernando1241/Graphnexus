@@ -18,7 +18,7 @@ const navItems = [
   { title: "Projetos", url: "/projects", icon: FolderKanban },
   { title: "Grafo", url: "/graph", icon: Network },
   { title: "Arquivos", url: "/archive", icon: Archive },
-  { title: "Importar", url: "/import", icon: Upload },
+  
 ];
 
 const SIDEBAR_MIN = 64;
