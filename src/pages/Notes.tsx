@@ -160,7 +160,15 @@ export default function Notes() {
     <ImportDropzone defaultType="note">
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <PageHeader title="Notas" actions={<NewNoteDialog onCreated={() => {}} />} />
+      <PageHeader
+        title="Notas"
+        actions={
+          <>
+            <ImportDialog defaultType="note" />
+            <NewNoteDialog onCreated={() => {}} />
+          </>
+        }
+      />
 
       {/* Filters */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
