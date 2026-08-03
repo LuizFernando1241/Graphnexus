@@ -331,6 +331,10 @@ export default function RadarPage() {
 
 
 
+        {tab === "comprados" ? (
+          <AprovadosTable onVerProduto={(p) => setProdutoSelecionado(p)} />
+        ) : (
+          <>
         {/* Filtros colapsáveis */}
         {filtrosAbertos && (
           <div className="rounded-lg border border-border bg-card/40 p-4">
@@ -378,6 +382,8 @@ export default function RadarPage() {
             selectedIds={selectedIds}
             onToggleSelection={toggleSelection}
           />
+        )}
+          </>
         )}
       </div>
 
