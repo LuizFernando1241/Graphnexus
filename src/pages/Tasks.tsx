@@ -86,7 +86,7 @@ export default function Tasks() {
     <PageTransition>
       <ImportDropzone defaultType="task">
       <div className="flex flex-col gap-4 h-full pb-20">
-        <PageHeader title="Tarefas" />
+        <PageHeader title="Tarefas" actions={<ImportDialog defaultType="task" />} />
 
         <TasksToolbar
           view={view}
