@@ -1,12 +1,17 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
 import { Upload, FileText, CheckCircle2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { PageTransition } from "@/components/PageTransition";
-import { PageHeader } from "@/components/PageHeader";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { parseFiles, importItems, type ParsedItem } from "@/lib/markdown/import";
 import type { EntityType } from "@/types/entities";
 
@@ -17,9 +22,25 @@ const TYPE_LABEL: Record<EntityType, string> = {
   product: "Produto",
 };
 
-export default function Import() {
-  const navigate = useNavigate();
+interface Props {
+  /** Tipo assumido quando o arquivo não tem frontmatter. */
+  defaultType: EntityType;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** Quando omitido, renderiza o botão padrão "Importar". */
+  trigger?: React.ReactNode;
+}
+
+export function ImportDialog({ defaultType, open, onOpenChange, trigger }: Props) {
   const queryClient = useQueryClient();
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = open !== undefined;
+  const isOpen = isControlled ? open : internalOpen;
+  const setOpen = (v: boolean) => {
+    if (!isControlled) setInternalOpen(v);
+    onOpenChange?.(v);
+  };
+
   const [items, setItems] = useState<ParsedItem[]>([]);
   const [parsing, setParsing] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -34,7 +55,7 @@ export default function Import() {
     }
     setParsing(true);
     try {
-      const parsed = await parseFiles(valid, "note");
+      const parsed = await parseFiles(valid, defaultType);
       setItems((prev) => [...prev, ...parsed]);
       toast.success(`${parsed.length} item(ns) prontos para importar`);
     } catch (err) {
@@ -84,6 +105,7 @@ export default function Import() {
       );
       setItems([]);
       setSkip(new Set());
+      setOpen(false);
     } catch (err) {
       console.error(err);
       toast.error("Falha na importação", { id: toastId });
@@ -102,17 +124,25 @@ export default function Import() {
   );
 
   return (
-    <PageTransition>
-      <main className="flex flex-col gap-6 pb-20">
-        <PageHeader
-          title="Importar"
-          description="Envie arquivos .md ou .zip exportados (próprios ou estilo Obsidian)."
-          actions={
-            <Button variant="ghost" onClick={() => navigate(-1)} size="sm">
-              Voltar
+    <Dialog open={isOpen} onOpenChange={setOpen}>
+      {trigger !== null && (
+        <DialogTrigger asChild>
+          {trigger ?? (
+            <Button variant="outline" size="sm">
+              <Upload className="h-4 w-4 mr-2" />
+              Importar
             </Button>
-          }
-        />
+          )}
+        </DialogTrigger>
+      )}
+
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Importar Markdown</DialogTitle>
+          <DialogDescription>
+            Envie arquivos .md ou .zip exportados (próprios ou estilo Obsidian).
+          </DialogDescription>
+        </DialogHeader>
 
         <label
           onDragEnter={(e) => {
@@ -128,15 +158,15 @@ export default function Import() {
             if (e.currentTarget === e.target) setDragging(false);
           }}
           onDrop={onDrop}
-          className={`flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-10 cursor-pointer transition-colors ${
+          className={`flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-8 cursor-pointer transition-colors ${
             dragging ? "border-primary bg-accent/40" : "border-border bg-card hover:bg-accent/20"
           }`}
         >
-          <Upload className="h-10 w-10 text-muted-foreground" />
-          <p className="text-base font-semibold text-foreground">
+          <Upload className="h-8 w-8 text-muted-foreground" />
+          <p className="text-sm font-semibold text-foreground">
             Arraste .md ou .zip ou clique para selecionar
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs text-muted-foreground text-center">
             Suporta múltiplos arquivos. Anexos do .zip são re-enviados para a biblioteca.
           </p>
           <input
@@ -166,7 +196,14 @@ export default function Import() {
                 </span>
               </div>
               <div className="flex gap-2">
-                <Button variant="ghost" size="sm" onClick={() => { setItems([]); setSkip(new Set()); }}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setItems([]);
+                    setSkip(new Set());
+                  }}
+                >
                   Limpar
                 </Button>
                 <Button onClick={runImport} disabled={importing} size="sm">
@@ -175,7 +212,7 @@ export default function Import() {
               </div>
             </div>
 
-            <div className="rounded-lg border border-border overflow-hidden">
+            <div className="rounded-lg border border-border overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-secondary text-xs text-muted-foreground">
                   <tr>
@@ -194,7 +231,7 @@ export default function Import() {
                         key={it.key}
                         className={`border-t border-border ${isSkipped ? "opacity-40" : ""}`}
                       >
-                        <td className="px-3 py-2 text-muted-foreground truncate max-w-[200px]">
+                        <td className="px-3 py-2 text-muted-foreground truncate max-w-[180px]">
                           <span className="inline-flex items-center gap-1.5">
                             <FileText className="h-3.5 w-3.5" /> {it.source}
                           </span>
@@ -205,6 +242,7 @@ export default function Import() {
                             value={it.type}
                             onChange={(e) => changeType(it.key, e.target.value as EntityType)}
                             className="rounded-md border border-border bg-background px-2 py-1 text-xs"
+                            aria-label="Tipo do item importado"
                           >
                             <option value="note">{TYPE_LABEL.note}</option>
                             <option value="task">{TYPE_LABEL.task}</option>
@@ -223,11 +261,7 @@ export default function Import() {
                           )}
                         </td>
                         <td className="px-3 py-2 text-right">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleSkip(it.key)}
-                          >
+                          <Button variant="ghost" size="sm" onClick={() => toggleSkip(it.key)}>
                             {isSkipped ? "Incluir" : "Pular"}
                           </Button>
                         </td>
@@ -239,7 +273,7 @@ export default function Import() {
             </div>
           </section>
         )}
-      </main>
-    </PageTransition>
+      </DialogContent>
+    </Dialog>
   );
 }

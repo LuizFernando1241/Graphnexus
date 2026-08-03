@@ -14,6 +14,7 @@ import { PageTransition } from "@/components/PageTransition";
 import { PageHeader } from "@/components/PageHeader";
 import { CreateEntityDialog } from "@/components/CreateEntityDialog";
 import { ImportDropzone } from "@/components/import/ImportDropzone";
+import { ImportDialog } from "@/components/import/ImportDialog";
 import { NotesGridSkeleton } from "@/components/ui/page-skeleton";
 import type { Note } from "@/types/entities";
 import { useDebouncedValue, escapeLikePattern } from "@/lib/utils";
@@ -160,7 +161,15 @@ export default function Notes() {
     <ImportDropzone defaultType="note">
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <PageHeader title="Notas" actions={<NewNoteDialog onCreated={() => {}} />} />
+      <PageHeader
+        title="Notas"
+        actions={
+          <>
+            <ImportDialog defaultType="note" />
+            <NewNoteDialog onCreated={() => {}} />
+          </>
+        }
+      />
 
       {/* Filters */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

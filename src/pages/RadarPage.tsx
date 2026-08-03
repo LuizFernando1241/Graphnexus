@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Crosshair, Plus, SlidersHorizontal, ChevronDown, Maximize2, Minimize2, Filter, FileText, Settings, CheckSquare2, X, Download } from "lucide-react";
+import { Crosshair, Plus, SlidersHorizontal, ChevronDown, Maximize2, Minimize2, Filter, FileText, Settings, CheckSquare2, X, Download, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,6 +13,7 @@ import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
 import { useRadarPreferences } from "@/hooks/radar/useRadarPreferences";
 import { ProdutoSheet } from "@/components/radar/ProdutoSheet";
 import { HistoricoModal } from "@/components/radar/HistoricoModal";
+import { AprovadosTable } from "@/components/radar/AprovadosTable";
 import { OrcamentoDialog } from "@/components/radar/OrcamentoDialog";
 import { ExportFieldsDialog } from "@/components/radar/ExportFieldsDialog";
 import { STAGE_SOLID, STAGE_CHIP_ACTIVE } from "@/lib/radar/decisionColors";
@@ -198,6 +199,9 @@ export default function RadarPage() {
   }
 
   const emDecisao = produtos.filter((p) => p.stage === "aguardando_decisao").length;
+  const totalComprados = produtos.filter((p) => p.stage === "comprado" || p.stage === "aprovado").length;
+  const tab: "pipeline" | "comprados" =
+    location.pathname === "/radar/aprovados" ? "comprados" : "pipeline";
 
   return (
     <PageTransition>
@@ -212,6 +216,11 @@ export default function RadarPage() {
             ) : null
           }
           actions={
+            tab === "comprados" ? (
+              <Button variant="ghost" size="sm" onClick={() => navigate("/settings?tab=radar")} title="Parâmetros do Radar">
+                <Settings className="h-4 w-4" />
+              </Button>
+            ) : (
             <>
               <Button variant="ghost" size="sm" onClick={() => navigate("/settings?tab=radar")} title="Parâmetros do Radar">
                 <Settings className="h-4 w-4" />
@@ -263,9 +272,39 @@ export default function RadarPage() {
                 {selectionMode ? "Cancelar seleção" : "Selecionar produtos"}
               </Button>
             </>
+            )
           }
         >
-          {!isLoading && (
+          <div className="flex flex-wrap items-center gap-2 mt-3">
+            <div className="inline-flex rounded-lg border border-border p-0.5">
+              <button
+                type="button"
+                onClick={() => navigate("/radar")}
+                className={cn(
+                  "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                  tab === "pipeline" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                Pipeline
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate("/radar/aprovados")}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                  tab === "comprados" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <ShoppingCart className="h-3.5 w-3.5" />
+                Comprados
+                {totalComprados > 0 && (
+                  <span className="tabular-nums font-semibold">{totalComprados}</span>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {tab === "pipeline" && !isLoading && (
             <div className="flex flex-wrap items-center gap-2 mt-2">
               {STAGE_CHIPS.map(({ stage, label }) => {
                 const count = produtos.filter((p) => p.stage === stage).length;
@@ -292,6 +331,11 @@ export default function RadarPage() {
         </PageHeader>
 
 
+
+        {tab === "comprados" ? (
+          <AprovadosTable onVerProduto={(p) => setProdutoSelecionado(p)} />
+        ) : (
+          <>
         {/* Filtros colapsáveis */}
         {filtrosAbertos && (
           <div className="rounded-lg border border-border bg-card/40 p-4">
@@ -339,6 +383,8 @@ export default function RadarPage() {
             selectedIds={selectedIds}
             onToggleSelection={toggleSelection}
           />
+        )}
+          </>
         )}
       </div>
 
