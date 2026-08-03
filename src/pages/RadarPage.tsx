@@ -271,9 +271,39 @@ export default function RadarPage() {
                 {selectionMode ? "Cancelar seleção" : "Selecionar produtos"}
               </Button>
             </>
+            )
           }
         >
-          {!isLoading && (
+          <div className="flex flex-wrap items-center gap-2 mt-3">
+            <div className="inline-flex rounded-lg border border-border p-0.5">
+              <button
+                type="button"
+                onClick={() => navigate("/radar")}
+                className={cn(
+                  "rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                  tab === "pipeline" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                Pipeline
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate("/radar/aprovados")}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                  tab === "comprados" ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                <ShoppingCart className="h-3.5 w-3.5" />
+                Comprados
+                {totalComprados > 0 && (
+                  <span className="tabular-nums font-semibold">{totalComprados}</span>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {tab === "pipeline" && !isLoading && (
             <div className="flex flex-wrap items-center gap-2 mt-2">
               {STAGE_CHIPS.map(({ stage, label }) => {
                 const count = produtos.filter((p) => p.stage === stage).length;
@@ -298,6 +328,7 @@ export default function RadarPage() {
             </div>
           )}
         </PageHeader>
+
 
 
         {/* Filtros colapsáveis */}
