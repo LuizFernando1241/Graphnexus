@@ -20,7 +20,7 @@ import Projects from "@/pages/Projects";
 import ProjectDetail from "@/pages/ProjectDetail";
 import Graph from "@/pages/Graph";
 import Archive from "@/pages/Archive";
-import Import from "@/pages/Import";
+import { Navigate } from "react-router-dom";
 import RadarPage from "@/pages/RadarPage";
 import AprovadosPage from "@/pages/AprovadosPage";
 import Settings from "@/pages/Settings";
