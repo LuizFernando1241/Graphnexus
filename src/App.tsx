@@ -75,7 +75,7 @@ const router = createBrowserRouter([
           { path: "/projects/:id", element: <ProjectDetail /> },
           { path: "/graph", element: <Graph /> },
           { path: "/archive", element: <Archive /> },
-          { path: "/import", element: <Import /> },
+          { path: "/import", element: <Navigate to="/notes" replace /> },
           { path: "/radar", element: <RadarPage /> },
           { path: "/radar/aprovados", element: <AprovadosPage /> },
           { path: "/suggestions", element: <Suggestions /> },
