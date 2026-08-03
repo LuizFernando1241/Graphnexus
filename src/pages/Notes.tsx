@@ -14,6 +14,7 @@ import { PageTransition } from "@/components/PageTransition";
 import { PageHeader } from "@/components/PageHeader";
 import { CreateEntityDialog } from "@/components/CreateEntityDialog";
 import { ImportDropzone } from "@/components/import/ImportDropzone";
+import { ImportDialog } from "@/components/import/ImportDialog";
 import { NotesGridSkeleton } from "@/components/ui/page-skeleton";
 import type { Note } from "@/types/entities";
 import { useDebouncedValue, escapeLikePattern } from "@/lib/utils";
