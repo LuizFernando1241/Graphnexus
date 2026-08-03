@@ -198,6 +198,9 @@ export default function RadarPage() {
   }
 
   const emDecisao = produtos.filter((p) => p.stage === "aguardando_decisao").length;
+  const totalComprados = produtos.filter((p) => p.stage === "comprado" || p.stage === "aprovado").length;
+  const tab: "pipeline" | "comprados" =
+    location.pathname === "/radar/aprovados" ? "comprados" : "pipeline";
 
   return (
     <PageTransition>
@@ -212,6 +215,11 @@ export default function RadarPage() {
             ) : null
           }
           actions={
+            tab === "comprados" ? (
+              <Button variant="ghost" size="sm" onClick={() => navigate("/settings?tab=radar")} title="Parâmetros do Radar">
+                <Settings className="h-4 w-4" />
+              </Button>
+            ) : (
             <>
               <Button variant="ghost" size="sm" onClick={() => navigate("/settings?tab=radar")} title="Parâmetros do Radar">
                 <Settings className="h-4 w-4" />
