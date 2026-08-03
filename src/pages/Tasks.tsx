@@ -7,6 +7,7 @@ import { useDebouncedValue } from "@/lib/utils";
 import { PageTransition } from "@/components/PageTransition";
 import { PageHeader } from "@/components/PageHeader";
 import { ImportDropzone } from "@/components/import/ImportDropzone";
+import { ImportDialog } from "@/components/import/ImportDialog";
 import { TasksBoardSkeleton } from "@/components/ui/page-skeleton";
 import { TasksToolbar } from "@/components/tasks/TasksToolbar";
 import { ListView } from "@/components/tasks/views/ListView";
