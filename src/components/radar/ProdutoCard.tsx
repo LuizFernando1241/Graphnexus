@@ -145,6 +145,14 @@ export function ProdutoCard({
                 >
                   {produto.nome}
                 </h3>
+                {produto.copiaDe && (
+                  <span
+                    className="text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0 bg-muted text-muted-foreground"
+                    title="Este produto é uma cópia e está vinculado ao original"
+                  >
+                    CÓPIA
+                  </span>
+                )}
                 <span className="text-xs font-bold tabular-nums text-foreground shrink-0">
                   {produto.scoreTotal}
                 </span>
