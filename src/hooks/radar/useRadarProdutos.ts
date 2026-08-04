@@ -33,6 +33,7 @@ function mapRow(row: any): RadarProduto {
     updatedAt: row.updated_at,
     valoresCustom: (row.valores_custom ?? {}) as Record<string, number>,
     decisaoFinal: (row.decisao_final ?? undefined) as DecisaoFinal | undefined,
+    copiaDe: row.copia_de ?? undefined,
   }
 }
 
