@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { Building2, ExternalLink, History, ChevronDown } from "lucide-react";
+import { Building2, ExternalLink, History, ChevronDown, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDistanceToNow } from "date-fns";
@@ -13,6 +13,7 @@ import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
 import { useRadarParametros } from "@/hooks/radar/useRadarParametros";
 import { cn } from "@/lib/utils";
 import { DECISION_SOLID } from "@/lib/radar/decisionColors";
+import { toast } from "sonner";
 import type { RadarProduto, PipelineStage, DecisaoFinal } from "@/types/radar";
 
 interface ProdutoCardProps {
@@ -36,7 +37,7 @@ export function ProdutoCard({
   selected = false,
   onToggleSelection,
 }: ProdutoCardProps) {
-  const { moverEtapa, isMovendo } = useRadarProdutos();
+  const { moverEtapa, isMovendo, duplicarProduto, isDuplicando } = useRadarProdutos();
   const { parametros } = useRadarParametros();
   const scoreResult = calcularScore(produto, parametros);
 
@@ -145,6 +146,14 @@ export function ProdutoCard({
                 >
                   {produto.nome}
                 </h3>
+                {produto.copiaDe && (
+                  <span
+                    className="text-[10px] font-semibold px-1.5 py-0.5 rounded shrink-0 bg-muted text-muted-foreground"
+                    title="Este produto é uma cópia e está vinculado ao original"
+                  >
+                    CÓPIA
+                  </span>
+                )}
                 <span className="text-xs font-bold tabular-nums text-foreground shrink-0">
                   {produto.scoreTotal}
                 </span>
@@ -203,6 +212,23 @@ export function ProdutoCard({
                       <ExternalLink className="h-3.5 w-3.5" />
                     </a>
                   )}
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      try {
+                        await duplicarProduto(produto);
+                        toast.success("Cópia criada e vinculada ao original");
+                      } catch {
+                        toast.error("Erro ao criar cópia");
+                      }
+                    }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    disabled={isDuplicando}
+                    className="text-muted-foreground hover:text-foreground transition-colors shrink-0 disabled:opacity-50"
+                    title="Criar cópia"
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </button>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();

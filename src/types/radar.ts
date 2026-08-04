@@ -44,6 +44,7 @@ export interface RadarProduto {
   updatedAt: string
   valoresCustom?: Record<string, number>
   decisaoFinal?: DecisaoFinal
+  copiaDe?: string
 }
 
 // ─── Histórico ────────────────────────────────────────────────────────────────

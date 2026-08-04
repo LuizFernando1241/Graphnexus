@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
-import { Clock, ExternalLink, AlertTriangle, Trash2 } from "lucide-react";
+import { Clock, ExternalLink, AlertTriangle, Trash2, Copy } from "lucide-react";
+import { toast } from "sonner";
 
 import {
   Sheet,
@@ -100,6 +101,8 @@ export function ProdutoSheet({ produto, open, onClose, prefill }: ProdutoSheetPr
     atualizarProduto,
     moverEtapa,
     deletarProduto,
+    duplicarProduto,
+    isDuplicando,
     isCriando,
     isAtualizando,
     isDeletando,
@@ -616,6 +619,26 @@ export function ProdutoSheet({ produto, open, onClose, prefill }: ProdutoSheetPr
               >
                 Cancelar
               </Button>
+              {!isNovo && produto?.id && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-muted-foreground gap-1.5"
+                  disabled={isDuplicando}
+                  onClick={async () => {
+                    try {
+                      await duplicarProduto(produto);
+                      toast.success("Cópia criada e vinculada ao produto original");
+                      onClose();
+                    } catch {
+                      toast.error("Erro ao criar cópia");
+                    }
+                  }}
+                >
+                  <Copy className="h-4 w-4" />
+                  {isDuplicando ? "Copiando..." : "Criar cópia"}
+                </Button>
+              )}
               {!isNovo && produto?.id && (
                 <AlertDialog>
                   <AlertDialogTrigger asChild>

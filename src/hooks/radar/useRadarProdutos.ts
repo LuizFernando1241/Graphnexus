@@ -33,6 +33,7 @@ function mapRow(row: any): RadarProduto {
     updatedAt: row.updated_at,
     valoresCustom: (row.valores_custom ?? {}) as Record<string, number>,
     decisaoFinal: (row.decisao_final ?? undefined) as DecisaoFinal | undefined,
+    copiaDe: row.copia_de ?? undefined,
   }
 }
 
@@ -313,6 +314,65 @@ export function useRadarProdutos() {
     },
   })
 
+  const duplicarProduto = useMutation({
+    mutationFn: async (original: RadarProduto) => {
+      if (!user) throw new Error('Usuário não autenticado')
+
+      const scoreResult = calcularScore(original, parametros)
+
+      const { data, error } = await supabase
+        .from('radar_produtos')
+        .insert({
+          user_id: user.id,
+          nome: `${original.nome} (cópia)`,
+          fornecedor: original.fornecedor,
+          link_ml: original.linkML,
+          preco_venda: original.precoVenda,
+          custo: original.custo,
+          margem: original.margem,
+          visitas_mes: original.visitasMes,
+          vendas_mes: original.vendasMes,
+          concorrentes_full: original.concorrentesFull,
+          is_lancamento: original.isLancamento,
+          observacoes: original.observacoes,
+          stage: original.stage,
+          score_total: scoreResult.scoreTotal,
+          decision: scoreResult.decision,
+          stage_entered_at: new Date().toISOString(),
+          valores_custom: (original.valoresCustom ?? {}) as any,
+          copia_de: original.id,
+        } as any)
+        .select()
+        .single()
+
+      if (error) throw error
+
+      await supabase.from('radar_historico').insert({
+        produto_id: data.id,
+        user_id: user.id,
+        stage: data.stage,
+        event: `Cópia criada a partir de "${original.nome}"`,
+      })
+
+      // Link bidirecional no grafo (cópia → original)
+      await supabase.from('entity_links').insert({
+        user_id: user.id,
+        source_type: 'product',
+        source_id: data.id,
+        target_type: 'product',
+        target_id: original.id,
+        label: 'cópia de',
+      } as any)
+
+      triggerEmbed('produto', data.id)
+      return mapRow(data)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['radar-produtos', user?.id] })
+      queryClient.invalidateQueries({ queryKey: ['entity-links'] })
+    },
+  })
+
   return {
     produtos: query.data ?? [],
     isLoading: query.isLoading,
@@ -324,6 +384,8 @@ export function useRadarProdutos() {
     isRecalculando: recalcularTodos.isPending,
     deletarProduto: deletarProduto.mutateAsync,
     isDeletando: deletarProduto.isPending,
+    duplicarProduto: duplicarProduto.mutateAsync,
+    isDuplicando: duplicarProduto.isPending,
     isCriando: criarProduto.isPending,
     isAtualizando: atualizarProduto.isPending,
     isMovendo: moverEtapa.isPending,
