@@ -341,6 +341,7 @@ export type Database = {
       radar_produtos: {
         Row: {
           concorrentes_full: number | null
+          copia_de: string | null
           created_at: string
           custo: number | null
           decisao_final: string | null
@@ -367,6 +368,7 @@ export type Database = {
         }
         Insert: {
           concorrentes_full?: number | null
+          copia_de?: string | null
           created_at?: string
           custo?: number | null
           decisao_final?: string | null
@@ -393,6 +395,7 @@ export type Database = {
         }
         Update: {
           concorrentes_full?: number | null
+          copia_de?: string | null
           created_at?: string
           custo?: number | null
           decisao_final?: string | null
@@ -417,7 +420,15 @@ export type Database = {
           vendas_mes?: number | null
           visitas_mes?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "radar_produtos_copia_de_fkey"
+            columns: ["copia_de"]
+            isOneToOne: false
+            referencedRelation: "radar_produtos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tasks: {
         Row: {

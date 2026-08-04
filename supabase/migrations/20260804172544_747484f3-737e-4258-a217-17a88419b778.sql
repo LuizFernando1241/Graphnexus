@@ -1,0 +1,2 @@
+ALTER TABLE public.radar_produtos ADD COLUMN IF NOT EXISTS copia_de uuid REFERENCES public.radar_produtos(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS radar_produtos_copia_de_idx ON public.radar_produtos(copia_de);
