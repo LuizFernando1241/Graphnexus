@@ -13,6 +13,7 @@ import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
 import { useRadarParametros } from "@/hooks/radar/useRadarParametros";
 import { cn } from "@/lib/utils";
 import { DECISION_SOLID } from "@/lib/radar/decisionColors";
+import { toast } from "sonner";
 import type { RadarProduto, PipelineStage, DecisaoFinal } from "@/types/radar";
 
 interface ProdutoCardProps {
@@ -211,6 +212,23 @@ export function ProdutoCard({
                       <ExternalLink className="h-3.5 w-3.5" />
                     </a>
                   )}
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      try {
+                        await duplicarProduto(produto);
+                        toast.success("Cópia criada e vinculada ao original");
+                      } catch {
+                        toast.error("Erro ao criar cópia");
+                      }
+                    }}
+                    onPointerDown={(e) => e.stopPropagation()}
+                    disabled={isDuplicando}
+                    className="text-muted-foreground hover:text-foreground transition-colors shrink-0 disabled:opacity-50"
+                    title="Criar cópia"
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </button>
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
