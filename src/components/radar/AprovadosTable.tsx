@@ -113,7 +113,7 @@ export function AprovadosTable({ onVerProduto }: AprovadosTableProps) {
       </div>
 
       {/* Tabela */}
-      <div className="rounded-lg border border-border overflow-hidden">
+      <div className="rounded-lg border border-border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
