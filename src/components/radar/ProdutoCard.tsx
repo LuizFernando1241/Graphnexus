@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
-import { Building2, ExternalLink, History, ChevronDown } from "lucide-react";
+import { Building2, ExternalLink, History, ChevronDown, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDistanceToNow } from "date-fns";
@@ -36,7 +36,7 @@ export function ProdutoCard({
   selected = false,
   onToggleSelection,
 }: ProdutoCardProps) {
-  const { moverEtapa, isMovendo } = useRadarProdutos();
+  const { moverEtapa, isMovendo, duplicarProduto, isDuplicando } = useRadarProdutos();
   const { parametros } = useRadarParametros();
   const scoreResult = calcularScore(produto, parametros);
 
