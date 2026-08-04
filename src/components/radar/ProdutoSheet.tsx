@@ -100,6 +100,8 @@ export function ProdutoSheet({ produto, open, onClose, prefill }: ProdutoSheetPr
     atualizarProduto,
     moverEtapa,
     deletarProduto,
+    duplicarProduto,
+    isDuplicando,
     isCriando,
     isAtualizando,
     isDeletando,
