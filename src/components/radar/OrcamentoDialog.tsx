@@ -1,8 +1,16 @@
-import { useMemo, useState } from "react";
-import { FileText, Loader2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Building2, FileText, Loader2, Pencil, Plus, Truck, ExternalLink } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,8 +18,14 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { toast } from "sonner";
+import { CadastroFormDialog } from "./CadastroFormDialog";
+import {
+  useEmpresasSolicitantes,
+  useFornecedoresCadastro,
+  type EmpresaSolicitante,
+  type FornecedorCadastro,
+} from "@/hooks/radar/useRadarCadastros";
 import type { RadarProduto } from "@/types/radar";
 
 interface Props {
@@ -20,42 +34,47 @@ interface Props {
   produtos: RadarProduto[];
 }
 
-interface DadosSolicitante {
-  empresa: string;
-  cnpj: string;
-  responsavel: string;
-  email: string;
-  telefone: string;
-}
-
-const DADOS_INICIAIS: DadosSolicitante = {
-  empresa: "",
-  cnpj: "",
-  responsavel: "",
-  email: "",
-  telefone: "",
-};
-
 export function OrcamentoDialog({ open, onOpenChange, produtos }: Props) {
-  const [fornecedor, setFornecedor] = useState<string>("");
+  const { empresas } = useEmpresasSolicitantes();
+  const { fornecedores: cadastros } = useFornecedoresCadastro();
+
+  const [empresaId, setEmpresaId] = useState<string>("");
+  const [marca, setMarca] = useState<string>("");
+  const [fornecedorId, setFornecedorId] = useState<string>("");
   const [selecionados, setSelecionados] = useState<Record<string, number>>({});
-  const [dados, setDados] = useLocalStorage<DadosSolicitante>("radar-orcamento-solicitante", DADOS_INICIAIS);
-  const { empresa, cnpj, responsavel, email, telefone } = dados;
-  const setCampo = (campo: keyof DadosSolicitante, valor: string) => setDados({ ...dados, [campo]: valor });
   const [prazo, setPrazo] = useState("");
   const [observacoes, setObservacoes] = useState("");
   const [gerando, setGerando] = useState(false);
 
+  const [cadastroModo, setCadastroModo] = useState<"empresa" | "fornecedor">("empresa");
+  const [cadastroOpen, setCadastroOpen] = useState(false);
+  const [editandoEmpresa, setEditandoEmpresa] = useState<EmpresaSolicitante | null>(null);
+  const [editandoFornecedor, setEditandoFornecedor] = useState<FornecedorCadastro | null>(null);
 
-  const fornecedores = useMemo(
+  const empresa = empresas.find((e) => e.id === empresaId) ?? null;
+  const fornecedorCad = cadastros.find((f) => f.id === fornecedorId) ?? null;
+
+  // Seleciona a empresa padrão automaticamente
+  useEffect(() => {
+    if (!open || empresaId) return;
+    const padrao = empresas.find((e) => e.isDefault) ?? empresas[0];
+    if (padrao) setEmpresaId(padrao.id);
+  }, [open, empresas, empresaId]);
+
+  // Ao escolher a marca, tenta casar com um fornecedor já cadastrado
+  useEffect(() => {
+    if (!marca) return;
+    const match = cadastros.find((f) => f.nome.toLowerCase() === marca.toLowerCase());
+    setFornecedorId(match ? match.id : "");
+  }, [marca, cadastros]);
+
+  const marcas = useMemo(
     () => Array.from(new Set(produtos.map((p) => p.fornecedor).filter(Boolean))).sort(),
     [produtos],
   );
 
-  const produtosDoFornecedor = useMemo(
-    () => produtos.filter((p) => p.fornecedor === fornecedor),
-    [produtos, fornecedor],
-  );
+  const produtosDaMarca = useMemo(() => produtos.filter((p) => p.fornecedor === marca), [produtos, marca]);
+  const itens = produtosDaMarca.filter((p) => selecionados[p.id] !== undefined);
 
   function toggleProduto(p: RadarProduto) {
     setSelecionados((prev) => {
@@ -67,17 +86,23 @@ export function OrcamentoDialog({ open, onOpenChange, produtos }: Props) {
   }
 
   function reset() {
-    setFornecedor("");
+    setMarca("");
+    setFornecedorId("");
     setSelecionados({});
     setObservacoes("");
     setPrazo("");
   }
 
-  const itens = produtosDoFornecedor.filter((p) => selecionados[p.id] !== undefined);
+  function abrirCadastro(modo: "empresa" | "fornecedor", editar: boolean) {
+    setCadastroModo(modo);
+    setEditandoEmpresa(modo === "empresa" && editar ? empresa : null);
+    setEditandoFornecedor(modo === "fornecedor" && editar ? fornecedorCad : null);
+    setCadastroOpen(true);
+  }
 
   function gerarPDF() {
-    if (!empresa.trim() || !cnpj.trim()) {
-      toast.error("Informe o nome da empresa e o CNPJ.");
+    if (!empresa) {
+      toast.error("Selecione (ou cadastre) a sua empresa.");
       return;
     }
     if (itens.length === 0) {
@@ -110,7 +135,7 @@ export function OrcamentoDialog({ open, onOpenChange, produtos }: Props) {
       doc.setTextColor(0);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(11);
-      doc.text("Dados do solicitante", margin, y);
+      doc.text("Solicitante (remetente)", margin, y);
       y += 6;
 
       autoTable(doc, {
@@ -119,22 +144,42 @@ export function OrcamentoDialog({ open, onOpenChange, produtos }: Props) {
         styles: { fontSize: 10, cellPadding: 3 },
         columnStyles: { 0: { fontStyle: "bold", cellWidth: 130 } },
         body: [
-          ["Empresa", empresa],
-          ["CNPJ", cnpj],
-          ["Responsável", responsavel || "—"],
-          ["E-mail", email || "—"],
-          ["Telefone", telefone || "—"],
+          ["Empresa", empresa.nome],
+          ["CNPJ", empresa.cnpj || "—"],
+          ["Responsável", empresa.responsavel || "—"],
+          ["E-mail", empresa.email || "—"],
+          ["Telefone", empresa.telefone || "—"],
+          ...(empresa.endereco ? [["Endereço", empresa.endereco]] : []),
+        ],
+        margin: { left: margin, right: margin },
+      });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      y = (doc as any).lastAutoTable.finalY + 20;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.text("Fornecedor (destinatário)", margin, y);
+      y += 6;
+
+      autoTable(doc, {
+        startY: y,
+        theme: "plain",
+        styles: { fontSize: 10, cellPadding: 3 },
+        columnStyles: { 0: { fontStyle: "bold", cellWidth: 130 } },
+        body: [
+          ["Marca / Fornecedor", fornecedorCad?.nome || marca],
+          ...(fornecedorCad?.empresa ? [["Razão social", fornecedorCad.empresa]] : []),
+          ...(fornecedorCad?.cnpj ? [["CNPJ", fornecedorCad.cnpj]] : []),
+          ...(fornecedorCad?.contato ? [["Contato", fornecedorCad.contato]] : []),
+          ...(fornecedorCad?.email ? [["E-mail", fornecedorCad.email]] : []),
+          ...(fornecedorCad?.telefone ? [["Telefone", fornecedorCad.telefone]] : []),
         ],
         margin: { left: margin, right: margin },
       });
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       y = (doc as any).lastAutoTable.finalY + 24;
-
-      doc.setFont("helvetica", "bold");
-      doc.setFontSize(11);
-      doc.text(`Fornecedor / Marca: ${fornecedor}`, margin, y);
-      y += 16;
 
       autoTable(doc, {
         startY: y,
@@ -144,7 +189,6 @@ export function OrcamentoDialog({ open, onOpenChange, produtos }: Props) {
         headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: "bold" },
         columnStyles: { 0: { cellWidth: 26 }, 2: { cellWidth: 90, halign: "center" } },
         margin: { left: margin, right: margin },
-        // Nome do produto vira hyperlink para o anúncio (sem exibir a URL longa)
         didDrawCell: (data) => {
           if (data.section !== "body" || data.column.index !== 1) return;
           const link = itens[data.row.index]?.linkML;
@@ -157,7 +201,6 @@ export function OrcamentoDialog({ open, onOpenChange, produtos }: Props) {
           data.cell.styles.textColor = [29, 78, 216];
         },
       });
-
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       y = (doc as any).lastAutoTable.finalY + 24;
@@ -193,7 +236,7 @@ export function OrcamentoDialog({ open, onOpenChange, produtos }: Props) {
       doc.text(texto, margin, y);
 
       doc.save(
-        `orcamento-${(fornecedor || "fornecedor").toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${new Date().toISOString().slice(0, 10)}.pdf`,
+        `orcamento-${(marca || "fornecedor").toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${new Date().toISOString().slice(0, 10)}.pdf`,
       );
       toast.success("PDF de solicitação de orçamento gerado.");
       onOpenChange(false);
@@ -206,138 +249,245 @@ export function OrcamentoDialog({ open, onOpenChange, produtos }: Props) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <FileText className="h-4 w-4 text-primary" />
-            Solicitar orçamento
-          </DialogTitle>
-          <DialogDescription>
-            Selecione a marca e os produtos, informe seus dados e gere um PDF formal de pedido de orçamento.
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl max-h-[88vh] grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-primary" />
+              Solicitar orçamento
+            </DialogTitle>
+            <DialogDescription>
+              Confirme seus dados, escolha o fornecedor e os produtos para gerar o PDF formal.
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="flex flex-col gap-5">
-          <div className="flex flex-col gap-2">
-            <Label>Marca / Fornecedor</Label>
-            <Select
-              value={fornecedor}
-              onValueChange={(v) => {
-                setFornecedor(v);
-                setSelecionados({});
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione a marca" />
-              </SelectTrigger>
-              <SelectContent>
-                {fornecedores.map((f) => (
-                  <SelectItem key={f} value={f}>
-                    {f}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <div className="min-w-0 overflow-y-auto pr-1 flex flex-col gap-5">
+            {/* 1 — Meus dados */}
+            <section className="rounded-lg border border-border p-3 flex flex-col gap-2 min-w-0">
+              <div className="flex items-center gap-2">
+                <Building2 className="h-4 w-4 text-primary shrink-0" />
+                <p className="text-sm font-medium">Meus dados (quem solicita)</p>
+              </div>
+              <div className="flex items-center gap-2 min-w-0">
+                <Select value={empresaId} onValueChange={setEmpresaId}>
+                  <SelectTrigger className="min-w-0 flex-1">
+                    <SelectValue placeholder="Selecione a sua empresa" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {empresas.map((e) => (
+                      <SelectItem key={e.id} value={e.id}>
+                        {e.nome}
+                        {e.isDefault ? " (padrão)" : ""}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => abrirCadastro("empresa", true)}
+                  disabled={!empresa}
+                  aria-label="Editar minha empresa"
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" onClick={() => abrirCadastro("empresa", false)} aria-label="Nova empresa">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground truncate">
+                {empresa
+                  ? [empresa.cnpj && `CNPJ ${empresa.cnpj}`, empresa.responsavel, empresa.email]
+                      .filter(Boolean)
+                      .join(" · ") || "Sem dados complementares"
+                  : "Cadastre a sua empresa uma única vez — os dados ficam salvos."}
+              </p>
+            </section>
 
-          {fornecedor && (
-            <div className="flex flex-col gap-2">
-              <Label>
-                Produtos ({itens.length} selecionado{itens.length === 1 ? "" : "s"})
-              </Label>
-              <ScrollArea className="max-h-56 rounded-md border border-border">
-                <div className="divide-y divide-border">
-                  {produtosDoFornecedor.length === 0 && (
-                    <p className="p-3 text-sm text-muted-foreground">Nenhum produto para esta marca.</p>
-                  )}
-                  {produtosDoFornecedor.map((p) => {
-                    const checked = selecionados[p.id] !== undefined;
-                    return (
-                      <div key={p.id} className="flex items-center gap-3 p-2.5">
-                        <Checkbox checked={checked} onCheckedChange={() => toggleProduto(p)} id={`orc-${p.id}`} />
-                        <label htmlFor={`orc-${p.id}`} className="flex-1 truncate text-sm cursor-pointer">
-                          {p.nome}
-                        </label>
-                        <Input
-                          type="number"
-                          min={1}
-                          disabled={!checked}
-                          value={checked ? selecionados[p.id] : ""}
-                          onChange={(e) =>
-                            setSelecionados((prev) => ({
-                              ...prev,
-                              [p.id]: Math.max(1, Number(e.target.value) || 1),
-                            }))
-                          }
-                          className="h-8 w-20 text-center"
-                          aria-label={`Quantidade de ${p.nome}`}
-                        />
-                      </div>
-                    );
-                  })}
+            {/* 2 — Fornecedor */}
+            <section className="rounded-lg border border-border p-3 flex flex-col gap-2 min-w-0">
+              <div className="flex items-center gap-2">
+                <Truck className="h-4 w-4 text-primary shrink-0" />
+                <p className="text-sm font-medium">Fornecedor (para quem vou enviar)</p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 min-w-0">
+                <div className="flex flex-col gap-1.5 min-w-0">
+                  <Label className="text-xs text-muted-foreground">Marca dos produtos</Label>
+                  <Select
+                    value={marca}
+                    onValueChange={(v) => {
+                      setMarca(v);
+                      setSelecionados({});
+                    }}
+                  >
+                    <SelectTrigger className="min-w-0">
+                      <SelectValue placeholder="Selecione a marca" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {marcas.map((f) => (
+                        <SelectItem key={f} value={f}>
+                          {f}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              </ScrollArea>
-            </div>
-          )}
+                <div className="flex flex-col gap-1.5 min-w-0">
+                  <Label className="text-xs text-muted-foreground">Cadastro do fornecedor</Label>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Select value={fornecedorId} onValueChange={setFornecedorId}>
+                      <SelectTrigger className="min-w-0 flex-1">
+                        <SelectValue placeholder="Opcional" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {cadastros.map((f) => (
+                          <SelectItem key={f.id} value={f.id}>
+                            {f.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => abrirCadastro("fornecedor", true)}
+                      disabled={!fornecedorCad}
+                      aria-label="Editar fornecedor"
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => abrirCadastro("fornecedor", false)}
+                      aria-label="Novo fornecedor"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              {fornecedorCad && (
+                <p className="text-xs text-muted-foreground truncate">
+                  {[fornecedorCad.cnpj && `CNPJ ${fornecedorCad.cnpj}`, fornecedorCad.contato, fornecedorCad.email]
+                    .filter(Boolean)
+                    .join(" · ") || "Sem dados complementares"}
+                </p>
+              )}
+            </section>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="orc-empresa">Nome da empresa *</Label>
-              <Input id="orc-empresa" value={empresa} onChange={(e) => setCampo("empresa", e.target.value)} maxLength={120} />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="orc-cnpj">CNPJ *</Label>
-              <Input
-                id="orc-cnpj"
-                value={cnpj}
-                onChange={(e) => setCampo("cnpj", e.target.value)}
-                placeholder="00.000.000/0001-00"
-                maxLength={20}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="orc-resp">Responsável</Label>
-              <Input id="orc-resp" value={responsavel} onChange={(e) => setCampo("responsavel", e.target.value)} maxLength={120} />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="orc-email">E-mail</Label>
-              <Input id="orc-email" type="email" value={email} onChange={(e) => setCampo("email", e.target.value)} maxLength={160} />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="orc-tel">Telefone</Label>
-              <Input id="orc-tel" value={telefone} onChange={(e) => setCampo("telefone", e.target.value)} maxLength={30} />
+            {/* 3 — Produtos */}
+            {marca && (
+              <div className="flex flex-col gap-2 min-w-0">
+                <Label>
+                  Produtos ({itens.length} selecionado{itens.length === 1 ? "" : "s"})
+                </Label>
+                <ScrollArea className="h-56 rounded-md border border-border">
+                  <div className="divide-y divide-border">
+                    {produtosDaMarca.length === 0 && (
+                      <p className="p-3 text-sm text-muted-foreground">Nenhum produto para esta marca.</p>
+                    )}
+                    {produtosDaMarca.map((p) => {
+                      const checked = selecionados[p.id] !== undefined;
+                      return (
+                        <div key={p.id} className="flex items-center gap-3 p-2.5 min-w-0">
+                          <Checkbox checked={checked} onCheckedChange={() => toggleProduto(p)} id={`orc-${p.id}`} />
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <button
+                                type="button"
+                                className="flex-1 min-w-0 truncate text-left text-sm hover:underline"
+                                title="Ver título completo"
+                              >
+                                {p.nome}
+                              </button>
+                            </PopoverTrigger>
+                            <PopoverContent align="start" className="max-w-sm break-words text-sm">
+                              <p className="font-medium">{p.nome}</p>
+                              {p.linkML && (
+                                <a
+                                  href={p.linkML}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                                >
+                                  <ExternalLink className="h-3 w-3" />
+                                  Abrir anúncio
+                                </a>
+                              )}
+                            </PopoverContent>
+                          </Popover>
+                          <Input
+                            type="number"
+                            min={1}
+                            disabled={!checked}
+                            value={checked ? selecionados[p.id] : ""}
+                            onChange={(e) =>
+                              setSelecionados((prev) => ({
+                                ...prev,
+                                [p.id]: Math.max(1, Number(e.target.value) || 1),
+                              }))
+                            }
+                            className="h-8 w-16 shrink-0 text-center"
+                            aria-label={`Quantidade de ${p.nome}`}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </ScrollArea>
+              </div>
+            )}
 
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="orc-prazo">Prazo desejado para resposta</Label>
-              <Input id="orc-prazo" value={prazo} onChange={(e) => setPrazo(e.target.value)} placeholder="Ex.: 5 dias úteis" maxLength={60} />
+            {/* 4 — Detalhes */}
+            <div className="flex flex-col gap-3 min-w-0">
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="orc-prazo">Prazo desejado para resposta</Label>
+                <Input
+                  id="orc-prazo"
+                  value={prazo}
+                  onChange={(e) => setPrazo(e.target.value)}
+                  placeholder="Ex.: 5 dias úteis"
+                  maxLength={60}
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="orc-obs">Observações</Label>
+                <Textarea
+                  id="orc-obs"
+                  value={observacoes}
+                  onChange={(e) => setObservacoes(e.target.value)}
+                  rows={3}
+                  maxLength={1000}
+                  placeholder="Condições de pagamento, frete, prazo de entrega..."
+                />
+              </div>
             </div>
           </div>
 
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="orc-obs">Observações</Label>
-            <Textarea
-              id="orc-obs"
-              value={observacoes}
-              onChange={(e) => setObservacoes(e.target.value)}
-              rows={3}
-              maxLength={1000}
-              placeholder="Condições de pagamento, frete, prazo de entrega..."
-            />
-          </div>
-        </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={gerarPDF} disabled={gerando}>
+              {gerando ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}
+              Gerar PDF
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
-          </Button>
-          <Button onClick={gerarPDF} disabled={gerando}>
-            {gerando ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}
-            Gerar PDF
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      <CadastroFormDialog
+        open={cadastroOpen}
+        onOpenChange={setCadastroOpen}
+        modo={cadastroModo}
+        empresa={editandoEmpresa}
+        fornecedor={editandoFornecedor}
+        nomeInicial={cadastroModo === "fornecedor" && !editandoFornecedor ? marca : undefined}
+        onSaved={(id) => (cadastroModo === "empresa" ? setEmpresaId(id) : setFornecedorId(id))}
+        onDeleted={() => (cadastroModo === "empresa" ? setEmpresaId("") : setFornecedorId(""))}
+      />
+    </>
   );
 }

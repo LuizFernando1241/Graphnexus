@@ -220,6 +220,48 @@ export type Database = {
           },
         ]
       }
+      radar_empresas: {
+        Row: {
+          cnpj: string | null
+          created_at: string
+          email: string | null
+          endereco: string | null
+          id: string
+          is_default: boolean
+          nome: string
+          responsavel: string | null
+          telefone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cnpj?: string | null
+          created_at?: string
+          email?: string | null
+          endereco?: string | null
+          id?: string
+          is_default?: boolean
+          nome: string
+          responsavel?: string | null
+          telefone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          cnpj?: string | null
+          created_at?: string
+          email?: string | null
+          endereco?: string | null
+          id?: string
+          is_default?: boolean
+          nome?: string
+          responsavel?: string | null
+          telefone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       radar_entity_links: {
         Row: {
           created_at: string
@@ -254,6 +296,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      radar_fornecedores: {
+        Row: {
+          cnpj: string | null
+          contato: string | null
+          created_at: string
+          email: string | null
+          empresa: string | null
+          endereco: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          telefone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          cnpj?: string | null
+          contato?: string | null
+          created_at?: string
+          email?: string | null
+          empresa?: string | null
+          endereco?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          telefone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          cnpj?: string | null
+          contato?: string | null
+          created_at?: string
+          email?: string | null
+          empresa?: string | null
+          endereco?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          telefone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       radar_historico: {
         Row: {
