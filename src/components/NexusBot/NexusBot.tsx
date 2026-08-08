@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Bot, X, Plus, Send, Loader2, FileText, CheckSquare, FolderKanban, Package } from "lucide-react";
+import { Bot, Plus, Send, Loader2, FileText, CheckSquare, FolderKanban, Package } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { FloatingWindow } from "@/components/ui/floating-window";
@@ -182,7 +182,7 @@ export function NexusBot() {
               <Bot className="h-3.5 w-3.5" />
             </span>
             NexusBot
-            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={reset} title="Nova conversa">
+            <Button variant="ghost" size="icon" className="h-6 w-6" onPointerDown={(e) => e.stopPropagation()} onClick={reset} title="Nova conversa">
               <Plus className="h-3.5 w-3.5" />
             </Button>
           </span>
