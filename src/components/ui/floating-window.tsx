@@ -16,6 +16,7 @@ interface FloatingWindowProps {
   minWidth?: number;
   minHeight?: number;
   className?: string;
+  bodyClassName?: string;
 }
 
 interface Rect {
@@ -41,6 +42,7 @@ export function FloatingWindow({
   minWidth = 340,
   minHeight = 240,
   className,
+  bodyClassName,
 }: FloatingWindowProps) {
   const isMobile = useIsMobile();
   const [rect, setRect] = React.useState<Rect | null>(null);
@@ -185,7 +187,7 @@ export function FloatingWindow({
 
       {!minimized && (
         <>
-          <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4">{children}</div>
+          <div className={cn("flex-1 min-h-0 overflow-y-auto px-4 py-4", bodyClassName)}>{children}</div>
           {footer && (
             <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 border-t border-border px-4 py-3 shrink-0">
               {footer}
