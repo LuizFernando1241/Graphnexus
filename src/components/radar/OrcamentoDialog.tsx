@@ -250,19 +250,32 @@ export function OrcamentoDialog({ open, onOpenChange, produtos }: Props) {
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-2xl max-h-[88vh] grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-primary" />
-              Solicitar orçamento
-            </DialogTitle>
-            <DialogDescription>
-              Confirme seus dados, escolha o fornecedor e os produtos para gerar o PDF formal.
-            </DialogDescription>
-          </DialogHeader>
+      <FloatingWindow
+        open={open}
+        onOpenChange={onOpenChange}
+        defaultWidth={760}
+        defaultHeight={680}
+        title={
+          <span className="flex items-center gap-2">
+            <FileText className="h-4 w-4 text-primary" />
+            Solicitar orçamento
+          </span>
+        }
+        description="Confirme seus dados, escolha o fornecedor e os produtos para gerar o PDF formal. Arraste o título para mover, use os cantos para redimensionar."
+        footer={
+          <>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={gerarPDF} disabled={gerando}>
+              {gerando ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}
+              Gerar PDF
+            </Button>
+          </>
+        }
+      >
+          <div className="min-w-0 flex flex-col gap-5">
 
-          <div className="min-w-0 overflow-y-auto pr-1 flex flex-col gap-5">
             {/* 1 — Meus dados */}
             <section className="rounded-lg border border-border p-3 flex flex-col gap-2 min-w-0">
               <div className="flex items-center gap-2">
