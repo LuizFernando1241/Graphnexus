@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { FloatingWindow } from "@/components/ui/floating-window";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -101,13 +101,24 @@ export function ExportFieldsDialog({
   );
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh]">
-        <DialogHeader>
-          <DialogTitle>Selecionar campos para exportação</DialogTitle>
-        </DialogHeader>
-
-        <ScrollArea className="max-h-[60vh] pr-4">
+    <FloatingWindow
+      open={open}
+      onOpenChange={onOpenChange}
+      defaultWidth={700}
+      defaultHeight={620}
+      title="Selecionar campos para exportação"
+      footer={
+        <>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
+          <Button onClick={handleExport} disabled={selectedIds.size === 0}>
+            Exportar ({selectedIds.size} campo{selectedIds.size !== 1 ? "s" : ""})
+          </Button>
+        </>
+      }
+    >
+        <div>
           <div className="space-y-4">
             {/* Botão marcar/desmarcar todos */}
             <div className="flex items-center gap-2 pb-3 border-b">
@@ -171,17 +182,7 @@ export function ExportFieldsDialog({
               );
             })}
           </div>
-        </ScrollArea>
-
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Cancelar
-          </Button>
-          <Button onClick={handleExport} disabled={selectedIds.size === 0}>
-            Exportar ({selectedIds.size} campo{selectedIds.size !== 1 ? "s" : ""})
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </div>
+    </FloatingWindow>
   );
 }
