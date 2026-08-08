@@ -1,13 +1,7 @@
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Clock, Plus, ArrowRight, Pencil } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { FloatingWindow } from "@/components/ui/floating-window";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getStageLabel } from "@/lib/radar/radarScore";
 import { useRadarHistorico } from "@/hooks/radar/useRadarHistorico";
@@ -52,16 +46,19 @@ export function HistoricoModal({ produto, open, onClose }: HistoricoModalProps) 
   const { data: historico, isLoading } = useRadarHistorico(open ? produto.id : null);
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Clock className="h-4 w-4" />
-            Histórico — {produto.nome}
-          </DialogTitle>
-        </DialogHeader>
-
-        <ScrollArea className="max-h-[60vh] pr-3">
+    <FloatingWindow
+      open={open}
+      onOpenChange={(v) => !v && onClose()}
+      defaultWidth={520}
+      defaultHeight={560}
+      title={
+        <span className="flex items-center gap-2 min-w-0">
+          <Clock className="h-4 w-4 shrink-0" />
+          <span className="truncate">Histórico — {produto.nome}</span>
+        </span>
+      }
+    >
+        <div>
           {isLoading ? (
             <div className="flex flex-col gap-3">
               {[...Array(5)].map((_, i) => (
@@ -108,8 +105,7 @@ export function HistoricoModal({ produto, open, onClose }: HistoricoModalProps) 
               })}
             </div>
           )}
-        </ScrollArea>
-      </DialogContent>
-    </Dialog>
+        </div>
+    </FloatingWindow>
   );
 }
