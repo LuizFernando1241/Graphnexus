@@ -2,9 +2,8 @@ import { useState, useMemo, useEffect } from "react";
 import { Clock, ExternalLink, AlertTriangle, Trash2, Copy } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  FloatingWindow,
-} from "@/components/ui/sheet";
+import { FloatingWindow } from "@/components/ui/floating-window";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
