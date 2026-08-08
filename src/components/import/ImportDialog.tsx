@@ -4,14 +4,7 @@ import { Upload, FileText, CheckCircle2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { FloatingWindow } from "@/components/ui/floating-window";
 import { parseFiles, importItems, type ParsedItem } from "@/lib/markdown/import";
 import type { EntityType } from "@/types/entities";
 
@@ -124,25 +117,26 @@ export function ImportDialog({ defaultType, open, onOpenChange, trigger }: Props
   );
 
   return (
-    <Dialog open={isOpen} onOpenChange={setOpen}>
+    <>
       {trigger !== null && (
-        <DialogTrigger asChild>
+        <span onClick={() => setOpen(true)} className="contents">
           {trigger ?? (
             <Button variant="outline" size="sm">
               <Upload className="h-4 w-4 mr-2" />
               Importar
             </Button>
           )}
-        </DialogTrigger>
+        </span>
       )}
 
-      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Importar Markdown</DialogTitle>
-          <DialogDescription>
-            Envie arquivos .md ou .zip exportados (próprios ou estilo Obsidian).
-          </DialogDescription>
-        </DialogHeader>
+      <FloatingWindow
+        open={isOpen}
+        onOpenChange={setOpen}
+        defaultWidth={860}
+        defaultHeight={680}
+        title="Importar Markdown"
+        description="Envie arquivos .md ou .zip exportados (próprios ou estilo Obsidian)."
+      >
 
         <label
           onDragEnter={(e) => {
@@ -273,7 +267,7 @@ export function ImportDialog({ defaultType, open, onOpenChange, trigger }: Props
             </div>
           </section>
         )}
-      </DialogContent>
-    </Dialog>
+      </FloatingWindow>
+    </>
   );
 }

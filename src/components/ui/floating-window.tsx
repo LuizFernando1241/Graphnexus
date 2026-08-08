@@ -2,6 +2,7 @@ import * as React from "react";
 import { createPortal } from "react-dom";
 import { Maximize2, Minimize2, Minus, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface FloatingWindowProps {
   open: boolean;
@@ -15,6 +16,7 @@ interface FloatingWindowProps {
   minWidth?: number;
   minHeight?: number;
   className?: string;
+  bodyClassName?: string;
 }
 
 interface Rect {
@@ -40,7 +42,9 @@ export function FloatingWindow({
   minWidth = 340,
   minHeight = 240,
   className,
+  bodyClassName,
 }: FloatingWindowProps) {
+  const isMobile = useIsMobile();
   const [rect, setRect] = React.useState<Rect | null>(null);
   const [maximized, setMaximized] = React.useState(false);
   const [minimized, setMinimized] = React.useState(false);
@@ -102,7 +106,7 @@ export function FloatingWindow({
   }, [onPointerMove]);
 
   function startDrag(mode: "move" | "resize", e: React.PointerEvent) {
-    if (!rect || maximized) return;
+    if (!rect || maximized || isMobile) return;
     e.preventDefault();
     dragRef.current = { mode, startX: e.clientX, startY: e.clientY, base: rect };
     document.body.style.userSelect = "none";
@@ -114,8 +118,10 @@ export function FloatingWindow({
 
   if (!open || !rect) return null;
 
-  const style: React.CSSProperties = maximized
-    ? { left: 8, top: 8, width: "calc(100vw - 16px)", height: "calc(100vh - 16px)" }
+  const fullscreen = maximized || isMobile;
+
+  const style: React.CSSProperties = fullscreen
+    ? { left: 0, top: 0, width: "100vw", height: "100dvh" }
     : { left: rect.x, top: rect.y, width: rect.w, height: minimized ? undefined : rect.h };
 
   return createPortal(
@@ -131,10 +137,10 @@ export function FloatingWindow({
     >
       <div
         onPointerDown={(e) => startDrag("move", e)}
-        onDoubleClick={() => setMaximized((v) => !v)}
+        onDoubleClick={() => !isMobile && setMaximized((v) => !v)}
         className={cn(
           "flex items-start gap-2 border-b border-border bg-muted/40 px-4 py-3 shrink-0",
-          !maximized && "cursor-move",
+          !fullscreen && "cursor-move",
         )}
       >
         <div className="min-w-0 flex-1">
@@ -163,6 +169,7 @@ export function FloatingWindow({
               });
             }}
             aria-label={maximized ? "Restaurar tamanho" : "Maximizar"}
+            hidden={isMobile}
             className="rounded p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground"
           >
             {maximized ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
@@ -180,13 +187,13 @@ export function FloatingWindow({
 
       {!minimized && (
         <>
-          <div className="flex-1 min-h-0 overflow-y-auto px-4 py-4">{children}</div>
+          <div className={cn("flex-1 min-h-0 overflow-y-auto px-4 py-4", bodyClassName)}>{children}</div>
           {footer && (
             <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 border-t border-border px-4 py-3 shrink-0">
               {footer}
             </div>
           )}
-          {!maximized && (
+          {!fullscreen && (
             <div
               onPointerDown={(e) => startDrag("resize", e)}
               aria-hidden

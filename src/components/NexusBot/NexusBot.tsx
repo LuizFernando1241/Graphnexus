@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Bot, X, Plus, Send, Loader2, FileText, CheckSquare, FolderKanban, Package } from "lucide-react";
+import { Bot, Plus, Send, Loader2, FileText, CheckSquare, FolderKanban, Package } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { FloatingWindow } from "@/components/ui/floating-window";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -170,30 +170,25 @@ export function NexusBot() {
         <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-success ring-2 ring-background" />
       </button>
 
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetContent
-          side="right"
-          className="w-full sm:max-w-[440px] p-0 flex flex-col gap-0 bg-background"
-        >
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-            <div className="flex items-center gap-2.5">
-              <div className="h-8 w-8 rounded-full bg-primary/15 text-primary flex items-center justify-center">
-                <Bot className="h-4 w-4" />
-              </div>
-              <div>
-                <div className="font-semibold text-sm leading-tight">NexusBot</div>
-                <div className="text-[11px] text-muted-foreground">Conhece todo o seu Nexus</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" onClick={reset} title="Nova conversa">
-                <Plus className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon" onClick={() => setOpen(false)} title="Fechar">
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+      <FloatingWindow
+        open={open}
+        onOpenChange={setOpen}
+        defaultWidth={460}
+        defaultHeight={640}
+        bodyClassName="p-0 flex flex-col overflow-hidden"
+        title={
+          <span className="flex items-center gap-2.5">
+            <span className="h-6 w-6 rounded-full bg-primary/15 text-primary flex items-center justify-center">
+              <Bot className="h-3.5 w-3.5" />
+            </span>
+            NexusBot
+            <Button variant="ghost" size="icon" className="h-6 w-6" onPointerDown={(e) => e.stopPropagation()} onClick={reset} title="Nova conversa">
+              <Plus className="h-3.5 w-3.5" />
+            </Button>
+          </span>
+        }
+        description="Conhece todo o seu Nexus"
+      >
 
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
             {messages.map((m) => (
@@ -277,8 +272,7 @@ export function NexusBot() {
               Enter envia · Shift+Enter quebra linha
             </div>
           </div>
-        </SheetContent>
-      </Sheet>
+      </FloatingWindow>
     </>
   );
 }

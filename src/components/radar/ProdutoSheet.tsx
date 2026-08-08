@@ -2,12 +2,8 @@ import { useState, useMemo, useEffect } from "react";
 import { Clock, ExternalLink, AlertTriangle, Trash2, Copy } from "lucide-react";
 import { toast } from "sonner";
 
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
+import { FloatingWindow } from "@/components/ui/floating-window";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -211,17 +207,19 @@ export function ProdutoSheet({ produto, open, onClose, prefill }: ProdutoSheetPr
 
   return (
     <TooltipProvider>
-      <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
-        <SheetContent
-          side="right"
-          className="w-full sm:max-w-[480px] p-0 flex flex-col gap-0"
-        >
-          <SheetHeader className="px-5 pt-5 pb-3 border-b flex-shrink-0">
-            <div className="flex items-start justify-between gap-3 pr-8">
+      <FloatingWindow
+        open={open}
+        onOpenChange={(v) => !v && onClose()}
+        defaultWidth={560}
+        defaultHeight={720}
+        bodyClassName="p-0 flex flex-col overflow-hidden"
+        title={
+          <span className="truncate">{isNovo ? "Novo Produto" : form.nome || "Editar Produto"}</span>
+        }
+      >
+          <div className="px-5 pt-4 pb-3 border-b flex-shrink-0">
+            <div className="flex items-start justify-between gap-3">
               <div className="flex flex-col gap-1 min-w-0">
-                <SheetTitle className="truncate">
-                  {isNovo ? "Novo Produto" : form.nome || "Editar Produto"}
-                </SheetTitle>
                 {!isNovo && produto && (
                   <div className="flex items-center gap-2 flex-wrap">
                     <Badge variant="outline" className="text-[10px]">
@@ -249,7 +247,7 @@ export function ProdutoSheet({ produto, open, onClose, prefill }: ProdutoSheetPr
                 </Button>
               )}
             </div>
-          </SheetHeader>
+          </div>
 
           <div className="px-5 py-3 flex-shrink-0">
             <ScorePainel scoreResult={scoreResult} />
@@ -685,8 +683,7 @@ export function ProdutoSheet({ produto, open, onClose, prefill }: ProdutoSheetPr
             </Button>
 
           </div>
-        </SheetContent>
-      </Sheet>
+      </FloatingWindow>
 
       <AlertDialog
         open={showDuplicataDialog}
