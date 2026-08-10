@@ -47,6 +47,7 @@ export function HistoricoModal({ produto, open, onClose }: HistoricoModalProps) 
 
   return (
     <FloatingWindow
+        storageKey="radar-historico"
       open={open}
       onOpenChange={(v) => !v && onClose()}
       defaultWidth={520}

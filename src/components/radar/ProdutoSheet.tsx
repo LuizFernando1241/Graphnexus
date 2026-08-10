@@ -208,6 +208,7 @@ export function ProdutoSheet({ produto, open, onClose, prefill }: ProdutoSheetPr
   return (
     <TooltipProvider>
       <FloatingWindow
+        storageKey="radar-produto"
         open={open}
         onOpenChange={(v) => !v && onClose()}
         defaultWidth={560}

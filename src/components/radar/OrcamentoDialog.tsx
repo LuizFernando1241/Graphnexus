@@ -245,6 +245,7 @@ export function OrcamentoDialog({ open, onOpenChange, produtos }: Props) {
   return (
     <>
       <FloatingWindow
+        storageKey="radar-orcamento"
         open={open}
         onOpenChange={onOpenChange}
         defaultWidth={760}

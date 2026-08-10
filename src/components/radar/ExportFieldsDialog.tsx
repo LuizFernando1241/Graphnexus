@@ -102,6 +102,7 @@ export function ExportFieldsDialog({
 
   return (
     <FloatingWindow
+        storageKey="radar-export"
       open={open}
       onOpenChange={onOpenChange}
       defaultWidth={700}

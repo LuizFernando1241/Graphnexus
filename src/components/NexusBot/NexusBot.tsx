@@ -171,6 +171,7 @@ export function NexusBot() {
       </button>
 
       <FloatingWindow
+        storageKey="nexus-bot"
         open={open}
         onOpenChange={setOpen}
         defaultWidth={460}

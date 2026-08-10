@@ -130,6 +130,7 @@ export function ImportDialog({ defaultType, open, onOpenChange, trigger }: Props
       )}
 
       <FloatingWindow
+        storageKey="import-md"
         open={isOpen}
         onOpenChange={setOpen}
         defaultWidth={860}
