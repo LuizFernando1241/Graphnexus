@@ -34,6 +34,54 @@ function clamp(v: number, min: number, max: number) {
   return Math.min(Math.max(v, min), max);
 }
 
+interface SavedRect extends Rect {
+  maximized?: boolean;
+}
+
+function orientation() {
+  return window.innerWidth >= window.innerHeight ? "landscape" : "portrait";
+}
+
+/** Chave separada por dispositivo e orientação: cada contexto lembra o seu layout. */
+function savedKey(storageKey: string, isMobile: boolean) {
+  return `fw:${storageKey}:${isMobile ? "m" : "d"}:${orientation()}`;
+}
+
+function readSaved(storageKey: string, isMobile: boolean): SavedRect | null {
+  try {
+    const raw = localStorage.getItem(savedKey(storageKey, isMobile));
+    if (!raw) return null;
+    const p = JSON.parse(raw);
+    if (typeof p?.w === "number" && typeof p?.h === "number" && typeof p?.x === "number" && typeof p?.y === "number") {
+      return p as SavedRect;
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+function writeSaved(storageKey: string, isMobile: boolean, value: SavedRect) {
+  try {
+    localStorage.setItem(savedKey(storageKey, isMobile), JSON.stringify(value));
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Garante que o retângulo salvo cabe na viewport atual. */
+function fitRect(r: Rect, minWidth: number, minHeight: number): Rect {
+  const w = clamp(r.w, Math.min(minWidth, window.innerWidth - 16), Math.max(120, window.innerWidth - 16));
+  const h = clamp(r.h, Math.min(minHeight, window.innerHeight - 16), Math.max(120, window.innerHeight - 16));
+  return {
+    w,
+    h,
+    x: clamp(r.x, 8, Math.max(8, window.innerWidth - w - 8)),
+    y: clamp(r.y, 8, Math.max(8, window.innerHeight - h - 8)),
+  };
+}
+
+
 /* ------------------------------------------------------------------ */
 /* Gerenciador global de janelas (empilhamento + barra de minimizados) */
 /* ------------------------------------------------------------------ */
