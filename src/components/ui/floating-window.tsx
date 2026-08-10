@@ -34,6 +34,54 @@ function clamp(v: number, min: number, max: number) {
   return Math.min(Math.max(v, min), max);
 }
 
+interface SavedRect extends Rect {
+  maximized?: boolean;
+}
+
+function orientation() {
+  return window.innerWidth >= window.innerHeight ? "landscape" : "portrait";
+}
+
+/** Chave separada por dispositivo e orientação: cada contexto lembra o seu layout. */
+function savedKey(storageKey: string, isMobile: boolean) {
+  return `fw:${storageKey}:${isMobile ? "m" : "d"}:${orientation()}`;
+}
+
+function readSaved(storageKey: string, isMobile: boolean): SavedRect | null {
+  try {
+    const raw = localStorage.getItem(savedKey(storageKey, isMobile));
+    if (!raw) return null;
+    const p = JSON.parse(raw);
+    if (typeof p?.w === "number" && typeof p?.h === "number" && typeof p?.x === "number" && typeof p?.y === "number") {
+      return p as SavedRect;
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+function writeSaved(storageKey: string, isMobile: boolean, value: SavedRect) {
+  try {
+    localStorage.setItem(savedKey(storageKey, isMobile), JSON.stringify(value));
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Garante que o retângulo salvo cabe na viewport atual. */
+function fitRect(r: Rect, minWidth: number, minHeight: number): Rect {
+  const w = clamp(r.w, Math.min(minWidth, window.innerWidth - 16), Math.max(120, window.innerWidth - 16));
+  const h = clamp(r.h, Math.min(minHeight, window.innerHeight - 16), Math.max(120, window.innerHeight - 16));
+  return {
+    w,
+    h,
+    x: clamp(r.x, 8, Math.max(8, window.innerWidth - w - 8)),
+    y: clamp(r.y, 8, Math.max(8, window.innerHeight - h - 8)),
+  };
+}
+
+
 /* ------------------------------------------------------------------ */
 /* Gerenciador global de janelas (empilhamento + barra de minimizados) */
 /* ------------------------------------------------------------------ */
@@ -141,10 +189,10 @@ export function FloatingWindow({
     if (!open) {
       registry.delete(id);
       emit();
-      // reset para que a próxima abertura venha limpa
+      // reset para que a próxima abertura releia o layout salvo
       setMinimized(false);
       setMaximized(false);
-      if (!storageKey) setRect(null);
+      setRect(null);
       const opener = openerRef.current as HTMLElement | null;
       openerRef.current = null;
       if (opener && document.contains(opener)) opener.focus?.();
@@ -153,33 +201,24 @@ export function FloatingWindow({
 
     openerRef.current = document.activeElement;
 
+    const saved = storageKey ? readSaved(storageKey, isMobile) : null;
+    if (saved) setMaximized(!!saved.maximized);
+    else if (isMobile) setMaximized(true);
+
     setRect((prev) => {
       if (prev) return prev;
-      let saved: Rect | null = null;
-      if (storageKey) {
-        try {
-          const raw = localStorage.getItem(`fw:${storageKey}`);
-          if (raw) {
-            const p = JSON.parse(raw);
-            if (typeof p?.w === "number" && typeof p?.h === "number") saved = p as Rect;
-          }
-        } catch {
-          /* ignore */
-        }
-      }
-      const w = clamp(saved?.w ?? defaultWidth, minWidth, window.innerWidth - 32);
-      const h = clamp(saved?.h ?? defaultHeight, minHeight, window.innerHeight - 32);
-      const cx = saved?.x ?? (window.innerWidth - w) / 2;
-      const cy = saved?.y ?? (window.innerHeight - h) / 2;
-      // cascata leve quando já há janelas abertas
-      const offset = saved ? 0 : registry.size * 24;
+      if (saved) return fitRect(saved, minWidth, minHeight);
+      const w = clamp(defaultWidth, minWidth, window.innerWidth - 32);
+      const h = clamp(defaultHeight, minHeight, window.innerHeight - 32);
+      const offset = registry.size * 24;
       return {
         w,
         h,
-        x: clamp(cx + offset, 8, Math.max(8, window.innerWidth - w - 8)),
-        y: clamp(cy + offset, 8, Math.max(8, window.innerHeight - h - 8)),
+        x: clamp((window.innerWidth - w) / 2 + offset, 8, Math.max(8, window.innerWidth - w - 8)),
+        y: clamp((window.innerHeight - h) / 2 + offset, 8, Math.max(8, window.innerHeight - h - 8)),
       };
     });
+
 
     const entry: WinEntry = { id, z: ++zCounter, minimized: false, close: () => onOpenChange(false) };
     registry.set(id, entry);
@@ -235,38 +274,55 @@ export function FloatingWindow({
     return () => window.clearTimeout(t);
   }, [open, minimized]);
 
-  /* ---- reposiciona quando a janela do navegador muda de tamanho ---- */
+  /* ---- persistência (por dispositivo + orientação) ---- */
+  const persist = React.useCallback(
+    (r: Rect, maxi = maximized) => {
+      if (!storageKey) return;
+      writeSaved(storageKey, isMobile, { ...r, maximized: maxi });
+    },
+    [storageKey, isMobile, maximized],
+  );
+
+  /* ---- redimensionamento / troca de orientação ---- */
+  const orientRef = React.useRef(orientation());
   React.useEffect(() => {
     if (!open) return;
     function onResize() {
+      const nextOrient = orientation();
+      const changed = nextOrient !== orientRef.current;
+      orientRef.current = nextOrient;
+
+      if (changed && storageKey) {
+        const saved = readSaved(storageKey, isMobile);
+        if (saved) {
+          setMaximized(!!saved.maximized);
+          setRect(fitRect(saved, minWidth, minHeight));
+          return;
+        }
+      }
+
       setRect((prev) => {
         if (!prev) return prev;
         const w = clamp(prev.w, minWidth, Math.max(minWidth, window.innerWidth - 16));
         const h = clamp(prev.h, minHeight, Math.max(minHeight, window.innerHeight - 16));
-        return {
+        const next = {
           w,
           h,
           x: clamp(prev.x, 8 - w + 120, Math.max(8, window.innerWidth - 120)),
           y: clamp(prev.y, 0, Math.max(0, window.innerHeight - 48)),
         };
+        if (changed && storageKey) writeSaved(storageKey, isMobile, { ...next, maximized });
+        return next;
       });
     }
     window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, [open, minWidth, minHeight]);
+    window.addEventListener("orientationchange", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+    };
+  }, [open, minWidth, minHeight, storageKey, isMobile, maximized]);
 
-  /* ---- persistência ---- */
-  const persist = React.useCallback(
-    (r: Rect) => {
-      if (!storageKey) return;
-      try {
-        localStorage.setItem(`fw:${storageKey}`, JSON.stringify(r));
-      } catch {
-        /* ignore */
-      }
-    },
-    [storageKey],
-  );
 
   /* ---- arrastar e redimensionar ---- */
   const onPointerMove = React.useCallback(
@@ -323,7 +379,7 @@ export function FloatingWindow({
   React.useEffect(() => endDrag, [endDrag]);
 
   function startDrag(mode: "move" | ResizeDir, e: React.PointerEvent) {
-    if (!rect || maximized || isMobile || minimized) return;
+    if (!rect || maximized || minimized) return;
     if (e.button !== 0 && e.pointerType === "mouse") return;
     e.preventDefault();
     bringToFront();
@@ -335,21 +391,27 @@ export function FloatingWindow({
   }
 
   function toggleMaximize() {
-    if (isMobile) return;
     setMinimized(false);
     setMaximized((v) => {
-      if (!v) {
+      const next = !v;
+      if (next) {
         restoreRef.current = rect;
-      } else if (restoreRef.current) {
-        setRect(restoreRef.current);
+        if (rect) persist(rect, true);
+      } else {
+        const target = restoreRef.current ?? rect;
+        if (target) {
+          setRect(target);
+          persist(target, false);
+        }
       }
-      return !v;
+      return next;
     });
   }
 
   if (!open || !rect) return null;
 
-  const fullscreen = maximized || isMobile;
+  const fullscreen = maximized;
+
 
   /* ---- estado minimizado: barra compacta ancorada no rodapé ---- */
   if (minimized) {
@@ -451,17 +513,15 @@ export function FloatingWindow({
           >
             <Minus className="h-4 w-4" />
           </button>
-          {!isMobile && (
-            <button
-              type="button"
-              onClick={toggleMaximize}
-              aria-label={maximized ? "Restaurar tamanho" : "Maximizar"}
-              title={maximized ? "Restaurar tamanho" : "Maximizar"}
-              className="rounded p-2 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              {maximized ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={toggleMaximize}
+            aria-label={maximized ? "Restaurar tamanho" : "Maximizar"}
+            title={maximized ? "Restaurar tamanho" : "Maximizar"}
+            className="rounded p-2 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {maximized ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+          </button>
           <button
             type="button"
             onClick={() => onOpenChange(false)}
