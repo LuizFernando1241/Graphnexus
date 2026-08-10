@@ -235,38 +235,55 @@ export function FloatingWindow({
     return () => window.clearTimeout(t);
   }, [open, minimized]);
 
-  /* ---- reposiciona quando a janela do navegador muda de tamanho ---- */
+  /* ---- persistência (por dispositivo + orientação) ---- */
+  const persist = React.useCallback(
+    (r: Rect, maxi = maximized) => {
+      if (!storageKey) return;
+      writeSaved(storageKey, isMobile, { ...r, maximized: maxi });
+    },
+    [storageKey, isMobile, maximized],
+  );
+
+  /* ---- redimensionamento / troca de orientação ---- */
+  const orientRef = React.useRef(orientation());
   React.useEffect(() => {
     if (!open) return;
     function onResize() {
+      const nextOrient = orientation();
+      const changed = nextOrient !== orientRef.current;
+      orientRef.current = nextOrient;
+
+      if (changed && storageKey) {
+        const saved = readSaved(storageKey, isMobile);
+        if (saved) {
+          setMaximized(!!saved.maximized);
+          setRect(fitRect(saved, minWidth, minHeight));
+          return;
+        }
+      }
+
       setRect((prev) => {
         if (!prev) return prev;
         const w = clamp(prev.w, minWidth, Math.max(minWidth, window.innerWidth - 16));
         const h = clamp(prev.h, minHeight, Math.max(minHeight, window.innerHeight - 16));
-        return {
+        const next = {
           w,
           h,
           x: clamp(prev.x, 8 - w + 120, Math.max(8, window.innerWidth - 120)),
           y: clamp(prev.y, 0, Math.max(0, window.innerHeight - 48)),
         };
+        if (changed && storageKey) writeSaved(storageKey, isMobile, { ...next, maximized });
+        return next;
       });
     }
     window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, [open, minWidth, minHeight]);
+    window.addEventListener("orientationchange", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("orientationchange", onResize);
+    };
+  }, [open, minWidth, minHeight, storageKey, isMobile, maximized]);
 
-  /* ---- persistência ---- */
-  const persist = React.useCallback(
-    (r: Rect) => {
-      if (!storageKey) return;
-      try {
-        localStorage.setItem(`fw:${storageKey}`, JSON.stringify(r));
-      } catch {
-        /* ignore */
-      }
-    },
-    [storageKey],
-  );
 
   /* ---- arrastar e redimensionar ---- */
   const onPointerMove = React.useCallback(
