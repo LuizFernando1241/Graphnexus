@@ -189,10 +189,10 @@ export function FloatingWindow({
     if (!open) {
       registry.delete(id);
       emit();
-      // reset para que a próxima abertura venha limpa
+      // reset para que a próxima abertura releia o layout salvo
       setMinimized(false);
       setMaximized(false);
-      if (!storageKey) setRect(null);
+      setRect(null);
       const opener = openerRef.current as HTMLElement | null;
       openerRef.current = null;
       if (opener && document.contains(opener)) opener.focus?.();
