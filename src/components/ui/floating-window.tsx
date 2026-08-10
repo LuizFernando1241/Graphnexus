@@ -153,33 +153,24 @@ export function FloatingWindow({
 
     openerRef.current = document.activeElement;
 
+    const saved = storageKey ? readSaved(storageKey, isMobile) : null;
+    if (saved) setMaximized(!!saved.maximized);
+    else if (isMobile) setMaximized(true);
+
     setRect((prev) => {
       if (prev) return prev;
-      let saved: Rect | null = null;
-      if (storageKey) {
-        try {
-          const raw = localStorage.getItem(`fw:${storageKey}`);
-          if (raw) {
-            const p = JSON.parse(raw);
-            if (typeof p?.w === "number" && typeof p?.h === "number") saved = p as Rect;
-          }
-        } catch {
-          /* ignore */
-        }
-      }
-      const w = clamp(saved?.w ?? defaultWidth, minWidth, window.innerWidth - 32);
-      const h = clamp(saved?.h ?? defaultHeight, minHeight, window.innerHeight - 32);
-      const cx = saved?.x ?? (window.innerWidth - w) / 2;
-      const cy = saved?.y ?? (window.innerHeight - h) / 2;
-      // cascata leve quando já há janelas abertas
-      const offset = saved ? 0 : registry.size * 24;
+      if (saved) return fitRect(saved, minWidth, minHeight);
+      const w = clamp(defaultWidth, minWidth, window.innerWidth - 32);
+      const h = clamp(defaultHeight, minHeight, window.innerHeight - 32);
+      const offset = registry.size * 24;
       return {
         w,
         h,
-        x: clamp(cx + offset, 8, Math.max(8, window.innerWidth - w - 8)),
-        y: clamp(cy + offset, 8, Math.max(8, window.innerHeight - h - 8)),
+        x: clamp((window.innerWidth - w) / 2 + offset, 8, Math.max(8, window.innerWidth - w - 8)),
+        y: clamp((window.innerHeight - h) / 2 + offset, 8, Math.max(8, window.innerHeight - h - 8)),
       };
     });
+
 
     const entry: WinEntry = { id, z: ++zCounter, minimized: false, close: () => onOpenChange(false) };
     registry.set(id, entry);
