@@ -323,7 +323,7 @@ export function FloatingWindow({
   React.useEffect(() => endDrag, [endDrag]);
 
   function startDrag(mode: "move" | ResizeDir, e: React.PointerEvent) {
-    if (!rect || maximized || isMobile || minimized) return;
+    if (!rect || maximized || minimized) return;
     if (e.button !== 0 && e.pointerType === "mouse") return;
     e.preventDefault();
     bringToFront();
@@ -335,21 +335,27 @@ export function FloatingWindow({
   }
 
   function toggleMaximize() {
-    if (isMobile) return;
     setMinimized(false);
     setMaximized((v) => {
-      if (!v) {
+      const next = !v;
+      if (next) {
         restoreRef.current = rect;
-      } else if (restoreRef.current) {
-        setRect(restoreRef.current);
+        if (rect) persist(rect, true);
+      } else {
+        const target = restoreRef.current ?? rect;
+        if (target) {
+          setRect(target);
+          persist(target, false);
+        }
       }
-      return !v;
+      return next;
     });
   }
 
   if (!open || !rect) return null;
 
-  const fullscreen = maximized || isMobile;
+  const fullscreen = maximized;
+
 
   /* ---- estado minimizado: barra compacta ancorada no rodapé ---- */
   if (minimized) {
