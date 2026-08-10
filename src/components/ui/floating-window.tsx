@@ -451,17 +451,15 @@ export function FloatingWindow({
           >
             <Minus className="h-4 w-4" />
           </button>
-          {!isMobile && (
-            <button
-              type="button"
-              onClick={toggleMaximize}
-              aria-label={maximized ? "Restaurar tamanho" : "Maximizar"}
-              title={maximized ? "Restaurar tamanho" : "Maximizar"}
-              className="rounded p-2 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              {maximized ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={toggleMaximize}
+            aria-label={maximized ? "Restaurar tamanho" : "Maximizar"}
+            title={maximized ? "Restaurar tamanho" : "Maximizar"}
+            className="rounded p-2 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            {maximized ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+          </button>
           <button
             type="button"
             onClick={() => onOpenChange(false)}
