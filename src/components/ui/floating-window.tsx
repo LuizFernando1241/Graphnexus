@@ -239,9 +239,10 @@ export function FloatingWindow({
     });
 
 
-    const entry: WinEntry = { id, z: ++zCounter, minimized: false, close: () => onOpenChange(false) };
+    const entry: WinEntry = { id, z: BASE_Z, minimized: false, close: () => onOpenChange(false) };
     registry.set(id, entry);
-    setZ(entry.z);
+    entry.z = nextZ();
+    setZTick((t) => t + 1);
     emit();
 
     return () => {
