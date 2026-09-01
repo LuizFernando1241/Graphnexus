@@ -178,7 +178,9 @@ export function FloatingWindow({
   const [rect, setRect] = React.useState<Rect | null>(null);
   const [maximized, setMaximized] = React.useState(false);
   const [minimized, setMinimized] = React.useState(false);
-  const [z, setZ] = React.useState(BASE_Z);
+  const [zTick, setZTick] = React.useState(0);
+  const z = registry.get(id)?.z ?? BASE_Z;
+  void zTick;
   const restoreRef = React.useRef<Rect | null>(null);
   const panelRef = React.useRef<HTMLDivElement>(null);
   const openerRef = React.useRef<Element | null>(null);
