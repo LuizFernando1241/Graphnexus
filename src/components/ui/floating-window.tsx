@@ -87,6 +87,7 @@ function fitRect(r: Rect, minWidth: number, minHeight: number): Rect {
 /* ------------------------------------------------------------------ */
 
 const BASE_Z = 80;
+const MAX_Z = 95; // mantém as janelas SEMPRE abaixo dos overlays Radix (z-[100]+)
 let zCounter = BASE_Z;
 
 interface WinEntry {
