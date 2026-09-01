@@ -117,6 +117,20 @@ function getMinimizedIds() {
   return snapshot;
 }
 
+function nextZ() {
+  zCounter += 1;
+  if (zCounter > MAX_Z) {
+    // renumera para nunca ultrapassar os overlays modais
+    const sorted = Array.from(registry.values()).sort((a, b) => a.z - b.z);
+    zCounter = BASE_Z;
+    sorted.forEach((w) => {
+      w.z = ++zCounter;
+    });
+    if (zCounter >= MAX_Z) zCounter = MAX_Z;
+  }
+  return zCounter;
+}
+
 function isTopmost(id: string) {
   const me = registry.get(id);
   if (!me || me.minimized) return false;
@@ -125,6 +139,7 @@ function isTopmost(id: string) {
   }
   return true;
 }
+
 
 /** Evita fechar a janela quando um popover/select/tooltip do Radix está aberto. */
 function hasOpenOverlay() {
