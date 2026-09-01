@@ -87,6 +87,7 @@ function fitRect(r: Rect, minWidth: number, minHeight: number): Rect {
 /* ------------------------------------------------------------------ */
 
 const BASE_Z = 80;
+const MAX_Z = 95; // mantém as janelas SEMPRE abaixo dos overlays Radix (z-[100]+)
 let zCounter = BASE_Z;
 
 interface WinEntry {
@@ -116,6 +117,20 @@ function getMinimizedIds() {
   return snapshot;
 }
 
+function nextZ() {
+  zCounter += 1;
+  if (zCounter > MAX_Z) {
+    // renumera para nunca ultrapassar os overlays modais
+    const sorted = Array.from(registry.values()).sort((a, b) => a.z - b.z);
+    zCounter = BASE_Z;
+    sorted.forEach((w) => {
+      w.z = ++zCounter;
+    });
+    if (zCounter >= MAX_Z) zCounter = MAX_Z;
+  }
+  return zCounter;
+}
+
 function isTopmost(id: string) {
   const me = registry.get(id);
   if (!me || me.minimized) return false;
@@ -124,6 +139,7 @@ function isTopmost(id: string) {
   }
   return true;
 }
+
 
 /** Evita fechar a janela quando um popover/select/tooltip do Radix está aberto. */
 function hasOpenOverlay() {
@@ -162,7 +178,9 @@ export function FloatingWindow({
   const [rect, setRect] = React.useState<Rect | null>(null);
   const [maximized, setMaximized] = React.useState(false);
   const [minimized, setMinimized] = React.useState(false);
-  const [z, setZ] = React.useState(BASE_Z);
+  const [zTick, setZTick] = React.useState(0);
+  const z = registry.get(id)?.z ?? BASE_Z;
+  void zTick;
   const restoreRef = React.useRef<Rect | null>(null);
   const panelRef = React.useRef<HTMLDivElement>(null);
   const openerRef = React.useRef<Element | null>(null);
@@ -179,9 +197,10 @@ export function FloatingWindow({
   const bringToFront = React.useCallback(() => {
     const entry = registry.get(id);
     if (!entry) return;
-    if (entry.z === zCounter) return;
-    entry.z = ++zCounter;
-    setZ(entry.z);
+    if (entry.z === zCounter && zCounter < MAX_Z) return;
+    entry.z = nextZ();
+    setZTick((t) => t + 1);
+    emit();
   }, [id]);
 
   /* ---- ciclo de vida: registro, posição inicial, reset ao fechar ---- */
@@ -220,9 +239,10 @@ export function FloatingWindow({
     });
 
 
-    const entry: WinEntry = { id, z: ++zCounter, minimized: false, close: () => onOpenChange(false) };
+    const entry: WinEntry = { id, z: BASE_Z, minimized: false, close: () => onOpenChange(false) };
     registry.set(id, entry);
-    setZ(entry.z);
+    entry.z = nextZ();
+    setZTick((t) => t + 1);
     emit();
 
     return () => {
