@@ -197,9 +197,10 @@ export function FloatingWindow({
   const bringToFront = React.useCallback(() => {
     const entry = registry.get(id);
     if (!entry) return;
-    if (entry.z === zCounter) return;
-    entry.z = ++zCounter;
-    setZ(entry.z);
+    if (entry.z === zCounter && zCounter < MAX_Z) return;
+    entry.z = nextZ();
+    setZTick((t) => t + 1);
+    emit();
   }, [id]);
 
   /* ---- ciclo de vida: registro, posição inicial, reset ao fechar ---- */
