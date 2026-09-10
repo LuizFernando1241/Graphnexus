@@ -86,7 +86,26 @@ Orçamento, ficha do produto, histórico, exportação, importação e o chat da
 - Paleta de comando, revisão semanal, arquivo unificado de itens arquivados
 - Tema consistente em toda a interface (tokens de design)
 
+## 11. Arquitetura, dados e limites (respostas às lacunas)
+
+**Colaboração — hoje é 100% single-player.** Não existe compartilhamento, convite, workspace de equipe nem permissões. Cada registro (nota, tarefa, projeto, produto, link, embedding, sugestão) carrega o `user_id` do dono e é isolado por políticas de segurança no banco: você só enxerga o que é seu. Multiplayer exigiria uma camada nova de workspaces/membros e reescrita das regras de acesso — não está previsto.
+
+**Sync e conflitos — estratégia atual é "último a escrever vence".** O app é offline-first via cache local (IndexedDB) das consultas; leitura funciona sem internet e há banner de "sem conexão". As gravações vão direto ao banco quando há rede. Não há CRDT nem merge de campo: se o mesmo item for editado em dois dispositivos, a última gravação sobrescreve a anterior. Mitigações já existentes: histórico de alterações no Radar (campo, valor antigo, valor novo) e atualização em tempo real das listas. Se conflito virar um problema real, o caminho é versionamento por campo ou timestamps de coluna.
+
+**Contexto da IA — é RAG, não "tudo no prompt".** Cada nota, tarefa, projeto e produto é convertido em vetor (embeddings) e guardado num índice pesquisável. Quando você pergunta algo, o assistente:
+1. transforma a pergunta em vetor;
+2. busca por similaridade os itens mais próximos (padrão ~8, teto 20 por busca);
+3. pode abrir itens específicos, listar recentes, listar atrasadas/próximas e sugerir conexões;
+4. responde só com o que encontrou, com no máximo ~6 rodadas de ferramentas e histórico limitado às últimas 20 mensagens.
+
+Ou seja, o custo **não** cresce com o tamanho da base — cresce com o número de perguntas. O que cresce com a base é o custo de indexação (uma vez por item criado/editado, mais a reindexação manual em Configurações → IA). As sugestões de link também são geradas por similaridade, de forma incremental, ao salvar cada item.
+
+**Privacidade e dados.** Os dados ficam no banco do próprio app, isolados por usuário, criptografados em trânsito (HTTPS) e em repouso pelo provedor. Não há criptografia ponta a ponta: o servidor consegue ler o conteúdo — necessário para busca e IA. Sobre a IA: **sim, o conteúdo relevante sai para um provedor de modelos externo** (via gateway de IA da plataforma) nos momentos de indexação, chat e classificação da captura rápida. Isso inclui dados de fornecedores, custos e margens do Radar. Nada é usado para treinar modelos, mas se houver informação comercialmente sensível o caminho recomendado é: (a) desativar a indexação de campos sensíveis, (b) manter custos/fornecedores fora dos campos de texto livre indexados, ou (c) adotar E2E apenas para notas, abrindo mão de busca semântica nelas.
+
+**Escopo — o que é diferencial e o que é acessório.** O diferencial real é a combinação PKM + Radar ligada por um grafo único de conexões e um assistente que enxerga os dois mundos. São acessórios (adiáveis sem perder valor): janelas flutuantes com persistência por orientação, importação/exportação Markdown, revisão semanal, PWA e grafo visual. O núcleo mínimo viável seria: captura rápida → notas/tarefas/projetos → Radar com score configurável → aprovados/compra → assistente de IA.
+
 ---
+
 
 ## Fluxos típicos (como fazer)
 
