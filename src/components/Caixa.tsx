@@ -27,6 +27,7 @@ type Kind = "task" | "note" | "project";
 interface Draft {
   kind: Kind;
   title: string;
+  reason?: string | null;
   due_date?: string | null;
   due_time?: string | null;
   status?: string | null;
@@ -36,9 +37,23 @@ interface Draft {
   project_id?: string | null;
   tags?: string[];
   content?: string | null;
+  note_format?: string | null;
   description?: string | null;
+  subtasks?: { title: string }[] | null;
+  linked_to_index?: number | null;
   tasks_initial?: { title: string; due_date?: string | null; priority?: string | null }[] | null;
 }
+
+const NOTE_FORMAT_LABEL: Record<string, string> = {
+  reuniao: "reunião",
+  ideia: "ideia",
+  referencia: "referência",
+  lista: "lista",
+  aprendizado: "aprendizado",
+  diario: "diário",
+  livre: "livre",
+};
+
 
 function priorityColor(p?: string | null) {
   switch (p) {
@@ -196,11 +211,13 @@ export function Caixa({ externalOpen, onExternalOpenChange }: CaixaProps) {
       tags: d.tags,
       content: d.content,
       description: d.description,
+      subtasks: d.subtasks,
       tasks_initial: d.tasks_initial,
     };
     const result = await createAsync(draft);
     return { kind: result.kind, id: result.id };
   }
+
 
   async function deleteCreated(items: { kind: Kind; id: string }[]) {
     for (const it of items) {

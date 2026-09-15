@@ -34,7 +34,17 @@ export interface QuickCreateDraft {
   tags?: string[];
   content?: string | null;
   description?: string | null;
+  subtasks?: { title: string }[] | null;
   tasks_initial?: { title: string; due_date?: string | null; priority?: string | null }[] | null;
+}
+
+/** Tarefas não têm coluna de tags — guardamos as hashtags no fim da descrição. */
+function taskDescription(draft: QuickCreateDraft): string | undefined {
+  const base = draft.description?.trim() || draft.content?.trim() || "";
+  const tags = (draft.tags || []).filter(Boolean);
+  const tagLine = tags.length ? tags.map((t) => `#${t}`).join(" ") : "";
+  const full = [base, tagLine].filter(Boolean).join("\n\n");
+  return full || undefined;
 }
 
 /**
@@ -51,12 +61,20 @@ export function useQuickCreate(opts?: QuickCreateOptions) {
       if (draft.kind === "task") {
         const task = await createTask({
           title: draft.title,
+          description: taskDescription(draft),
           status: draft.status || opts?.defaultStatus,
           priority: draft.priority,
           due_date: draft.due_date ?? opts?.defaultDueDate ?? null,
           due_time: draft.due_time,
           recurrence_rule: draft.recurrence_rule,
           recurrence_days: draft.recurrence_days,
+          subtasks: draft.subtasks?.length
+            ? draft.subtasks.slice(0, 8).map((s, i) => ({
+                id: `${Date.now()}-${i}`,
+                title: s.title,
+                done: false,
+              }))
+            : null,
         });
         result = { kind: "task", id: task.id, title: task.title };
 
@@ -89,20 +107,27 @@ export function useQuickCreate(opts?: QuickCreateOptions) {
         });
         result = { kind: "project", id: project.id, title: project.title };
 
-        // Criar tarefas iniciais se houver
+        // Criar tarefas iniciais se houver — já vinculadas ao projeto
         if (draft.tasks_initial?.length) {
           for (const ti of draft.tasks_initial.slice(0, 5)) {
             try {
-              await createTask({
+              const t = await createTask({
                 title: ti.title,
                 priority: ti.priority,
                 due_date: ti.due_date || null,
+              });
+              await createEntityLink({
+                source_type: "task",
+                source_id: t.id,
+                target_type: "project",
+                target_id: project.id,
               });
             } catch (e) {
               console.warn("Failed initial task", e);
             }
           }
         }
+
       }
 
       // Invalidar queries
