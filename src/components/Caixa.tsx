@@ -211,11 +211,13 @@ export function Caixa({ externalOpen, onExternalOpenChange }: CaixaProps) {
       tags: d.tags,
       content: d.content,
       description: d.description,
+      subtasks: d.subtasks,
       tasks_initial: d.tasks_initial,
     };
     const result = await createAsync(draft);
     return { kind: result.kind, id: result.id };
   }
+
 
   async function deleteCreated(items: { kind: Kind; id: string }[]) {
     for (const it of items) {
