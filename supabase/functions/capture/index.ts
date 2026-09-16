@@ -340,10 +340,16 @@ Sempre responda chamando a tool "capture_drafts". Não escreva texto fora da too
       const due_date = normalizeDate(r.due_date);
       const due_time = normalizeTime(r.due_time);
       let priority = typeof r.priority === "string" && PRIORITIES.includes(r.priority) ? r.priority : null;
-      // Status e prioridade derivados da data (determinístico, não confia só no modelo)
-      let status = typeof r.status === "string" && STATUSES.includes(r.status) ? r.status : null;
-      if (!status) status = due_date && due_date > today ? "backlog" : "todo";
+      // Status derivado da data (determinístico): o modelo só manda em in_progress/done.
+      const modelStatus = typeof r.status === "string" && STATUSES.includes(r.status) ? r.status : null;
+      const status =
+        modelStatus === "in_progress" || modelStatus === "done"
+          ? modelStatus
+          : due_date && due_date > today
+            ? "backlog"
+            : "todo";
       if (!priority) priority = due_date && due_date <= today ? "medium" : "none";
+
 
       const rule = cleanStr(r.recurrence_rule, 64);
       const recurrence_rule = rule && /^every:\d+:(day|week|month|custom_days)$/.test(rule) ? rule : null;
