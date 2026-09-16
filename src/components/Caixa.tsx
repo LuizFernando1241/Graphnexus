@@ -8,6 +8,8 @@ import { fetchProjects } from "@/lib/api/projects";
 import { deleteNote } from "@/lib/api/notes";
 import { deleteTask } from "@/lib/api/tasks";
 import { deleteProject } from "@/lib/api/projects";
+import { createEntityLink } from "@/lib/api/links";
+
 import { parseTaskInput } from "@/lib/parseTaskInput";
 import { getHintPhrases } from "@/lib/captureHints";
 import { useQuickCreate, type QuickCreateDraft, type QuickCreateOptions } from "@/hooks/useQuickCreate";
