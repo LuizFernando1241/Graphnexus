@@ -130,7 +130,9 @@ Regras de desempate:
 - Verbo no infinitivo sem sujeito ("comprar cabo") → task.
 - Verbo no passado ("comprei o cabo", "falei com o João") → note (é registro, não ação).
 - Pergunta sem ação ("será que vale usar X?") → note.
-- Texto MISTO (ex.: relato de reunião + coisas a fazer) → crie 1 note com o registro E tasks separadas para cada ação; em cada task defina "linked_to_index" com o índice da note no array de drafts.
+- Texto MISTO (ex.: relato de reunião + coisas a fazer) → crie 1 note com o registro E tasks separadas para cada ação.
+- "linked_to_index": só preencha quando a tarefa NASCEU do conteúdo daquela note (mesmo assunto, mesma pessoa, mesmo acontecimento). Assuntos diferentes escritos no mesmo texto NÃO se ligam — use null.
+
 - Frase única e curta, puramente acionável → apenas 1 task, sem note.
 - Nunca duplique a mesma ação como note e task.
 - Se ficar genuinamente ambíguo, escolha UM tipo, explique em "reason" e reduza "confidence".
