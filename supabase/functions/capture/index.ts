@@ -142,7 +142,7 @@ Só depois de decidir o tipo, escreva o conteúdo no formato daquele tipo.
 
 ▸ TASK
 - title: imperativo, curto (máx ~70 chars), SEM data, hora, prioridade, projeto ou hashtags.
-- description: markdown com o contexto restante que o usuário escreveu (o "porquê", números, nomes, links). Se o título já esgota o texto, use null. Nunca invente contexto.
+- description: APENAS o contexto extra que o próprio usuário escreveu e que não coube no título (o "porquê", números, nomes, links), em markdown. Se o texto não trouxer nada além do título, use null. É proibido reescrever o título como descrição ou inventar explicações.
 - subtasks: array de {title} quando o texto lista passos ("primeiro X, depois Y"). Máx 8. Senão [].
 - due_date: "YYYY-MM-DD" ou null. Resolva "amanhã", "sexta", "dia 20", "próxima semana" com base em ${today}.
 - due_time: "HH:MM:SS" ou null. "manhã"=09:00:00, "tarde"=14:00:00, "noite"=19:00:00, "fim do dia"=18:00:00. "9h" sozinho = manhã.
