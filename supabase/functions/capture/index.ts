@@ -393,14 +393,26 @@ Sempre responda chamando a tool "capture_drafts". Não escreva texto fora da too
       };
     });
 
-    // Um índice só é válido se apontar para uma note
+    // Um índice só vale se apontar para uma note E houver assunto em comum
+    const words = (s: string) =>
+      new Set(
+        s
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .split(/[^a-z0-9]+/)
+          .filter((w) => w.length > 4)
+      );
     const finalDrafts = drafts.map((d) => {
-      if (d.kind === "task" && d.linked_to_index != null) {
-        const target = drafts[d.linked_to_index];
-        if (!target || target.kind !== "note") return { ...d, linked_to_index: null };
-      }
-      return d;
+      if (d.kind !== "task" || d.linked_to_index == null) return d;
+      const target = drafts[d.linked_to_index];
+      if (!target || target.kind !== "note") return { ...d, linked_to_index: null };
+      const a = words(`${d.title} ${d.description ?? ""}`);
+      const b = words(`${target.title} ${target.content ?? ""}`);
+      const shares = [...a].some((w) => b.has(w));
+      return shares ? d : { ...d, linked_to_index: null };
     });
+
 
     return json({ drafts: finalDrafts, confidence: parsed.confidence ?? null });
   } catch (e) {
