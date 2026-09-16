@@ -436,11 +436,14 @@ interface DraftRowProps {
   draft: Draft;
   projects: { id: string; title: string }[];
   onChange: (patch: Partial<Draft>) => void;
+  onToggleKind: () => void;
   onRemove: () => void;
 }
 
-function DraftRow({ draft, projects, onChange, onRemove }: DraftRowProps) {
+function DraftRow({ draft, projects, onChange, onToggleKind, onRemove }: DraftRowProps) {
   const proj = projects.find((p) => p.id === draft.project_id);
+  const [showFull, setShowFull] = useState(false);
+  const canToggle = draft.kind !== "project";
   return (
     <div className="rounded-md border border-border/60 bg-card/60 p-2.5 group">
       <div className="flex items-start gap-2">
@@ -452,9 +455,23 @@ function DraftRow({ draft, projects, onChange, onRemove }: DraftRowProps) {
             className="w-full bg-transparent text-sm font-medium outline-none focus:bg-background/40 rounded px-1 -mx-1"
           />
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-            <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70">
+            <button
+              type="button"
+              onClick={canToggle ? onToggleKind : undefined}
+              disabled={!canToggle}
+              title={draft.reason || undefined}
+              className={`text-[10px] uppercase tracking-wide rounded px-1.5 py-0.5 border border-border/60 ${canToggle ? "hover:bg-muted text-muted-foreground" : "text-muted-foreground/70 border-transparent"}`}
+            >
               {kindLabel(draft.kind)}
-            </span>
+              {canToggle && (
+                <span className="ml-1 normal-case opacity-60">
+                  → {draft.kind === "task" ? "nota" : "tarefa"}
+                </span>
+              )}
+            </button>
+            {draft.kind === "note" && draft.note_format && (
+              <Chip>{NOTE_FORMAT_LABEL[draft.note_format] || draft.note_format}</Chip>
+            )}
             {draft.kind === "task" && (
               <>
                 {dateLabel(draft.due_date, draft.due_time) && (
@@ -472,6 +489,8 @@ function DraftRow({ draft, projects, onChange, onRemove }: DraftRowProps) {
                 {draft.recurrence_rule && (
                   <Chip>↻ {draft.recurrence_rule.replace(/^every:/, "")}</Chip>
                 )}
+                {draft.subtasks?.length ? <Chip>{draft.subtasks.length} passos</Chip> : null}
+                {draft.linked_to_index != null ? <Chip>ligada à nota</Chip> : null}
                 {proj && (
                   <Chip>
                     <Folder className="h-3 w-3" />
@@ -487,9 +506,28 @@ function DraftRow({ draft, projects, onChange, onRemove }: DraftRowProps) {
               <Chip>#{draft.tags.slice(0, 3).join(" #")}</Chip>
             ) : null}
           </div>
+
           {draft.kind === "note" && draft.content && (
+            <div className="mt-2 rounded border border-border/50 bg-background/50 px-2 py-1.5">
+              <div
+                className={`prose prose-sm dark:prose-invert max-w-none text-[12px] prose-headings:text-[12px] prose-headings:font-semibold prose-p:my-1 prose-ul:my-1 prose-li:my-0 ${showFull ? "" : "max-h-24 overflow-hidden"}`}
+              >
+                <ReactMarkdown>{draft.content}</ReactMarkdown>
+              </div>
+              {draft.content.length > 160 && (
+                <button
+                  type="button"
+                  onClick={() => setShowFull((v) => !v)}
+                  className="mt-1 text-[10px] text-muted-foreground hover:text-foreground"
+                >
+                  {showFull ? "ver menos" : "ver formatação completa"}
+                </button>
+              )}
+            </div>
+          )}
+          {draft.kind === "task" && draft.description && (
             <p className="mt-1.5 text-[11px] text-muted-foreground line-clamp-2 whitespace-pre-wrap">
-              {draft.content}
+              {draft.description}
             </p>
           )}
           {draft.kind === "project" && draft.description && (
@@ -509,6 +547,7 @@ function DraftRow({ draft, projects, onChange, onRemove }: DraftRowProps) {
     </div>
   );
 }
+
 
 function Chip({ children }: { children: React.ReactNode }) {
   return (
