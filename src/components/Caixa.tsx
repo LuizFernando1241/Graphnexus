@@ -374,9 +374,11 @@ export function Caixa({ externalOpen, onExternalOpenChange }: CaixaProps) {
                   draft={d}
                   projects={projects}
                   onChange={(patch) => updateDraft(idx, patch)}
+                  onToggleKind={() => toggleKind(idx)}
                   onRemove={() => removeDraft(idx)}
                 />
               ))}
+
             </div>
           )}
 
