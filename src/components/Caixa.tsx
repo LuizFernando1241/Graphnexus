@@ -3,6 +3,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Plus, Sparkles, Loader2, CheckSquare, StickyNote, FolderKanban, X, ArrowUp, Calendar, Flag, Folder } from "lucide-react";
 import { toast } from "sonner";
+import ReactMarkdown from "react-markdown";
+
 import { supabase } from "@/integrations/supabase/client";
 import { fetchProjects } from "@/lib/api/projects";
 import { deleteNote } from "@/lib/api/notes";
