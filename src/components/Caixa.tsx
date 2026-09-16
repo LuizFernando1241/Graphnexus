@@ -3,11 +3,15 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { Plus, Sparkles, Loader2, CheckSquare, StickyNote, FolderKanban, X, ArrowUp, Calendar, Flag, Folder } from "lucide-react";
 import { toast } from "sonner";
+import ReactMarkdown from "react-markdown";
+
 import { supabase } from "@/integrations/supabase/client";
 import { fetchProjects } from "@/lib/api/projects";
 import { deleteNote } from "@/lib/api/notes";
 import { deleteTask } from "@/lib/api/tasks";
 import { deleteProject } from "@/lib/api/projects";
+import { createEntityLink } from "@/lib/api/links";
+
 import { parseTaskInput } from "@/lib/parseTaskInput";
 import { getHintPhrases } from "@/lib/captureHints";
 import { useQuickCreate, type QuickCreateDraft, type QuickCreateOptions } from "@/hooks/useQuickCreate";
@@ -241,6 +245,27 @@ export function Caixa({ externalOpen, onExternalOpenChange }: CaixaProps) {
         created.push(c);
       }
 
+      // Liga tarefas à nota do mesmo texto (quando a IA indicou o vínculo)
+      for (let i = 0; i < drafts.length; i++) {
+        const d = drafts[i];
+        const idx = d.linked_to_index;
+        if (d.kind !== "task" || idx == null) continue;
+        const source = created[i];
+        const target = created[idx];
+        if (!source || !target || target.kind !== "note") continue;
+        try {
+          await createEntityLink({
+            source_type: "task",
+            source_id: source.id,
+            target_type: "note",
+            target_id: target.id,
+          });
+        } catch (e) {
+          console.warn("link task->note failed", e);
+        }
+      }
+      qc.invalidateQueries({ queryKey: ["entity_links"] });
+
       const label = created.length === 1
         ? `${kindLabel(created[0].kind)} criada`
         : `${created.length} itens criados`;
@@ -271,12 +296,29 @@ export function Caixa({ externalOpen, onExternalOpenChange }: CaixaProps) {
     setDrafts((prev) => prev?.map((d, i) => i === idx ? { ...d, ...patch } : d) || null);
   }
 
+  /** Alterna nota ↔ tarefa mantendo o texto escrito. */
+  function toggleKind(idx: number) {
+    setDrafts((prev) =>
+      prev?.map((d, i) => {
+        if (i !== idx) return d;
+        if (d.kind === "note") {
+          return { ...d, kind: "task" as Kind, description: d.content ?? null, content: null, status: d.status || "todo", priority: d.priority || "none", linked_to_index: null };
+        }
+        if (d.kind === "task") {
+          return { ...d, kind: "note" as Kind, content: d.description ?? null, description: null, note_format: d.note_format || "livre", linked_to_index: null };
+        }
+        return d;
+      }) || null
+    );
+  }
+
   function removeDraft(idx: number) {
     setDrafts((prev) => {
       const next = prev?.filter((_, i) => i !== idx) || [];
       return next.length ? next : null;
     });
   }
+
 
   function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
@@ -334,9 +376,11 @@ export function Caixa({ externalOpen, onExternalOpenChange }: CaixaProps) {
                   draft={d}
                   projects={projects}
                   onChange={(patch) => updateDraft(idx, patch)}
+                  onToggleKind={() => toggleKind(idx)}
                   onRemove={() => removeDraft(idx)}
                 />
               ))}
+
             </div>
           )}
 
@@ -394,11 +438,14 @@ interface DraftRowProps {
   draft: Draft;
   projects: { id: string; title: string }[];
   onChange: (patch: Partial<Draft>) => void;
+  onToggleKind: () => void;
   onRemove: () => void;
 }
 
-function DraftRow({ draft, projects, onChange, onRemove }: DraftRowProps) {
+function DraftRow({ draft, projects, onChange, onToggleKind, onRemove }: DraftRowProps) {
   const proj = projects.find((p) => p.id === draft.project_id);
+  const [showFull, setShowFull] = useState(false);
+  const canToggle = draft.kind !== "project";
   return (
     <div className="rounded-md border border-border/60 bg-card/60 p-2.5 group">
       <div className="flex items-start gap-2">
@@ -410,9 +457,23 @@ function DraftRow({ draft, projects, onChange, onRemove }: DraftRowProps) {
             className="w-full bg-transparent text-sm font-medium outline-none focus:bg-background/40 rounded px-1 -mx-1"
           />
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-            <span className="text-[10px] uppercase tracking-wide text-muted-foreground/70">
+            <button
+              type="button"
+              onClick={canToggle ? onToggleKind : undefined}
+              disabled={!canToggle}
+              title={draft.reason || undefined}
+              className={`text-[10px] uppercase tracking-wide rounded px-1.5 py-0.5 border border-border/60 ${canToggle ? "hover:bg-muted text-muted-foreground" : "text-muted-foreground/70 border-transparent"}`}
+            >
               {kindLabel(draft.kind)}
-            </span>
+              {canToggle && (
+                <span className="ml-1 normal-case opacity-60">
+                  → {draft.kind === "task" ? "nota" : "tarefa"}
+                </span>
+              )}
+            </button>
+            {draft.kind === "note" && draft.note_format && (
+              <Chip>{NOTE_FORMAT_LABEL[draft.note_format] || draft.note_format}</Chip>
+            )}
             {draft.kind === "task" && (
               <>
                 {dateLabel(draft.due_date, draft.due_time) && (
@@ -430,6 +491,8 @@ function DraftRow({ draft, projects, onChange, onRemove }: DraftRowProps) {
                 {draft.recurrence_rule && (
                   <Chip>↻ {draft.recurrence_rule.replace(/^every:/, "")}</Chip>
                 )}
+                {draft.subtasks?.length ? <Chip>{draft.subtasks.length} passos</Chip> : null}
+                {draft.linked_to_index != null ? <Chip>ligada à nota</Chip> : null}
                 {proj && (
                   <Chip>
                     <Folder className="h-3 w-3" />
@@ -445,9 +508,28 @@ function DraftRow({ draft, projects, onChange, onRemove }: DraftRowProps) {
               <Chip>#{draft.tags.slice(0, 3).join(" #")}</Chip>
             ) : null}
           </div>
+
           {draft.kind === "note" && draft.content && (
+            <div className="mt-2 rounded border border-border/50 bg-background/50 px-2 py-1.5">
+              <div
+                className={`prose prose-sm dark:prose-invert max-w-none text-[12px] prose-headings:text-[12px] prose-headings:font-semibold prose-p:my-1 prose-ul:my-1 prose-li:my-0 ${showFull ? "" : "max-h-24 overflow-hidden"}`}
+              >
+                <ReactMarkdown>{draft.content}</ReactMarkdown>
+              </div>
+              {draft.content.length > 160 && (
+                <button
+                  type="button"
+                  onClick={() => setShowFull((v) => !v)}
+                  className="mt-1 text-[10px] text-muted-foreground hover:text-foreground"
+                >
+                  {showFull ? "ver menos" : "ver formatação completa"}
+                </button>
+              )}
+            </div>
+          )}
+          {draft.kind === "task" && draft.description && (
             <p className="mt-1.5 text-[11px] text-muted-foreground line-clamp-2 whitespace-pre-wrap">
-              {draft.content}
+              {draft.description}
             </p>
           )}
           {draft.kind === "project" && draft.description && (
@@ -467,6 +549,7 @@ function DraftRow({ draft, projects, onChange, onRemove }: DraftRowProps) {
     </div>
   );
 }
+
 
 function Chip({ children }: { children: React.ReactNode }) {
   return (

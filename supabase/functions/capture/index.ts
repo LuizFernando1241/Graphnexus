@@ -130,7 +130,9 @@ Regras de desempate:
 - Verbo no infinitivo sem sujeito ("comprar cabo") → task.
 - Verbo no passado ("comprei o cabo", "falei com o João") → note (é registro, não ação).
 - Pergunta sem ação ("será que vale usar X?") → note.
-- Texto MISTO (ex.: relato de reunião + coisas a fazer) → crie 1 note com o registro E tasks separadas para cada ação; em cada task defina "linked_to_index" com o índice da note no array de drafts.
+- Texto MISTO (ex.: relato de reunião + coisas a fazer) → crie 1 note com o registro E tasks separadas para cada ação.
+- "linked_to_index": só preencha quando a tarefa NASCEU do conteúdo daquela note (mesmo assunto, mesma pessoa, mesmo acontecimento). Assuntos diferentes escritos no mesmo texto NÃO se ligam — use null.
+
 - Frase única e curta, puramente acionável → apenas 1 task, sem note.
 - Nunca duplique a mesma ação como note e task.
 - Se ficar genuinamente ambíguo, escolha UM tipo, explique em "reason" e reduza "confidence".
@@ -142,7 +144,7 @@ Só depois de decidir o tipo, escreva o conteúdo no formato daquele tipo.
 
 ▸ TASK
 - title: imperativo, curto (máx ~70 chars), SEM data, hora, prioridade, projeto ou hashtags.
-- description: markdown com o contexto restante que o usuário escreveu (o "porquê", números, nomes, links). Se o título já esgota o texto, use null. Nunca invente contexto.
+- description: APENAS o contexto extra que o próprio usuário escreveu e que não coube no título (o "porquê", números, nomes, links), em markdown. Se o texto não trouxer nada além do título, use null. É proibido reescrever o título como descrição ou inventar explicações.
 - subtasks: array de {title} quando o texto lista passos ("primeiro X, depois Y"). Máx 8. Senão [].
 - due_date: "YYYY-MM-DD" ou null. Resolva "amanhã", "sexta", "dia 20", "próxima semana" com base em ${today}.
 - due_time: "HH:MM:SS" ou null. "manhã"=09:00:00, "tarde"=14:00:00, "noite"=19:00:00, "fim do dia"=18:00:00. "9h" sozinho = manhã.
@@ -340,10 +342,16 @@ Sempre responda chamando a tool "capture_drafts". Não escreva texto fora da too
       const due_date = normalizeDate(r.due_date);
       const due_time = normalizeTime(r.due_time);
       let priority = typeof r.priority === "string" && PRIORITIES.includes(r.priority) ? r.priority : null;
-      // Status e prioridade derivados da data (determinístico, não confia só no modelo)
-      let status = typeof r.status === "string" && STATUSES.includes(r.status) ? r.status : null;
-      if (!status) status = due_date && due_date > today ? "backlog" : "todo";
+      // Status derivado da data (determinístico): o modelo só manda em in_progress/done.
+      const modelStatus = typeof r.status === "string" && STATUSES.includes(r.status) ? r.status : null;
+      const status =
+        modelStatus === "in_progress" || modelStatus === "done"
+          ? modelStatus
+          : due_date && due_date > today
+            ? "backlog"
+            : "todo";
       if (!priority) priority = due_date && due_date <= today ? "medium" : "none";
+
 
       const rule = cleanStr(r.recurrence_rule, 64);
       const recurrence_rule = rule && /^every:\d+:(day|week|month|custom_days)$/.test(rule) ? rule : null;
@@ -385,14 +393,26 @@ Sempre responda chamando a tool "capture_drafts". Não escreva texto fora da too
       };
     });
 
-    // Um índice só é válido se apontar para uma note
+    // Um índice só vale se apontar para uma note E houver assunto em comum
+    const words = (s: string) =>
+      new Set(
+        s
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "")
+          .split(/[^a-z0-9]+/)
+          .filter((w) => w.length > 4)
+      );
     const finalDrafts = drafts.map((d) => {
-      if (d.kind === "task" && d.linked_to_index != null) {
-        const target = drafts[d.linked_to_index];
-        if (!target || target.kind !== "note") return { ...d, linked_to_index: null };
-      }
-      return d;
+      if (d.kind !== "task" || d.linked_to_index == null) return d;
+      const target = drafts[d.linked_to_index];
+      if (!target || target.kind !== "note") return { ...d, linked_to_index: null };
+      const a = words(`${d.title} ${d.description ?? ""}`);
+      const b = words(`${target.title} ${target.content ?? ""}`);
+      const shares = [...a].some((w) => b.has(w));
+      return shares ? d : { ...d, linked_to_index: null };
     });
+
 
     return json({ drafts: finalDrafts, confidence: parsed.confidence ?? null });
   } catch (e) {
