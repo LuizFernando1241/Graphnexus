@@ -241,6 +241,27 @@ export function Caixa({ externalOpen, onExternalOpenChange }: CaixaProps) {
         created.push(c);
       }
 
+      // Liga tarefas à nota do mesmo texto (quando a IA indicou o vínculo)
+      for (let i = 0; i < drafts.length; i++) {
+        const d = drafts[i];
+        const idx = d.linked_to_index;
+        if (d.kind !== "task" || idx == null) continue;
+        const source = created[i];
+        const target = created[idx];
+        if (!source || !target || target.kind !== "note") continue;
+        try {
+          await createEntityLink({
+            source_type: "task",
+            source_id: source.id,
+            target_type: "note",
+            target_id: target.id,
+          });
+        } catch (e) {
+          console.warn("link task->note failed", e);
+        }
+      }
+      qc.invalidateQueries({ queryKey: ["entity_links"] });
+
       const label = created.length === 1
         ? `${kindLabel(created[0].kind)} criada`
         : `${created.length} itens criados`;
@@ -271,12 +292,29 @@ export function Caixa({ externalOpen, onExternalOpenChange }: CaixaProps) {
     setDrafts((prev) => prev?.map((d, i) => i === idx ? { ...d, ...patch } : d) || null);
   }
 
+  /** Alterna nota ↔ tarefa mantendo o texto escrito. */
+  function toggleKind(idx: number) {
+    setDrafts((prev) =>
+      prev?.map((d, i) => {
+        if (i !== idx) return d;
+        if (d.kind === "note") {
+          return { ...d, kind: "task" as Kind, description: d.content ?? null, content: null, status: d.status || "todo", priority: d.priority || "none", linked_to_index: null };
+        }
+        if (d.kind === "task") {
+          return { ...d, kind: "note" as Kind, content: d.description ?? null, description: null, note_format: d.note_format || "livre", linked_to_index: null };
+        }
+        return d;
+      }) || null
+    );
+  }
+
   function removeDraft(idx: number) {
     setDrafts((prev) => {
       const next = prev?.filter((_, i) => i !== idx) || [];
       return next.length ? next : null;
     });
   }
+
 
   function onKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
