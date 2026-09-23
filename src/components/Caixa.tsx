@@ -358,16 +358,31 @@ export function Caixa({ externalOpen, onExternalOpenChange }: CaixaProps) {
           </DialogHeader>
 
           <div className="px-5 pb-3">
-            <Textarea
-              ref={textareaRef}
-              placeholder='Ex: "ligar pro contador amanhã sobre o DAS"'
-              value={text}
-              onChange={(e) => { setText(e.target.value); if (drafts) setDrafts(null); }}
-              onKeyDown={onKeyDown}
-              rows={3}
-              className="resize-none text-base min-h-[88px] focus-visible:ring-1"
-              disabled={isPending}
-            />
+            <div className="flex items-start gap-2">
+              <Textarea
+                ref={textareaRef}
+                placeholder='Ex: "ligar pro contador amanhã sobre o DAS"'
+                value={text}
+                onChange={(e) => { setText(e.target.value); if (drafts) setDrafts(null); }}
+                onKeyDown={onKeyDown}
+                rows={3}
+                className="resize-none text-base min-h-[88px] focus-visible:ring-1"
+                disabled={isPending}
+              />
+              {speech.isSupported && (
+                <MicButton
+                  listening={speech.isListening}
+                  onClick={speech.toggle}
+                  disabled={isPending}
+                />
+              )}
+            </div>
+            {speech.isListening && (
+              <p className="mt-1.5 text-[11px] text-destructive flex items-center gap-1.5">
+                ouvindo…
+                {speech.interim && <span className="text-muted-foreground italic truncate">{speech.interim}</span>}
+              </p>
+            )}
             <p className="mt-2 text-[11px] text-muted-foreground">
               Enter para analisar · ⌘/Ctrl+Enter para criar direto · Esc para fechar
             </p>
