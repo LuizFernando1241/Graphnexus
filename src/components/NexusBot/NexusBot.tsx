@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { FloatingWindow } from "@/components/ui/floating-window";
 import { Textarea } from "@/components/ui/textarea";
+import { MicButton } from "@/components/ui/mic-button";
+import { useSpeechToText } from "@/hooks/useSpeechToText";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -79,6 +81,12 @@ export function NexusBot() {
   const navigate = useNavigate();
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const speech = useSpeechToText({
+    onFinal: (chunk) => {
+      setInput((prev) => (prev.trim() ? `${prev.replace(/\s+$/, "")} ${chunk}` : chunk));
+    },
+  });
 
   useEffect(() => {
     try {
