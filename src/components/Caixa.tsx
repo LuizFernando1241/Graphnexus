@@ -17,6 +17,8 @@ import { getHintPhrases } from "@/lib/captureHints";
 import { useQuickCreate, type QuickCreateDraft, type QuickCreateOptions } from "@/hooks/useQuickCreate";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { MicButton } from "@/components/ui/mic-button";
+import { useSpeechToText } from "@/hooks/useSpeechToText";
 import {
   Dialog,
   DialogContent,
@@ -127,6 +129,13 @@ export function Caixa({ externalOpen, onExternalOpenChange }: CaixaProps) {
   };
 
   const { createAsync, isPending } = useQuickCreate(opts);
+
+  const speech = useSpeechToText({
+    onFinal: (chunk) => {
+      setText((prev) => (prev.trim() ? `${prev.replace(/\s+$/, "")} ${chunk}` : chunk));
+      setDrafts(null);
+    },
+  });
 
   useEffect(() => {
     if (open) {
