@@ -141,10 +141,11 @@ export function Caixa({ externalOpen, onExternalOpenChange }: CaixaProps) {
     if (open) {
       setTimeout(() => textareaRef.current?.focus(), 50);
     } else {
+      speechStop();
       // reset depois de fechar
       setTimeout(() => { setText(""); setDrafts(null); setThinking(false); }, 200);
     }
-  }, [open]);
+  }, [open, speechStop]);
 
   // ---------------- Fallback local instantâneo ----------------
   const localDraft: Draft | null = useMemo(() => {
