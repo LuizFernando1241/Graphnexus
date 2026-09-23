@@ -268,8 +268,15 @@ export function NexusBot() {
                 className="min-h-[44px] max-h-32 resize-none text-sm"
                 disabled={loading}
               />
+              {speech.isSupported && (
+                <MicButton
+                  listening={speech.isListening}
+                  onClick={speech.toggle}
+                  disabled={loading}
+                />
+              )}
               <Button
-                onClick={send}
+                onClick={() => { speech.stop(); send(); }}
                 disabled={loading || !input.trim()}
                 size="icon"
                 className="h-11 w-11 shrink-0"
@@ -278,7 +285,13 @@ export function NexusBot() {
               </Button>
             </div>
             <div className="text-[10px] text-muted-foreground mt-1.5 px-1">
-              Enter envia · Shift+Enter quebra linha
+              {speech.isListening ? (
+                <span className="text-destructive">
+                  ouvindo… <span className="text-muted-foreground italic">{speech.interim}</span>
+                </span>
+              ) : (
+                <>Enter envia · Shift+Enter quebra linha</>
+              )}
             </div>
           </div>
       </FloatingWindow>
