@@ -17,6 +17,8 @@ import { getHintPhrases } from "@/lib/captureHints";
 import { useQuickCreate, type QuickCreateDraft, type QuickCreateOptions } from "@/hooks/useQuickCreate";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { MicButton } from "@/components/ui/mic-button";
+import { useSpeechToText } from "@/hooks/useSpeechToText";
 import {
   Dialog,
   DialogContent,
@@ -128,13 +130,22 @@ export function Caixa({ externalOpen, onExternalOpenChange }: CaixaProps) {
 
   const { createAsync, isPending } = useQuickCreate(opts);
 
+  const speech = useSpeechToText({
+    onFinal: (chunk) => {
+      setText((prev) => (prev.trim() ? `${prev.replace(/\s+$/, "")} ${chunk}` : chunk));
+      setDrafts(null);
+    },
+  });
+
   useEffect(() => {
     if (open) {
       setTimeout(() => textareaRef.current?.focus(), 50);
     } else {
+      speech.stop();
       // reset depois de fechar
       setTimeout(() => { setText(""); setDrafts(null); setThinking(false); }, 200);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   // ---------------- Fallback local instantâneo ----------------
@@ -349,16 +360,31 @@ export function Caixa({ externalOpen, onExternalOpenChange }: CaixaProps) {
           </DialogHeader>
 
           <div className="px-5 pb-3">
-            <Textarea
-              ref={textareaRef}
-              placeholder='Ex: "ligar pro contador amanhã sobre o DAS"'
-              value={text}
-              onChange={(e) => { setText(e.target.value); if (drafts) setDrafts(null); }}
-              onKeyDown={onKeyDown}
-              rows={3}
-              className="resize-none text-base min-h-[88px] focus-visible:ring-1"
-              disabled={isPending}
-            />
+            <div className="flex items-start gap-2">
+              <Textarea
+                ref={textareaRef}
+                placeholder='Ex: "ligar pro contador amanhã sobre o DAS"'
+                value={text}
+                onChange={(e) => { setText(e.target.value); if (drafts) setDrafts(null); }}
+                onKeyDown={onKeyDown}
+                rows={3}
+                className="resize-none text-base min-h-[88px] focus-visible:ring-1"
+                disabled={isPending}
+              />
+              {speech.isSupported && (
+                <MicButton
+                  listening={speech.isListening}
+                  onClick={speech.toggle}
+                  disabled={isPending}
+                />
+              )}
+            </div>
+            {speech.isListening && (
+              <p className="mt-1.5 text-[11px] text-destructive flex items-center gap-1.5">
+                ouvindo…
+                {speech.interim && <span className="text-muted-foreground italic truncate">{speech.interim}</span>}
+              </p>
+            )}
             <p className="mt-2 text-[11px] text-muted-foreground">
               Enter para analisar · ⌘/Ctrl+Enter para criar direto · Esc para fechar
             </p>
