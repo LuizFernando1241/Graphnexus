@@ -7,8 +7,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 import { ResizeHandle } from "@/components/ui/ResizeHandle";
-import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
-import { useRadarSinais } from "@/hooks/radar/useRadarSinais";
 import { usePendingSuggestionCount } from "@/hooks/useSuggestionCount";
 
 const navItems = [
@@ -34,10 +32,6 @@ export function AppSidebar() {
   const [width, setWidth] = useLocalStorage<number>("ui:sidebar-width", SIDEBAR_DEFAULT);
   const collapsed = width < COLLAPSE_THRESHOLD;
   const effectiveWidth = collapsed ? 64 : width;
-  const { produtos: radarProdutos } = useRadarProdutos();
-  const produtosEmDecisao = radarProdutos.filter((p) => p.stage === "decisao").length;
-  const { urgentes } = useRadarSinais();
-  const badgeCount = urgentes.length + produtosEmDecisao;
   const { data: suggestionCount = 0 } = usePendingSuggestionCount();
 
 
@@ -100,42 +94,6 @@ export function AppSidebar() {
           </NavLink>
 
 
-          {/* Radar section */}
-          {!collapsed && (
-            <div className="mt-4 mb-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Radar
-            </div>
-          )}
-          {collapsed && <div className="mt-4 mx-2 border-t border-border/50" />}
-
-          <NavLink
-            to="/radar"
-            title={collapsed ? "Pipeline" : undefined}
-            className={`flex items-center gap-3 rounded-lg py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${collapsed ? "px-2 justify-center" : "px-3"}`}
-            activeClassName="bg-sidebar-accent text-foreground"
-          >
-            <Crosshair className="h-4 w-4 shrink-0" />
-            {!collapsed && (
-              <>
-                <span className="truncate flex-1">Pipeline</span>
-                {badgeCount > 0 && (
-                  <span className="ml-auto inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-semibold text-destructive-foreground">
-                    {badgeCount}
-                  </span>
-                )}
-              </>
-            )}
-          </NavLink>
-
-          <NavLink
-            to="/radar/aprovados"
-            title={collapsed ? "Aprovados" : undefined}
-            className={`flex items-center gap-3 rounded-lg py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground ${collapsed ? "px-2 justify-center" : "px-3"}`}
-            activeClassName="bg-sidebar-accent text-foreground"
-          >
-            <ShoppingCart className="h-4 w-4 shrink-0" />
-            {!collapsed && <span className="truncate">Aprovados</span>}
-          </NavLink>
         </nav>
 
         {/* Settings */}

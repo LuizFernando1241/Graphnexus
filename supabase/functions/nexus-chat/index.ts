@@ -35,10 +35,10 @@ function json(data: unknown, status = 200) {
 
 const TODAY = () => new Date().toISOString().slice(0, 10);
 
-const SYSTEM_PROMPT = `Você é o NexusBot, assistente do NexusGraph (sistema pessoal de notas, tarefas, projetos e produtos do radar) em português.
+const SYSTEM_PROMPT = `Você é o NexusBot, assistente do NexusGraph (sistema pessoal de notas, tarefas e projetos) em português.
 
 Seu papel:
-- Responder perguntas do usuário usando o contexto real do banco dele (notas, tarefas, projetos, produtos).
+- Responder perguntas do usuário usando o contexto real do banco dele (notas, tarefas, projetos).
 - SEMPRE use as ferramentas disponíveis para buscar dados antes de responder. Nunca invente.
 - Faça busca semântica quando o usuário menciona um tema/assunto.
 - Quando citar uma entidade, mencione o título e use a ferramenta get_entity se precisar de detalhes.
@@ -52,7 +52,7 @@ const tools = [
     type: "function",
     function: {
       name: "semantic_search",
-      description: "Busca semântica em todas as entidades do usuário (notas, tarefas, projetos, produtos). Use quando o usuário menciona um tema, assunto ou palavra-chave.",
+      description: "Busca semântica em todas as entidades do usuário (notas, tarefas, projetos). Use quando o usuário menciona um tema, assunto ou palavra-chave.",
       parameters: {
         type: "object",
         properties: {
@@ -71,7 +71,7 @@ const tools = [
       parameters: {
         type: "object",
         properties: {
-          entity_type: { type: "string", enum: ["note", "task", "project", "produto"] },
+          entity_type: { type: "string", enum: ["note", "task", "project"] },
           entity_id: { type: "string" },
         },
         required: ["entity_type", "entity_id"],
@@ -86,7 +86,7 @@ const tools = [
       parameters: {
         type: "object",
         properties: {
-          entity_type: { type: "string", enum: ["note", "task", "project", "produto"] },
+          entity_type: { type: "string", enum: ["note", "task", "project"] },
           limit: { type: "number", description: "Padrão 10, máx 30" },
         },
         required: ["entity_type"],
@@ -120,7 +120,7 @@ const tools = [
       parameters: {
         type: "object",
         properties: {
-          entity_type: { type: "string", enum: ["note", "task", "project", "produto"] },
+          entity_type: { type: "string", enum: ["note", "task", "project"] },
           entity_id: { type: "string" },
           limit: { type: "number", description: "Padrão 5" },
         },

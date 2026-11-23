@@ -17,8 +17,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { useRadarProdutos } from "@/hooks/radar/useRadarProdutos";
-import { useRadarSinais } from "@/hooks/radar/useRadarSinais";
 import { usePendingSuggestionCount } from "@/hooks/useSuggestionCount";
 
 const navItems = [
@@ -37,12 +35,8 @@ export function MobileSidebarContent({ onNavigate }: { onNavigate: () => void })
   const navigate = useNavigate();
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { produtos: radarProdutos } = useRadarProdutos();
-  const { urgentes } = useRadarSinais();
   const { data: suggestionCount = 0 } = usePendingSuggestionCount();
 
-  const produtosEmDecisao = radarProdutos.filter((p) => p.stage === "decisao").length;
-  const badgeCount = urgentes.length + produtosEmDecisao;
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -93,36 +87,6 @@ export function MobileSidebarContent({ onNavigate }: { onNavigate: () => void })
               {suggestionCount}
             </span>
           )}
-        </NavLink>
-
-        <div className="mt-4 mb-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Radar
-        </div>
-
-        <NavLink
-          to="/radar"
-          end
-          onClick={onNavigate}
-          className={linkClass}
-          activeClassName="bg-sidebar-accent text-foreground"
-        >
-          <Crosshair className="h-4 w-4 shrink-0" />
-          <span className="truncate flex-1">Pipeline</span>
-          {badgeCount > 0 && (
-            <span className="ml-auto inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-destructive px-1.5 text-[10px] font-semibold text-destructive-foreground">
-              {badgeCount}
-            </span>
-          )}
-        </NavLink>
-
-        <NavLink
-          to="/radar/aprovados"
-          onClick={onNavigate}
-          className={linkClass}
-          activeClassName="bg-sidebar-accent text-foreground"
-        >
-          <ShoppingCart className="h-4 w-4 shrink-0" />
-          <span className="truncate">Comprados</span>
         </NavLink>
 
         <div className="mt-4 border-t border-border pt-2">

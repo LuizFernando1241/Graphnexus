@@ -7,17 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PageTransition } from "@/components/PageTransition";
 import { PageHeader } from "@/components/PageHeader";
-import { ParametrosRadar } from "@/components/radar/ParametrosRadar";
 import { reindexAll } from "@/lib/api/embedding";
 
 export default function Settings() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [reindexing, setReindexing] = useState(false);
-  const [activeTab, setActiveTab] = useState("radar");
+  const [activeTab, setActiveTab] = useState("ai");
 
   useEffect(() => {
     const tab = searchParams.get("tab");
-    if (tab === "radar" || tab === "ai") {
+    if (tab === "ai") {
       setActiveTab(tab);
     }
   }, [searchParams]);
@@ -42,19 +41,11 @@ export default function Settings() {
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList>
-            <TabsTrigger value="radar">
-              <Crosshair className="w-4 h-4 mr-2" />
-              Radar
-            </TabsTrigger>
             <TabsTrigger value="ai">
               <Sparkles className="w-4 h-4 mr-2" />
               IA
             </TabsTrigger>
           </TabsList>
-
-          <TabsContent value="radar" className="mt-6">
-            <ParametrosRadar />
-          </TabsContent>
 
           <TabsContent value="ai" className="mt-6">
             <Card className="p-6 max-w-2xl space-y-4">

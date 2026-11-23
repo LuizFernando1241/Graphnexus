@@ -30,7 +30,7 @@ const WELCOME: ChatMessage = {
   id: "welcome",
   role: "assistant",
   content:
-    "Oi! Sou o **NexusBot** 🤖\n\nPergunte qualquer coisa sobre suas notas, tarefas, projetos e produtos. Por exemplo:\n\n- *Quais tarefas estão atrasadas?*\n- *Tenho alguma nota sobre marketing?*\n- *O que está acontecendo no projeto X?*\n- *Com o que essa nota se conecta?*",
+    "Oi! Sou o **NexusBot** 🤖\n\nPergunte qualquer coisa sobre suas notas, tarefas e projetos. Por exemplo:\n\n- *Quais tarefas estão atrasadas?*\n- *Tenho alguma nota sobre marketing?*\n- *O que está acontecendo no projeto X?*\n- *Com o que essa nota se conecta?*",
 };
 
 function entityHref(e: EntityRef): string {

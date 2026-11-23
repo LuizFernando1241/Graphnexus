@@ -163,7 +163,7 @@ async function searchProjects(pattern: string, limit?: number): Promise<Project[
 }
 
 /**
- * Busca unificada em todas as entidades (notas, tarefas, projetos, produtos),
+ * Busca unificada em todas as entidades (notas, tarefas, projetos),
  * devolvendo um formato leve `SearchResult`. Usada pelo LinkPicker para que
  * o seletor de links e o ⌘K compartilhem a mesma estratégia de busca.
  */
@@ -179,15 +179,10 @@ export function useMultiEntitySearch(
     enabled: (opts?.enabled ?? true) && debouncedSearch.trim().length > 0,
     queryFn: async (): Promise<SearchResult[]> => {
       const pattern = `%${escapeLikePattern(debouncedSearch)}%`;
-      const [notes, tasks, projects, products] = await Promise.all([
+      const [notes, tasks, projects] = await Promise.all([
         searchNotes(pattern, limit),
         searchTasks(pattern, limit),
         searchProjects(pattern, limit),
-        supabase
-          .from("radar_produtos")
-          .select("id, nome")
-          .ilike("nome", pattern)
-          .limit(limit),
       ]);
 
       const results: SearchResult[] = [];
@@ -199,9 +194,6 @@ export function useMultiEntitySearch(
       );
       projects.slice(0, limit).forEach((p) =>
         results.push({ id: p.id, type: "project", title: p.title, emoji: p.emoji })
-      );
-      ((products.data || []) as { id: string; nome: string }[]).forEach((p) =>
-        results.push({ id: p.id, type: "product", title: p.nome })
       );
       return results;
     },

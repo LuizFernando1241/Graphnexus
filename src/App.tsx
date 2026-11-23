@@ -21,7 +21,6 @@ import ProjectDetail from "@/pages/ProjectDetail";
 import Graph from "@/pages/Graph";
 import Archive from "@/pages/Archive";
 import { Navigate } from "react-router-dom";
-import RadarPage from "@/pages/RadarPage";
 import Settings from "@/pages/Settings";
 import Suggestions from "@/pages/Suggestions";
 import Login from "@/pages/Login";
@@ -75,8 +74,7 @@ const router = createBrowserRouter([
           { path: "/graph", element: <Graph /> },
           { path: "/archive", element: <Archive /> },
           { path: "/import", element: <Navigate to="/notes" replace /> },
-          { path: "/radar", element: <RadarPage /> },
-          { path: "/radar/aprovados", element: <RadarPage /> },
+          { path: "/radar/*", element: <Navigate to="/" replace /> },
           { path: "/suggestions", element: <Suggestions /> },
           { path: "/settings", element: <Settings /> },
         ],

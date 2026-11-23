@@ -53,7 +53,6 @@ const TYPE_CONFIG = [
   { type: "note" as const, label: "Notas", icon: StickyNote, color: TYPE_COLORS.note },
   { type: "task" as const, label: "Tarefas", icon: CheckSquare, color: TYPE_COLORS.task },
   { type: "project" as const, label: "Projetos", icon: FolderKanban, color: TYPE_COLORS.project },
-  { type: "product" as const, label: "Produtos", icon: Crosshair, color: TYPE_COLORS.product },
 ];
 
 const ORPHAN_COLOR = "#3F3F46";
@@ -61,11 +60,10 @@ const ORPHAN_TEXT_COLOR = "rgba(244,244,248,0.3)";
 
 async function fetchGraphData() {
   try {
-    const [notes, tasks, projects, products, links] = await Promise.all([
+    const [notes, tasks, projects, links] = await Promise.all([
       supabase.from("notes").select("id, title, emoji, color, content").eq("archived", false),
       supabase.from("tasks").select("id, title, description").eq("archived", false).neq("status", "cancelled"),
       supabase.from("projects").select("id, title, emoji, cover_color, description, parent_id").eq("archived", false),
-      supabase.from("radar_produtos").select("id, nome, fornecedor, stage").neq("stage", "arquivado"),
       supabase.from("entity_links").select("source_id, source_type, target_id, target_type"),
     ]);
 
@@ -97,10 +95,6 @@ async function fetchGraphData() {
       nodeIds.add(p.id);
     });
 
-    (products.data || []).forEach((p: { id: string; nome: string; fornecedor: string }) => {
-      nodes.push({ id: p.id, type: "product", label: p.nome, color: TYPE_COLORS.product, description: p.fornecedor, isOrphan: !connectedIds.has(p.id), linkCount: linkCounts.get(p.id) || 0 });
-      nodeIds.add(p.id);
-    });
 
     const graphLinks: GraphLink[] = (links.data || [])
       .filter((l) => nodeIds.has(l.source_id) && nodeIds.has(l.target_id))

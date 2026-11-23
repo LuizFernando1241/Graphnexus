@@ -333,25 +333,10 @@ export default function Archive() {
             <TabsTrigger value="notes">Notas</TabsTrigger>
             <TabsTrigger value="projects">Projetos</TabsTrigger>
             <TabsTrigger value="tasks">Tarefas</TabsTrigger>
-            <TabsTrigger value="products">Produtos</TabsTrigger>
           </TabsList>
           <TabsContent value="notes">{renderList(notes?.data, notes?.isLoading, "notes")}</TabsContent>
           <TabsContent value="projects">{renderList(projects?.data, projects?.isLoading, "projects")}</TabsContent>
           <TabsContent value="tasks">{renderList(tasks?.data, tasks?.isLoading, "tasks")}</TabsContent>
-          <TabsContent value="products">
-            <div className="flex flex-col gap-3">
-              <div className="relative max-w-md">
-                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por nome ou fornecedor"
-                  value={productSearch}
-                  onChange={(e) => setProductSearch(e.target.value)}
-                  className="pl-8 h-9"
-                />
-              </div>
-              {renderList(filteredProducts, products?.isLoading, "radar_produtos")}
-            </div>
-          </TabsContent>
         </Tabs>
 
         <AlertDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}>

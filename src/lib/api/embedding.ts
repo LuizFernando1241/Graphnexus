@@ -48,7 +48,9 @@ export async function fetchPendingSuggestions(): Promise<LinkSuggestion[]> {
     .order("score", { ascending: false })
     .limit(100);
   if (error) throw error;
-  return (data ?? []) as LinkSuggestion[];
+  return ((data ?? []) as LinkSuggestion[]).filter(
+    (s) => (s.source_type as string) !== "produto" && (s.target_type as string) !== "produto",
+  );
 }
 
 export async function fetchPendingSuggestionsFor(
@@ -116,17 +118,15 @@ export async function acceptSuggestion(s: LinkSuggestion) {
 
 export async function reindexAll(): Promise<{ queued: number }> {
   // Collect all user entity ids and queue embed calls
-  const [{ data: notes }, { data: tasks }, { data: projects }, { data: produtos }] = await Promise.all([
+  const [{ data: notes }, { data: tasks }, { data: projects }] = await Promise.all([
     supabase.from("notes").select("id"),
     supabase.from("tasks").select("id"),
     supabase.from("projects").select("id"),
-    supabase.from("radar_produtos").select("id"),
   ]);
   const batches: { entity_type: EmbedEntityType; entity_id: string }[] = [
     ...(notes ?? []).map((r) => ({ entity_type: "note" as const, entity_id: r.id })),
     ...(tasks ?? []).map((r) => ({ entity_type: "task" as const, entity_id: r.id })),
     ...(projects ?? []).map((r) => ({ entity_type: "project" as const, entity_id: r.id })),
-    ...(produtos ?? []).map((r) => ({ entity_type: "produto" as const, entity_id: r.id })),
   ];
   // Run in small concurrency to avoid rate limits
   const concurrency = 3;
