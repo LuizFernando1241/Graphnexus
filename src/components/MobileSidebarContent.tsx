@@ -24,7 +24,6 @@ const navItems = [
   { title: "Notas", url: "/notes", icon: StickyNote },
   { title: "Tarefas", url: "/tasks", icon: CheckSquare },
   { title: "Projetos", url: "/projects", icon: FolderKanban },
-  { title: "Grafo", url: "/graph", icon: Network },
   { title: "Arquivos", url: "/archive", icon: Archive },
 ];
 

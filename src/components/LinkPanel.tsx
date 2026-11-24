@@ -133,7 +133,8 @@ function LinkItem({
 export function LinkPanel({ entityId, entityType }: LinkPanelProps) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [deleteLinkId, setDeleteLinkId] = useState<string | null>(null);
-  const { data: links = [], isLoading } = useEntityLinks(entityId, entityType);
+  const { data: allLinks = [], isLoading } = useEntityLinks(entityId, entityType);
+  const links = allLinks.filter((l) => l.source_type !== "product" && l.target_type !== "product");
   const createLink = useCreateLink(entityId, entityType);
   const deleteLink = useDeleteLink(entityId, entityType);
 

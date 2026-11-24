@@ -153,7 +153,7 @@ Deno.serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) return json({ error: "LOVABLE_API_KEY missing" }, 500);
 
-    const aiPrompt = `Você é um assistente que analisa pares de itens (notas, tarefas, projetos, produtos) e decide se devem ser vinculados. Para cada par, responda se faz sentido vincular (relate=true) e uma frase curta em português explicando o motivo. Seja conservador: só relate=true se houver relação clara de tema, projeto, produto ou contexto. Pares:\n\n` +
+    const aiPrompt = `Você é um assistente que analisa pares de itens (notas, tarefas, projetos) e decide se devem ser vinculados. Para cada par, responda se faz sentido vincular (relate=true) e uma frase curta em português explicando o motivo. Seja conservador: só relate=true se houver relação clara de tema, projeto ou contexto. Pares:\n\n` +
       limited.map((c, i) =>
         `[${i}] A (${c.source_type}): ${c.source_preview.slice(0, 200)}\n    B (${c.target_type}): ${c.target_preview.slice(0, 200)}`
       ).join("\n\n");

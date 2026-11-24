@@ -172,6 +172,24 @@ export default function Dashboard() {
         </p>
       </div>
 
+      {data.counts.notes + data.counts.tasks + data.counts.projects === 0 && (
+        <Card>
+          <CardHeader><CardTitle className="text-base">Comece em 3 passos</CardTitle></CardHeader>
+          <CardContent className="grid gap-3 sm:grid-cols-3">
+            {[
+              ["1. Capture", "Escreva ou fale qualquer pensamento na Caixa (botão +)."],
+              ["2. Revise", "A IA separa nota de tarefa — confirme ou ajuste."],
+              ["3. Conecte", "Ligue itens a projetos e pergunte ao NexusBot."],
+            ].map(([t, d]) => (
+              <div key={t} className="rounded-lg border border-border p-3">
+                <p className="font-medium text-sm">{t}</p>
+                <p className="text-xs text-muted-foreground mt-1">{d}</p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card className="cursor-pointer hover:bg-accent transition-colors" onClick={() => navigate("/notes")}>
